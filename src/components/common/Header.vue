@@ -79,14 +79,14 @@ export default {
         console.log('🔐 Verificando status de autenticação...');
         await this.checkAuthStatus();
         
-        // Inicializar componentes Bootstrap se necessário
+        
         this.initializeBootstrapComponents();
         
         // Configurar event listeners
         this.setupEventListeners();
         
       } catch (error) {
-        console.error('❌ Erro ao inicializar header:', error);
+        console.error(' Erro ao inicializar header:', error);
       }
     },
     

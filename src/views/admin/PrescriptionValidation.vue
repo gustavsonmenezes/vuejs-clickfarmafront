@@ -1,6 +1,6 @@
 <template>
   <div class="prescription-validation container-fluid">
-    <h2>Validar Receitas (US-504)</h2>
+    <h2>Validar Receitas</h2>
     <div class="row">
       <div v-for="prescription in prescriptions" :key="prescription.id" class="col-md-6 mb-3">
         <div class="card">

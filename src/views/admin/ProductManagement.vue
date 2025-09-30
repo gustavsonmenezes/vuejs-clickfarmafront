@@ -1,6 +1,6 @@
 <template>
   <div class="product-management container-fluid">
-    <h2 class="mb-4">Gerenciar Produtos (US-501)</h2>
+    <h2 class="mb-4">Gerenciar Produtos</h2>
     
     <!-- Notificação de Sucesso/Erro -->
     <div v-if="notification.show" :class="['alert', notification.type === 'success' ? 'alert-success' : 'alert-danger', 'alert-dismissible']" role="alert">
@@ -104,7 +104,7 @@
       </div>
     </div>
 
-    <!-- Modal de Confirmação de Exclusão -->
+    
     <div v-if="showDeleteConfirm" class="modal d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
       <div class="modal-dialog">
         <div class="modal-content">
@@ -174,7 +174,7 @@ export default {
   },
   methods: {
     async fetchProducts() {
-      // Dados mockados
+      
       this.products = [
         { id: 1, name: 'Paracetamol 500mg', price: 10.50, description: 'Analgésico comum', requiresPrescription: false, stock: 50 },
         { id: 2, name: 'Amoxicilina 500mg', price: 25.00, description: 'Antibiótico para infecções', requiresPrescription: true, stock: 30 },
@@ -220,13 +220,13 @@ export default {
     },
 
     async addProduct() {
-      // Adiciona produto mockado
+      
       const newProduct = {
         ...this.productForm,
-        id: Date.now(), // ID único baseado no timestamp
+        id: Date.now(), 
         price: parseFloat(this.productForm.price),
         requiresPrescription: this.productForm.requiresPrescription === 'true',
-        stock: 0 // Estoque inicial
+        stock: 0 
       }
       
       this.products.push(newProduct)
@@ -235,7 +235,7 @@ export default {
     },
 
     async updateProduct() {
-      // Atualiza produto mockado
+      
       const index = this.products.findIndex(p => p.id === this.productForm.id)
       if (index !== -1) {
         this.products[index] = {

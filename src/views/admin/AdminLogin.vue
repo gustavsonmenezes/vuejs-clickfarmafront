@@ -68,12 +68,12 @@ export default {
       this.isLoading = true
       this.error = ''
       
-      // Simula delay de rede
+      
       await new Promise(resolve => setTimeout(resolve, 1000))
       
-      // Verificação mockada
+      
       if (this.email === 'admin@clickfarma.com' && this.password === 'senha123') {
-        // Dados mockados do usuário admin
+        
         const mockUser = {
           id: 1,
           name: 'Administrador ClickFarma',
@@ -84,11 +84,11 @@ export default {
         
         const mockToken = 'mock-jwt-token-' + Date.now()
         
-        // Salva no localStorage
+        
         localStorage.setItem('authToken', mockToken)
         localStorage.setItem('user', JSON.stringify(mockUser))
         
-        // Redireciona para o painel admin
+        
         this.$router.push('/admin')
       } else {
         this.error = 'Credenciais inválidas. Use: admin@clickfarma.com / senha123'
@@ -98,7 +98,7 @@ export default {
     }
   },
   mounted() {
-    // Limpa dados de login ao carregar a página de login
+    
     localStorage.removeItem('authToken')
     localStorage.removeItem('user')
   }

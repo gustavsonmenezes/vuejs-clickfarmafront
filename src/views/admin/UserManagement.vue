@@ -1,4 +1,4 @@
-<!-- src/views/admin/UserManagement.vue -->
+
 <template>
   <div class="user-management">
     <div class="page-header">

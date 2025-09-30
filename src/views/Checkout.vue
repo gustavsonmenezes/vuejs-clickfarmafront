@@ -132,7 +132,7 @@ export default {
       
       alert(message);
       this.clearCart();
-      this.$router.push('/PaymentMethod');
+      this.$router.push("/payment-method");
     }
   }
 }

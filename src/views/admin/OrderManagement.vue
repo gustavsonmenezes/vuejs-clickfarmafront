@@ -1,6 +1,6 @@
 <template>
   <div class="order-management container-fluid">
-    <h2>Visualizar Pedidos (US-503)</h2>
+    <h2>Visualizar Pedidos</h2>
     <input v-model="search" class="form-control mb-3" placeholder="Buscar por ID ou Cliente" />
     <div class="row">
       <div v-for="order in filteredOrders" :key="order.id" class="col-md-6 mb-3">

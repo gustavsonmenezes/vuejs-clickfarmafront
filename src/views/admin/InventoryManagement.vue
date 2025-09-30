@@ -1,6 +1,6 @@
 <template>
   <div class="inventory-management container-fluid">
-    <h2 class="mb-4">Gerenciar Estoque (US-502)</h2>
+    <h2 class="mb-4">Gerenciar Estoque</h2>
     <div v-if="lowStockProducts.length > 0" class="alert alert-warning mb-4">
       <h4>Alertas de Baixo Estoque</h4>
       <ul class="list-unstyled">

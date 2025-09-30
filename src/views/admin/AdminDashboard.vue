@@ -32,7 +32,7 @@
             @click="closeSidebar"
           >
             <i class="fas fa-tachometer-alt me-2"></i>
-            Dashboard
+            Início
           </router-link>
         </li>
         <li class="nav-item">
@@ -43,7 +43,7 @@
             @click="closeSidebar"
           >
             <i class="fas fa-pills me-2"></i>
-            Gerenciar Produtos (US-501)
+            Gerenciar Produtos
           </router-link>
         </li>
         <li class="nav-item">
@@ -54,7 +54,7 @@
             @click="closeSidebar"
           >
             <i class="fas fa-boxes me-2"></i>
-            Gerenciar Estoque (US-502)
+            Gerenciar Estoque
           </router-link>
         </li>
         <li class="nav-item">
@@ -65,7 +65,7 @@
             @click="closeSidebar"
           >
             <i class="fas fa-shopping-cart me-2"></i>
-            Visualizar Pedidos (US-503)
+            Visualizar Pedidos
           </router-link>
         </li>
         <li class="nav-item">
@@ -76,7 +76,7 @@
             @click="closeSidebar"
           >
             <i class="fas fa-file-medical me-2"></i>
-            Validar Receitas (US-504)
+            Validar Receitas
           </router-link>
         </li>
         <li class="nav-item">
@@ -87,7 +87,7 @@
             @click="closeSidebar"
           >
             <i class="fas fa-users me-2"></i>
-            Gerenciar Usuários (US-505)
+            Gerenciar Usuários
           </router-link>
         </li>
       </ul>

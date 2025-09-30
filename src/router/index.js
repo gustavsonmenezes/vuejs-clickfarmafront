@@ -12,7 +12,6 @@ import ResetPassword from '../views/ResetPassword.vue'
 import Prescriptions from '../views/Prescriptions.vue'
 import OrderConfirmation from '../views/OrderConfirmation.vue'
 
-// Import das views do admin
 import AdminLogin from '../views/admin/AdminLogin.vue'
 import AdminDashboard from '../views/admin/AdminDashboard.vue'
 import ProductManagement from '../views/admin/ProductManagement.vue'
@@ -47,7 +46,6 @@ const routes = [
     name: 'Register',
     component: Register 
   },  
-  
   { 
     path: '/cart', 
     name: 'Cart',
@@ -95,13 +93,18 @@ const routes = [
     component: () => import('../components/checkout/PaymentMethod.vue'),
     meta: { requiresAuth: true }
   },
-  // Rota para Login Admin
+  // Adicione esta rota para resolver o erro
+  {
+    path: '/payment-method',
+    name: 'PaymentMethod',
+    component: () => import('../components/checkout/PaymentMethod.vue'),
+    meta: { requiresAuth: true }
+  },
   {
     path: '/admin/login',
     name: 'AdminLogin',
     component: AdminLogin
   },
-  // Rotas do Painel Administrativo
   {
     path: '/admin',
     component: AdminDashboard,
@@ -114,7 +117,7 @@ const routes = [
       {
         path: 'dashboard',
         name: 'AdminDashboardOverview',
-        component: { template: '<div>Bem-vindo ao Painel Administrativo!</div>' } // Componente simples para o overview
+        component: { template: '<div>Bem-vindo ao Painel Administrativo!</div>' } 
       },
       {
         path: 'products',
@@ -150,7 +153,6 @@ const router = createRouter({
   routes
 })
 
-// Middleware de autenticação
 router.beforeEach((to, from, next) => {
   const isAuthenticated = localStorage.getItem('authToken')
   const user = JSON.parse(localStorage.getItem('user') || '{}')

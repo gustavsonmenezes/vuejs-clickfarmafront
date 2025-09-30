@@ -55,7 +55,7 @@
               </router-link>
               <p class="card-text">{{ product.description }}</p>
               <p class="text-success fw-bold">R$ {{ product.price.toFixed(2) }}</p>
-              <p :class="{'text-success': product.inStock, 'text-danger': !product.inStock}">
+              <p :class="{'text-success': product.inStock, 'text-danger': !product.inStock}"> <!-- inteporla -->
                 {{ product.inStock ? 'Em estoque' : 'Fora de estoque' }}
               </p>
             </div>

@@ -13,7 +13,7 @@ export const authService = {
     return api.post('/auth/logout')
   },
   
-  // Novo método para atualizar perfil
+  
   async updateProfile(userData) {
     return api.put('/profile', userData)
   },
@@ -26,7 +26,7 @@ export const authService = {
   return api.post('/auth/reset-password', data)
  },
   
-  // Novo método para alterar senha
+  
   async changePassword(passwordData) {
     return api.put('/profile/password', passwordData)
   },
