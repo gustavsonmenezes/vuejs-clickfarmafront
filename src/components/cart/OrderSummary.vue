@@ -49,7 +49,7 @@ export default {
     },
     shippingCost() {
       // Frete grátis para compras acima de R$ 100
-      return this.total > 100 ? 0 : 15
+      return this.total > 100 ? 0 : 10
     },
     totalWithShipping() {
       return this.total + this.shippingCost

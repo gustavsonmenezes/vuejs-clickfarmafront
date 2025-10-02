@@ -37,15 +37,36 @@
                 <i class="bi bi-credit-card-2-front"></i>
                 Método de Pagamento
               </h1>
-              <p class="payment-subtitle">Escolha como deseja pagar seu pedido</p>
+              <p class="payment-subtitle">Finalize o pagamento do seu pedido</p>
             </div>
 
             <div class="payment-card-body">
               <div class="row">
                 <!-- Coluna de Métodos de Pagamento -->
                 <div class="col-lg-7">
+                  <!-- Resumo dos Itens -->
+                  <div class="items-section mb-4">
+                    <h3 class="section-title">Itens do Pedido</h3>
+                    <div class="items-list">
+                      <div v-for="item in cartItems" :key="item.id" class="cart-item">
+                        <div class="item-image">
+                          <img :src="getItemImage(item)" :alt="item.name" />
+                        </div>
+                        <div class="item-details">
+                          <h6 class="item-name">{{ item.name }}</h6>
+                          <p class="item-category">{{ item.category }}</p>
+                          <div class="item-price">R$ {{ item.price.toFixed(2) }}</div>
+                        </div>
+                        <div class="item-quantity">
+                          <span class="quantity-badge">Qtd: {{ item.quantity }}</span>
+                          <div class="item-total">R$ {{ (item.price * item.quantity).toFixed(2) }}</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
                   <div class="methods-section">
-                    <h3 class="section-title">Selecione o método</h3>
+                    <h3 class="section-title">Selecione o método de pagamento</h3>
                     
                     <!-- Cartão de Crédito -->
                     <div class="method-option" :class="{ active: selectedMethod === 'credit_card' }" 
@@ -206,10 +227,7 @@
                           <label class="form-label">Parcelas</label>
                           <select v-model="cardData.installments" class="form-select">
                             <option v-for="i in 12" :key="i" :value="i">
-                              {{ i }}x de R$ {{ (finalTotal / i).toFixed(2) }} 
-                              <span v-if="i > 1" class="text-muted">
-                                (Total: R$ {{ finalTotal.toFixed(2) }})
-                              </span>
+                              {{ i }}x de R$ {{ (getTotal() / i).toFixed(2) }} 
                             </option>
                           </select>
                         </div>
@@ -251,16 +269,16 @@
                     <div class="summary-card">
                       <div class="summary-items">
                         <div class="summary-item">
-                          <span>Subtotal:</span>
-                          <span>R$ {{ finalTotal.toFixed(2) }}</span>
+                          <span>Itens ({{ totalItems }}):</span>
+                          <span>R$ {{ subtotal.toFixed(2) }}</span>
                         </div>
                         <div class="summary-item">
                           <span>Frete:</span>
-                          <span class="text-success">Grátis</span>
+                          <span class="text-success">{{ deliveryCost }}</span>
                         </div>
                         <div v-if="selectedMethod === 'pix'" class="summary-item discount">
                           <span>Desconto PIX:</span>
-                          <span class="text-success">- R$ {{ (finalTotal * 0.05).toFixed(2) }}</span>
+                          <span class="text-success">- R$ {{ (subtotal * 0.05).toFixed(2) }}</span>
                         </div>
                       </div>
                       <div class="summary-total">
@@ -278,11 +296,25 @@
                       </div>
                     </div>
 
+                    <!-- Informações de Entrega -->
+                    <div class="delivery-info">
+                      <h4 class="info-title">
+                        <i class="bi bi-truck"></i>
+                        Entrega
+                      </h4>
+                      <div class="delivery-details">
+                        <p><strong>Tipo:</strong> {{ deliveryType === 'delivery' ? 'Entrega em domicílio' : 'Retirada na loja' }}</p>
+                        <p v-if="deliveryType === 'delivery'"><strong>Endereço:</strong> {{ deliveryAddress }}</p>
+                        <p v-else><strong>Local:</strong> Rua das Farmácias, 123 - Centro, São Paulo - SP</p>
+                        <p><strong>Previsão:</strong> {{ deliveryType === 'delivery' ? '2-3 dias úteis' : 'Pronta para retirada' }}</p>
+                      </div>
+                    </div>
+
                     <!-- Botões de Ação -->
                     <div class="action-buttons">
                       <button class="btn btn-back" @click="$router.back()">
                         <i class="bi bi-arrow-left"></i>
-                        Voltar
+                        Voltar ao Checkout
                       </button>
                       <button class="btn btn-primary" @click="handlePayment" :disabled="!isFormValid">
                         <i class="bi bi-lock-fill"></i>
@@ -317,13 +349,6 @@
 <script>
 export default {
   name: 'PaymentMethod',
-  props: {
-    finalTotal: {
-      type: Number,
-      required: true,
-      default: 0
-    }
-  },
   data() {
     return {
       selectedMethod: 'credit_card',
@@ -333,7 +358,11 @@ export default {
         expiry: '',
         cvv: '',
         installments: 1
-      }
+      },
+      cartItems: [],
+      checkoutData: {},
+      deliveryType: 'delivery',
+      deliveryAddress: ''
     }
   },
   computed: {
@@ -353,20 +382,78 @@ export default {
              name.length > 0 && 
              expiry.length === 5 && 
              cvv.length >= 3;
+    },
+    subtotal() {
+      return this.cartItems.reduce((total, item) => total + (item.price * item.quantity), 0);
+    },
+    totalItems() {
+      return this.cartItems.reduce((total, item) => total + item.quantity, 0);
+    },
+    deliveryCost() {
+      if (this.deliveryType === 'delivery') {
+        if (this.subtotal >= 300) return 'Grátis';
+        if (this.subtotal < 100) return 'R$ 10.00';
+        return 'Grátis';
+      }
+      return 'Grátis';
     }
   },
-  watch: {
-    selectedMethod(newMethod) {
-      this.$emit('payment-method-selected', newMethod);
-    },
-    cardData: {
-      deep: true,
-      handler(newData) {
-        this.$emit('card-data-updated', newData);
-      }
-    }
+  mounted() {
+    this.clearOldData();
+    this.loadCartData();
+    this.loadCheckoutData();
+    
+    console.log('Cart items loaded:', this.cartItems);
+    console.log('Cart items from store:', this.$store.state.cart);
   },
   methods: {
+    clearOldData() {
+      const checkoutData = localStorage.getItem('checkoutData');
+      if (checkoutData) {
+        try {
+          const data = JSON.parse(checkoutData);
+          if (data.timestamp && (Date.now() - new Date(data.timestamp).getTime()) > 3600000) {
+            localStorage.removeItem('checkoutData');
+          }
+        } catch (error) {
+          localStorage.removeItem('checkoutData');
+        }
+      }
+    },
+    loadCartData() {
+      const savedCart = localStorage.getItem('cart');
+      
+      if (savedCart) {
+        try {
+          this.cartItems = JSON.parse(savedCart);
+        } catch (error) {
+          console.error('Erro ao carregar carrinho:', error);
+          this.cartItems = [];
+        }
+      } else {
+        this.cartItems = this.$store.state.cart || [];
+      }
+      
+      if (this.cartItems.length === 0) {
+        alert('Seu carrinho está vazio!');
+        this.$router.push('/cart');
+      }
+    },
+    loadCheckoutData() {
+      const checkoutData = JSON.parse(localStorage.getItem('checkoutData') || '{}');
+      this.checkoutData = checkoutData;
+      this.deliveryType = checkoutData.deliveryType || 'delivery';
+      
+      if (this.deliveryType === 'delivery' && checkoutData.deliveryInfo) {
+        const info = checkoutData.deliveryInfo;
+        this.deliveryAddress = `${info.address}, ${info.city} - ${info.state}`;
+      }
+    },
+    getDeliveryCost() {
+      if (this.subtotal >= 300) return 0;
+      if (this.subtotal < 100) return 10.00;
+      return 0;
+    },
     selectMethod(method) {
       this.selectedMethod = method;
     },
@@ -386,19 +473,44 @@ export default {
       this.cardData.expiry = value.substring(0, 5);
     },
     getTotal() {
-      if (this.selectedMethod === 'pix') {
-        return this.finalTotal * 0.95; // 5% de desconto
+      let total = this.subtotal;
+      
+      if (this.deliveryType === 'delivery') {
+        total += this.getDeliveryCost();
       }
-      return this.finalTotal;
+      
+      if (this.selectedMethod === 'pix') {
+        total *= 0.95;
+      }
+      
+      return total;
+    },
+    getItemImage(item) {
+      return item.image || '/placeholder-product.jpg';
     },
     handlePayment() {
       if (!this.isFormValid) return;
       
-      this.$emit('payment-submit', {
+      const paymentData = {
         method: this.selectedMethod,
         cardData: this.selectedMethod !== 'pix' ? this.cardData : null,
-        total: this.getTotal()
-      });
+        total: this.getTotal(),
+        items: this.cartItems,
+        deliveryType: this.deliveryType,
+        deliveryInfo: this.checkoutData.deliveryInfo,
+      };
+      
+      // Salvar dados de pagamento no localStorage
+      localStorage.setItem('paymentData', JSON.stringify(paymentData));
+      
+      // Processar no Vuex
+      this.$store.dispatch('processPayment', paymentData)
+        .then(() => {
+          this.$router.push('/order-confirmation');
+        })
+        .catch(error => {
+          alert('Erro no pagamento: ' + error.message);
+        });
     }
   }
 }
@@ -910,5 +1022,110 @@ export default {
 .form-control:focus, .form-select:focus {
   border-color: #4a90e2;
   box-shadow: 0 0 0 0.2rem rgba(74, 144, 226, 0.1);
+}
+
+/* Novos estilos para itens do carrinho */
+.items-section {
+  background: white;
+  border-radius: 15px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  margin-bottom: 1.5rem;
+}
+
+.items-list {
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.cart-item {
+  display: flex;
+  align-items: center;
+  padding: 1rem;
+  border-bottom: 1px solid #f8f9fa;
+  gap: 1rem;
+}
+
+.cart-item:last-child {
+  border-bottom: none;
+}
+
+.item-image {
+  width: 60px;
+  height: 60px;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #f8f9fa;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.item-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.item-details {
+  flex: 1;
+}
+
+.item-name {
+  font-weight: 600;
+  color: #2c3e50;
+  margin-bottom: 0.25rem;
+}
+
+.item-category {
+  color: #6c757d;
+  font-size: 0.8rem;
+  margin-bottom: 0.5rem;
+}
+
+.item-price {
+  font-weight: 600;
+  color: #4a90e2;
+}
+
+.item-quantity {
+  text-align: right;
+}
+
+.quantity-badge {
+  background: #f8f9fa;
+  padding: 0.25rem 0.5rem;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  color: #6c757d;
+}
+
+.item-total {
+  font-weight: 600;
+  color: #2c3e50;
+  margin-top: 0.5rem;
+}
+
+.delivery-info {
+  background: #f8f9fa;
+  border-radius: 15px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.info-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #2c3e50;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.delivery-details p {
+  margin-bottom: 0.5rem;
+  color: #6c757d;
+  font-size: 0.9rem;
 }
 </style>

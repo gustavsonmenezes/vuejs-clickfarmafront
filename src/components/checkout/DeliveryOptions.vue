@@ -98,7 +98,7 @@
             <li v-if="selectedOption === 'pickup'">
               • Horário de funcionamento: Segunda a Sábado, 8h às 20h
             </li>
-            <li>• Pedidos acima de R$ 100,00 têm frete grátis</li>
+            <li>• Pedidos acima de R$ 300,00 têm frete grátis</li>
             <li>• Medicamentos controlados exigem receita médica na retirada</li>
           </ul>
         </div>
@@ -175,7 +175,9 @@ export default {
   computed: {
     deliveryPrice() {
       const cartTotal = this.$store.getters.cartTotal
-      return cartTotal >= 100 ? 0 : 15.90
+      if (cartTotal >= 300) return 0;
+      if (cartTotal < 100) return 10.00;
+      return 0;
     },
     deliveryTime() {
       return '2-3 dias úteis'

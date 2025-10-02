@@ -128,6 +128,14 @@ export default {
     cartTotal() {
       return this.cart.reduce((total, item) => total + (item.price * item.quantity), 0)
     },
+    deliveryPrice() {
+      if (this.deliveryOption === 'delivery') {
+        if (this.cartTotal >= 300) return 0;
+        if (this.cartTotal < 100) return 10.00;
+        return 0;
+      }
+      return 0;
+    },
     orderTotal() {
       let total = this.cartTotal + this.deliveryPrice
       if (this.selectedPaymentMethod === 'pix') {
@@ -146,6 +154,7 @@ export default {
   }
 }
 </script>
+
 
 <style scoped>
 .checkout-summary .card {

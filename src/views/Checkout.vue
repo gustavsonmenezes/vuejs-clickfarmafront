@@ -13,7 +13,7 @@
               <div class="form-check">
                 <input v-model="deliveryType" class="form-check-input" type="radio" value="delivery" id="delivery">
                 <label class="form-check-label" for="delivery">
-                  🚚 Entrega em domicílio (R$ 10,00)
+                  🚚 Entrega em domicílio {{ getDeliveryLabel() }}
                 </label>
               </div>
               <div class="form-check">
@@ -66,7 +66,7 @@
             
             <div v-if="deliveryType" class="mt-3">
               <button @click="confirmOrder" class="btn btn-success">
-                {{ deliveryType === 'delivery' ? 'Confirmar Entrega' : 'Confirmar Retirada' }}
+                {{ deliveryType === 'delivery' ? 'Continuar para Pagamento' : 'Continuar para Pagamento' }}
               </button>
             </div>
           </div>
@@ -80,8 +80,8 @@
           <div class="card-body">
             <p>Itens: {{ cartItemsCount }}</p>
             <p>Subtotal: R$ {{ cartTotal.toFixed(2) }}</p>
-            <p v-if="deliveryType === 'delivery'">Entrega: R$ 10.00</p>
-            <p v-else-if="deliveryType === 'pickup'">Retirada: R$ 0.00</p>
+            <p v-if="deliveryType === 'delivery'">Entrega: {{ getDeliveryCostLabel() }}</p>
+            <p v-else-if="deliveryType === 'pickup'">Retirada: Grátis</p>
             <hr>
             <h5>Total: R$ {{ finalTotal.toFixed(2) }}</h5>
           </div>
@@ -92,7 +92,7 @@
 </template>
 
 <script>
-import { mapGetters, mapActions } from 'vuex'
+import { mapGetters, mapState } from 'vuex'
 
 export default {
   name: 'Checkout',
@@ -111,28 +111,58 @@ export default {
   },
   computed: {
     ...mapGetters(['cartItemsCount', 'cartTotal']),
+    ...mapState(['cart']),
     finalTotal() {
-      return this.deliveryType === 'delivery' ? this.cartTotal + 10 : this.cartTotal;
+      const deliveryCost = this.deliveryType === 'delivery' ? this.getDeliveryCost() : 0;
+      return this.cartTotal + deliveryCost;
     }
   },
   methods: {
-    ...mapActions(['clearCart']),
+    getDeliveryCost() {
+      if (this.cartTotal >= 300) return 0;
+      if (this.cartTotal < 100) return 10.00;
+      return 0; // Entre R$ 100 e R$ 299,99 é grátis também
+    },
+    
+    getDeliveryLabel() {
+      if (this.cartTotal >= 300) return '(Grátis)';
+      if (this.cartTotal < 100) return '(R$ 10,00)';
+      return '(Grátis)';
+    },
+    
+    getDeliveryCostLabel() {
+      const cost = this.getDeliveryCost();
+      return cost > 0 ? `R$ ${cost.toFixed(2)}` : 'Grátis';
+    },
+    
     confirmOrder() {
-      let message = 'Pedido confirmado com sucesso!\n\n';
-      
       if (this.deliveryType === 'delivery') {
         if (!this.deliveryInfo.name || !this.deliveryInfo.address) {
           alert('Por favor, preencha todos os campos de entrega.');
           return;
         }
-        message += `Tipo: Entrega em domicílio\nNome: ${this.deliveryInfo.name}\nEndereço: ${this.deliveryInfo.address}`;
-      } else {
-        message += 'Tipo: Retirada na loja\nEndereço: Rua das Farmácias, 123 - Centro, São Paulo - SP';
       }
       
-      alert(message);
-      this.clearCart();
+      // Salvar dados no localStorage antes de ir para o pagamento
+      this.saveCheckoutData();
+      
+      // Ir para a página de pagamento
       this.$router.push("/payment-method");
+    },
+    
+    saveCheckoutData() {
+      // Salvar carrinho no localStorage
+      localStorage.setItem('cart', JSON.stringify(this.cart));
+      localStorage.setItem('cartTotal', this.cartTotal.toString());
+      localStorage.setItem('finalTotal', this.finalTotal.toString());
+      
+      // Salvar informações de entrega
+      const checkoutData = {
+        deliveryType: this.deliveryType,
+        deliveryInfo: this.deliveryInfo,
+        finalTotal: this.finalTotal
+      };
+      localStorage.setItem('checkoutData', JSON.stringify(checkoutData));
     }
   }
 }

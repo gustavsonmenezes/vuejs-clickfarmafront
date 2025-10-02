@@ -47,7 +47,8 @@ class PaymentService {
           success: true,
           transactionId: this.generateTransactionId(),
           amount: paymentData.amount,
-          method: 'credit_card',
+          method: paymentData.paymentMethod, // Inclui se é credit_card ou debit_card
+          cardType: paymentData.paymentMethod,
           status: 'approved',
           timestamp: new Date().toISOString(),
           authorizationCode: this.generateAuthCode()
@@ -380,11 +381,15 @@ export default createStore({
     async processPayment({ commit, state }, paymentData) {
       try {
         let paymentResult;
-        const amount = state.cartTotal + (paymentData.deliveryType === 'delivery' ? 10 : 0);
+        const deliveryCost = paymentData.deliveryType === 'delivery' ? (state.cartTotal >= 100 ? 0 : 10) : 0;
+        const amount = state.cartTotal + deliveryCost;
         
         // Processa o pagamento de acordo com o método selecionado
+        console.log('🔄 Processando pagamento com método:', paymentData.paymentMethod);
+        
         switch (paymentData.paymentMethod) {
           case 'credit_card':
+          case 'debit_card': // ← CORREÇÃO: Agora suporta cartão de débito
             paymentResult = await PaymentService.processCardPayment({
               ...paymentData,
               amount: amount
@@ -404,7 +409,7 @@ export default createStore({
             break;
             
           default:
-            throw new Error('Método de pagamento não suportado');
+            throw new Error(`Método de pagamento não suportado: ${paymentData.paymentMethod}`);
         }
         
         if (paymentResult.success) {
@@ -424,10 +429,13 @@ export default createStore({
           
           commit('SET_ORDER', order);
           commit('CLEAR_CART');
+          
+          console.log('✅ Pedido criado com sucesso:', order);
         }
         
         return paymentResult;
       } catch (error) {
+        console.error('❌ Erro no processamento do pagamento:', error);
         throw error.response ? error.response.data : { message: error.message || 'Erro ao processar pagamento' };
       }
     },
