@@ -1,90 +1,45 @@
 <template>
-  <div class="container mt-4">
-    <h2>💰 Finalizar Compra</h2>
-    <div class="row">
-      <div class="col-md-8">
-        <div class="card">
-          <div class="card-header">
-            <h5>Informações de Entrega</h5>
-          </div>
-          <div class="card-body">
-            <div class="mb-4">
-              <h6>Tipo de Entrega</h6>
-              <div class="form-check">
-                <input v-model="deliveryType" class="form-check-input" type="radio" value="delivery" id="delivery">
-                <label class="form-check-label" for="delivery">
-                  🚚 Entrega em domicílio {{ getDeliveryLabel() }}
-                </label>
-              </div>
-              <div class="form-check">
-                <input v-model="deliveryType" class="form-check-input" type="radio" value="pickup" id="pickup">
-                <label class="form-check-label" for="pickup">
-                  🏪 Retirada na loja (Grátis)
-                </label>
-              </div>
-            </div>
-            
-            <form v-if="deliveryType === 'delivery'" @submit.prevent="confirmOrder">
-              <div class="row">
-                <div class="col-md-6 mb-3">
-                  <label class="form-label">Nome completo</label>
-                  <input v-model="deliveryInfo.name" type="text" class="form-control" required>
-                </div>
-                <div class="col-md-6 mb-3">
-                  <label class="form-label">CPF</label>
-                  <input v-model="deliveryInfo.cpf" type="text" class="form-control" required>
-                </div>
-              </div>
-              <div class="mb-3">
-                <label class="form-label">Endereço</label>
-                <input v-model="deliveryInfo.address" type="text" class="form-control" required>
-              </div>
-              <div class="row">
-                <div class="col-md-6 mb-3">
-                  <label class="form-label">Cidade</label>
-                  <input v-model="deliveryInfo.city" type="text" class="form-control" required>
-                </div>
-                <div class="col-md-3 mb-3">
-                  <label class="form-label">Estado</label>
-                  <input v-model="deliveryInfo.state" type="text" class="form-control" required>
-                </div>
-                <div class="col-md-3 mb-3">
-                  <label class="form-label">CEP</label>
-                  <input v-model="deliveryInfo.zip" type="text" class="form-control" required>
-                </div>
-              </div>
-            </form>
-            
-            <div v-if="deliveryType === 'pickup'" class="alert alert-info">
-              <h6>📍 Endereço da Loja:</h6>
-              <p class="mb-0">
-                Rua das Farmácias, 123 - Centro<br>
-                São Paulo - SP, CEP: 01234-567<br>
-                <strong>Horário:</strong> Segunda a Sexta: 8h às 18h | Sábado: 8h às 12h
-              </p>
-            </div>
-            
-            <div v-if="deliveryType" class="mt-3">
-              <button @click="confirmOrder" class="btn btn-success">
-                {{ deliveryType === 'delivery' ? 'Continuar para Pagamento' : 'Continuar para Pagamento' }}
-              </button>
-            </div>
+  <div class="checkout-page">
+    <div class="container mt-4">
+      <!-- Steps -->
+      <checkout-steps :current-step="1" />
+      
+      <div class="row">
+        <!-- Coluna Principal -->
+        <div class="col-lg-8">
+          <!-- Opções de Entrega -->
+          <delivery-options
+            :addresses="userAddresses"
+            :selected-delivery-option="deliveryOption"
+            :selected-address="selectedAddress"
+            :selected-store="selectedStore"
+            @update:delivery-option="updateDeliveryOption"
+            @update:selected-address="updateSelectedAddress"
+            @update:selected-store="updateSelectedStore"
+          />
+          
+          <!-- Botão de Continuar -->
+          <div class="text-end mt-4">
+            <button 
+              class="btn btn-primary btn-lg"
+              @click="proceedToPayment"
+              :disabled="!canProceed"
+            >
+              Continuar para Pagamento <i class="fas fa-arrow-right ms-2"></i>
+            </button>
           </div>
         </div>
-      </div>
-      <div class="col-md-4">
-        <div class="card">
-          <div class="card-header">
-            <h5>Resumo</h5>
-          </div>
-          <div class="card-body">
-            <p>Itens: {{ cartItemsCount }}</p>
-            <p>Subtotal: R$ {{ cartTotal.toFixed(2) }}</p>
-            <p v-if="deliveryType === 'delivery'">Entrega: {{ getDeliveryCostLabel() }}</p>
-            <p v-else-if="deliveryType === 'pickup'">Retirada: Grátis</p>
-            <hr>
-            <h5>Total: R$ {{ finalTotal.toFixed(2) }}</h5>
-          </div>
+        
+        <!-- Resumo -->
+        <div class="col-lg-4">
+          <checkout-summary
+            :cart="cart"
+            :delivery-option="deliveryOption"
+            :selected-address="selectedAddress"
+            :selected-store="selectedStore"
+            :selected-payment-method="''"
+            :current-step="1"
+          />
         </div>
       </div>
     </div>
@@ -93,77 +48,132 @@
 
 <script>
 import { mapGetters, mapState } from 'vuex'
+import CheckoutSteps from '@/components/checkout/CheckoutSteps.vue'
+import DeliveryOptions from '@/components/checkout/DeliveryOptions.vue'
+import CheckoutSummary from '@/components/checkout/CheckoutSummary.vue'
 
 export default {
   name: 'Checkout',
+  components: {
+    CheckoutSteps,
+    DeliveryOptions,
+    CheckoutSummary
+  },
   data() {
     return {
-      deliveryType: 'delivery',
-      deliveryInfo: {
-        name: '',
-        cpf: '',
-        address: '',
-        city: '',
-        state: '',
-        zip: ''
-      }
+      deliveryOption: 'delivery',
+      selectedAddress: null,
+      selectedStore: null
     }
   },
   computed: {
     ...mapGetters(['cartItemsCount', 'cartTotal']),
-    ...mapState(['cart']),
-    finalTotal() {
-      const deliveryCost = this.deliveryType === 'delivery' ? this.getDeliveryCost() : 0;
-      return this.cartTotal + deliveryCost;
+    ...mapState(['cart', 'user']),
+    
+    userAddresses() {
+      // Endereços mockados - em produção viriam da API
+      return [
+        {
+          id: 1,
+          nickname: 'Casa',
+          street: 'Rua das Flores',
+          number: '123',
+          complement: 'Apto 101',
+          neighborhood: 'Centro',
+          city: 'Recife',
+          state: 'PE',
+          zipcode: '50000-000',
+          isDefault: true
+        },
+        {
+          id: 2,
+          nickname: 'Trabalho',
+          street: 'Av. Boa Viagem',
+          number: '456',
+          complement: 'Sala 501',
+          neighborhood: 'Boa Viagem',
+          city: 'Recife',
+          state: 'PE',
+          zipcode: '51000-000',
+          isDefault: false
+        }
+      ]
+    },
+    
+    canProceed() {
+      if (this.deliveryOption === 'delivery') {
+        return this.selectedAddress !== null
+      } else if (this.deliveryOption === 'pickup') {
+        return this.selectedStore !== null
+      }
+      return false
     }
   },
   methods: {
-    getDeliveryCost() {
-      if (this.cartTotal >= 300) return 0;
-      if (this.cartTotal < 100) return 10.00;
-      return 0; // Entre R$ 100 e R$ 299,99 é grátis também
+    updateDeliveryOption(option) {
+      this.deliveryOption = option
     },
     
-    getDeliveryLabel() {
-      if (this.cartTotal >= 300) return '(Grátis)';
-      if (this.cartTotal < 100) return '(R$ 10,00)';
-      return '(Grátis)';
+    updateSelectedAddress(address) {
+      this.selectedAddress = address
     },
     
-    getDeliveryCostLabel() {
-      const cost = this.getDeliveryCost();
-      return cost > 0 ? `R$ ${cost.toFixed(2)}` : 'Grátis';
+    updateSelectedStore(store) {
+      this.selectedStore = store
     },
     
-    confirmOrder() {
-      if (this.deliveryType === 'delivery') {
-        if (!this.deliveryInfo.name || !this.deliveryInfo.address) {
-          alert('Por favor, preencha todos os campos de entrega.');
-          return;
-        }
+    proceedToPayment() {
+      if (!this.canProceed) {
+        alert('Por favor, selecione uma opção de entrega válida.')
+        return
       }
       
-      // Salvar dados no localStorage antes de ir para o pagamento
-      this.saveCheckoutData();
-      
-      // Ir para a página de pagamento
-      this.$router.push("/payment-method");
-    },
-    
-    saveCheckoutData() {
-      // Salvar carrinho no localStorage
-      localStorage.setItem('cart', JSON.stringify(this.cart));
-      localStorage.setItem('cartTotal', this.cartTotal.toString());
-      localStorage.setItem('finalTotal', this.finalTotal.toString());
-      
-      // Salvar informações de entrega
+      // Salvar dados do checkout com estrutura consistente
       const checkoutData = {
-        deliveryType: this.deliveryType,
-        deliveryInfo: this.deliveryInfo,
-        finalTotal: this.finalTotal
-      };
-      localStorage.setItem('checkoutData', JSON.stringify(checkoutData));
+        deliveryOption: this.deliveryOption,
+        deliveryType: this.deliveryOption, // ← ADICIONADO: alias para consistência
+        selectedAddress: this.selectedAddress,
+        selectedStore: this.selectedStore,
+        deliveryInfo: this.selectedAddress || this.selectedStore, // ← ADICIONADO: estrutura unificada
+        timestamp: new Date().toISOString()
+      }
+      
+      console.log('🚚 Dados de checkout salvos:', checkoutData) // ← DEBUG
+      
+      localStorage.setItem('checkoutData', JSON.stringify(checkoutData))
+      
+      // Ir para pagamento
+      this.$router.push('/payment-method')
+    }
+  },
+  
+  mounted() {
+    // Verificar se há itens no carrinho
+    if (this.cart.length === 0) {
+      alert('Seu carrinho está vazio!')
+      this.$router.push('/products')
+      return
+    }
+    
+    // Carregar dados salvos se existirem
+    const savedCheckoutData = localStorage.getItem('checkoutData')
+    if (savedCheckoutData) {
+      try {
+        const data = JSON.parse(savedCheckoutData)
+        this.deliveryOption = data.deliveryOption || 'delivery'
+        this.selectedAddress = data.selectedAddress || null
+        this.selectedStore = data.selectedStore || null
+      } catch (error) {
+        console.error('Erro ao carregar dados do checkout:', error)
+      }
     }
   }
 }
 </script>
+
+<style scoped>
+.checkout-page {
+  min-height: 100vh;
+  background-color: #f8f9fa;
+}
+</style>

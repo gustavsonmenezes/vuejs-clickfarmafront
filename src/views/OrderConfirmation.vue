@@ -17,7 +17,7 @@
       <div class="row">
         <!-- Detalhes do Pedido -->
         <div class="col-lg-8">
-          <!-- Detalhes do Pedido (simplificado) -->
+          <!-- Detalhes do Pedido -->
           <div class="card mb-4">
             <div class="card-header bg-light">
               <h5 class="mb-0">
@@ -27,7 +27,7 @@
             <div class="card-body">
               <div v-for="item in order.items" :key="item.id" class="d-flex justify-content-between align-items-center mb-3 pb-3 border-bottom">
                 <div class="d-flex align-items-center">
-                  <img :src="item.image" :alt="item.name" class="rounded me-3" width="60" height="60">
+                  <img :src="getItemImage(item)" :alt="item.name" class="rounded me-3" width="60" height="60">
                   <div>
                     <h6 class="mb-1">{{ item.name }}</h6>
                     <small class="text-muted">Quantidade: {{ item.quantity }}</small>
@@ -38,7 +38,7 @@
             </div>
           </div>
           
-          <!-- Timeline do Pedido (simplificado) -->
+          <!-- Timeline do Pedido -->
           <div class="card mb-4">
             <div class="card-header bg-light">
               <h5 class="mb-0">
@@ -46,36 +46,7 @@
               </h5>
             </div>
             <div class="card-body">
-              <div class="timeline">
-                <div class="timeline-item completed">
-                  <div class="timeline-marker bg-success"></div>
-                  <div class="timeline-content">
-                    <h6 class="mb-1">Pedido Confirmado</h6>
-                    <small class="text-muted">Seu pedido foi recebido com sucesso</small>
-                  </div>
-                </div>
-                <div class="timeline-item" :class="order.status !== 'confirmed' ? 'completed' : ''">
-                  <div class="timeline-marker" :class="order.status !== 'confirmed' ? 'bg-success' : 'bg-secondary'"></div>
-                  <div class="timeline-content">
-                    <h6 class="mb-1">Preparando Pedido</h6>
-                    <small class="text-muted">Estamos separando seus produtos</small>
-                  </div>
-                </div>
-                <div class="timeline-item" :class="order.status === 'shipped' || order.status === 'delivered' ? 'completed' : ''">
-                  <div class="timeline-marker" :class="order.status === 'shipped' || order.status === 'delivered' ? 'bg-success' : 'bg-secondary'"></div>
-                  <div class="timeline-content">
-                    <h6 class="mb-1">Enviado</h6>
-                    <small class="text-muted">Seu pedido está a caminho</small>
-                  </div>
-                </div>
-                <div class="timeline-item" :class="order.status === 'delivered' ? 'completed' : ''">
-                  <div class="timeline-marker" :class="order.status === 'delivered' ? 'bg-success' : 'bg-secondary'"></div>
-                  <div class="timeline-content">
-                    <h6 class="mb-1">Entregue</h6>
-                    <small class="text-muted">Pedido entregue com sucesso</small>
-                  </div>
-                </div>
-              </div>
+              <OrderTimeline :status="order.status" />
             </div>
           </div>
 
@@ -87,16 +58,16 @@
               </h5>
             </div>
             <div class="card-body">
-              <div v-if="order.delivery && order.delivery.type === 'delivery'">
+              <div v-if="order.deliveryType === 'delivery' && order.deliveryInfo">
                 <h6>Entrega em Domicílio</h6>
                 <p class="mb-1">
                   <strong>Endereço:</strong><br>
-                  {{ order.delivery.address.street }}, {{ order.delivery.address.number }}<br>
-                  {{ order.delivery.address.neighborhood }}<br>
-                  {{ order.delivery.address.city }} - {{ order.delivery.address.state }}<br>
-                  CEP: {{ order.delivery.address.zipcode }}
-                  <span v-if="order.delivery.address.complement">
-                    <br>Complemento: {{ order.delivery.address.complement }}
+                  {{ order.deliveryInfo.street }}, {{ order.deliveryInfo.number }}<br>
+                  {{ order.deliveryInfo.neighborhood }}<br>
+                  {{ order.deliveryInfo.city }} - {{ order.deliveryInfo.state }}<br>
+                  CEP: {{ order.deliveryInfo.zipcode || order.deliveryInfo.zip }}
+                  <span v-if="order.deliveryInfo.complement">
+                    <br>Complemento: {{ order.deliveryInfo.complement }}
                   </span>
                 </p>
                 <p class="mb-0">
@@ -104,20 +75,39 @@
                   {{ calculateDeliveryDate() }}
                 </p>
               </div>
-              <div v-else-if="order.delivery && order.delivery.type === 'pickup'">
+              <div v-else-if="order.deliveryType === 'pickup' && order.deliveryInfo">
                 <h6>Retirada na Loja</h6>
                 <p class="mb-1">
-                  <strong>Loja:</strong> {{ order.delivery.store.name }}<br>
-                  <strong>Endereço:</strong> {{ order.delivery.store.address }}<br>
-                  <strong>Telefone:</strong> {{ order.delivery.store.phone }}
+                  <strong>Loja:</strong> {{ order.deliveryInfo.name || 'ClickFarma Centro' }}<br>
+                  <strong>Endereço:</strong> {{ order.deliveryInfo.address || order.deliveryInfo.street }}<br>
+                  <strong>Telefone:</strong> {{ order.deliveryInfo.phone || '(11) 3333-3333' }}
                 </p>
                 <p class="mb-0">
-                  <strong>Horário de Funcionamento:</strong> {{ order.delivery.store.hours }}
+                  <strong>Horário de Funcionamento:</strong> {{ order.deliveryInfo.hours || 'Segunda a Sexta: 8h às 18h | Sábado: 8h às 12h' }}
                 </p>
               </div>
               <div v-else>
                 <p class="text-muted">Informações de entrega não disponíveis.</p>
               </div>
+            </div>
+          </div>
+
+          <!-- Informações de Pagamento -->
+          <div class="card mb-4">
+            <div class="card-header bg-light">
+              <h5 class="mb-0">
+                <i class="fas fa-credit-card me-2"></i>Informações de Pagamento
+              </h5>
+            </div>
+            <div class="card-body">
+              <p><strong>Método de Pagamento:</strong> {{ getPaymentMethodLabel() }}</p>
+              <p v-if="order.paymentMethod === 'credit_card' && order.cardData">
+                <strong>Cartão:</strong> {{ formatCardNumber(order.cardData.number) }}<br>
+                <strong>Parcelas:</strong> {{ order.cardData.installments }}x
+              </p>
+              <p v-if="order.paymentMethod === 'pix'">
+                <strong>Status PIX:</strong> <span class="text-success">Pagamento aprovado</span>
+              </p>
             </div>
           </div>
         </div>
@@ -139,11 +129,11 @@
                 </div>
                 <div class="d-flex justify-content-between mb-2">
                   <span>Entrega:</span>
-                  <span>{{ order.delivery && order.delivery.price > 0 ? 'R$ ' + order.delivery.price.toFixed(2) : 'Grátis' }}</span>
+                  <span>{{ getDeliveryCostLabel() }}</span>
                 </div>
-                <div v-if="order.discount > 0" class="d-flex justify-content-between mb-2 text-success">
-                  <span>Desconto:</span>
-                  <span>- R$ {{ order.discount.toFixed(2) }}</span>
+                <div v-if="order.paymentMethod === 'pix'" class="d-flex justify-content-between mb-2 text-success">
+                  <span>Desconto PIX (5%):</span>
+                  <span>- R$ {{ (order.subtotal * 0.05).toFixed(2) }}</span>
                 </div>
                 <hr>
                 <div class="d-flex justify-content-between fw-bold fs-5">
@@ -189,80 +179,157 @@
 </template>
 
 <script>
+import { mapState } from 'vuex'
+import OrderTimeline from '@/components/orders/OrderTimeline.vue' // ← CORREÇÃO DO CAMINHO
+
 export default {
   name: 'OrderConfirmation',
+  components: {
+    OrderTimeline
+  },
+  computed: {
+    ...mapState(['lastOrder'])
+  },
   data() {
     return {
-      order: this.getSampleOrder() // Dados de exemplo
+      order: this.getRealOrderData()
     }
   },
+  mounted() {
+    console.log('📦 Dados do último pedido (Vuex):', this.lastOrder)
+    console.log('🛒 Carrinho atual:', JSON.parse(localStorage.getItem('cart') || '[]'))
+    console.log('💳 Dados do checkout:', JSON.parse(localStorage.getItem('checkoutData') || '{}'))
+    console.log('💰 Dados do pagamento:', JSON.parse(localStorage.getItem('paymentData') || '{}'))
+    
+    // Limpar dados temporários após confirmação
+    this.clearTemporaryData()
+    
+    // Rolar para o topo
+    window.scrollTo(0, 0)
+  },
   methods: {
-    getSampleOrder() {
-      // Dados de exemplo para demonstração
-      return {
-        id: 'ORD' + Date.now().toString().slice(-6),
+    getRealOrderData() {
+      // 1. Primeiro tenta pegar do Vuex (se veio do processamento de pagamento)
+      if (this.lastOrder) {
+        console.log('✅ Usando dados do Vuex (lastOrder)')
+        return this.lastOrder
+      }
+
+      // 2. Se não tem no Vuex, monta com dados reais do localStorage
+      console.log('🔄 Montando pedido com dados reais do localStorage')
+      
+      const cart = JSON.parse(localStorage.getItem('cart') || '[]')
+      const checkoutData = JSON.parse(localStorage.getItem('checkoutData') || '{}')
+      const paymentData = JSON.parse(localStorage.getItem('paymentData') || '{}')
+
+      console.log('📋 Itens do carrinho:', cart)
+      console.log('🚚 Dados de entrega:', checkoutData)
+      console.log('💳 Dados de pagamento:', paymentData)
+
+      if (cart.length === 0) {
+        console.warn('⚠️ Carrinho vazio! Mostrando dados de exemplo')
+        return this.getSampleOrderData()
+      }
+
+      const subtotal = cart.reduce((total, item) => total + (item.price * item.quantity), 0)
+      const deliveryCost = this.calculateDeliveryCost(subtotal, checkoutData.deliveryType || checkoutData.deliveryOption)
+      
+      let total = subtotal + deliveryCost
+      
+      // Aplicar desconto PIX se aplicável
+      if (paymentData.paymentMethod === 'pix' || paymentData.method === 'pix') {
+        total *= 0.95 // 5% de desconto
+      }
+
+      const orderData = {
+        id: 'ORD-' + Math.random().toString(36).substr(2, 9).toUpperCase(),
+        subtotal: subtotal,
+        total: total,
+        paymentMethod: paymentData.paymentMethod || paymentData.method || 'credit_card',
+        cardData: paymentData.cardData || null,
         status: 'confirmed',
-        subtotal: 158.50,
-        discount: 10.00,
-        total: 148.50,
-        items: [
-          {
-            id: 1,
-            name: 'Paracetamol 500mg 20 comprimidos',
-            price: 12.50,
-            quantity: 2,
-            image: 'https://via.placeholder.com/60'
-          },
-          {
-            id: 2,
-            name: 'Dipirona 500mg 10 comprimidos',
-            price: 8.75,
-            quantity: 1,
-            image: 'https://via.placeholder.com/60'
-          },
-          {
-            id: 3,
-            name: 'Curativo Band-Aid 10 unidades',
-            price: 15.00,
-            quantity: 3,
-            image: 'https://via.placeholder.com/60'
-          }
-        ],
-        delivery: {
-          type: 'delivery',
-          price: 15.00,
-          address: {
-            street: 'Rua das Flores',
-            number: '123',
-            complement: 'Apto 101',
-            neighborhood: 'Centro',
-            city: 'Recife',
-            state: 'PE',
-            zipcode: '50000-000'
-          }
-        }
+        deliveryType: checkoutData.deliveryType || checkoutData.deliveryOption || 'delivery',
+        deliveryInfo: checkoutData.deliveryInfo || checkoutData.selectedAddress || checkoutData.selectedStore || {},
+        items: [...cart] // Cópia dos itens do carrinho real
+      }
+
+      console.log('🎯 Pedido final montado:', orderData)
+      return orderData
+    },
+
+    getSampleOrderData() {
+      // Apenas como fallback se não houver dados reais
+      return {
+        id: 'ORD-' + Math.random().toString(36).substr(2, 9).toUpperCase(),
+        subtotal: 0,
+        total: 0,
+        paymentMethod: 'credit_card',
+        status: 'confirmed',
+        deliveryType: 'delivery',
+        items: []
       }
     },
-    
+
+    calculateDeliveryCost(subtotal, deliveryType) {
+      if (deliveryType === 'pickup') return 0
+      if (subtotal >= 300) return 0
+      if (subtotal < 100) return 10.00
+      return 0
+    },
+
+    getDeliveryCostLabel() {
+      if (this.order.deliveryType === 'pickup') return 'Grátis'
+      const deliveryCost = this.calculateDeliveryCost(this.order.subtotal, this.order.deliveryType)
+      return deliveryCost > 0 ? `R$ ${deliveryCost.toFixed(2)}` : 'Grátis'
+    },
+
+    getPaymentMethodLabel() {
+      const methods = {
+        'credit_card': 'Cartão de Crédito',
+        'debit_card': 'Cartão de Débito',
+        'pix': 'PIX'
+      }
+      return methods[this.order.paymentMethod] || this.order.paymentMethod
+    },
+
+    formatCardNumber(cardNumber) {
+      if (!cardNumber) return ''
+      const last4 = cardNumber.slice(-4)
+      return `**** **** **** ${last4}`
+    },
+
     calculateDeliveryDate() {
       const today = new Date()
       const deliveryDate = new Date(today)
       deliveryDate.setDate(today.getDate() + 3) // 3 dias úteis
-      
       return deliveryDate.toLocaleDateString('pt-BR')
     },
-    
+
+    getItemImage(item) {
+      return item.image || 'https://via.placeholder.com/60x60?text=Produto'
+    },
+
     continueShopping() {
       this.$router.push('/products')
     },
-    
+
     printOrder() {
       window.print()
+    },
+
+    clearTemporaryData() {
+      // Remove apenas dados temporários, mantém o lastOrder se existir
+      localStorage.removeItem('cart')
+      localStorage.removeItem('checkoutData')
+      localStorage.removeItem('paymentData')
+      
+      // Limpa o carrinho no Vuex também
+      if (this.$store && this.$store.commit) {
+        this.$store.commit('CLEAR_CART')
+      }
+      
+      console.log('🧹 Dados temporários limpos')
     }
-  },
-  mounted() {
-    // Em uma aplicação real, aqui carregaria os dados do pedido da API ou Vuex
-    console.log('OrderConfirmation carregado')
   }
 }
 </script>
@@ -300,39 +367,6 @@ export default {
 .sticky-top {
   position: sticky;
   z-index: 100;
-}
-
-/* Timeline Styles */
-.timeline {
-  position: relative;
-  padding-left: 30px;
-}
-
-.timeline-item {
-  position: relative;
-  margin-bottom: 20px;
-}
-
-.timeline-marker {
-  position: absolute;
-  left: -30px;
-  top: 0;
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  border: 3px solid #fff;
-}
-
-.timeline-content {
-  padding: 10px;
-}
-
-.timeline-item.completed .timeline-content {
-  opacity: 1;
-}
-
-.timeline-item:not(.completed) .timeline-content {
-  opacity: 0.6;
 }
 
 @media print {

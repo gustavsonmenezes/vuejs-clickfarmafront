@@ -88,13 +88,6 @@ const routes = [
     meta: { requiresAuth: true }
   },
   {
-    path: '/payment',
-    name: 'Payment',
-    component: () => import('../components/checkout/PaymentMethod.vue'),
-    meta: { requiresAuth: true }
-  },
-  // Adicione esta rota para resolver o erro
-  {
     path: '/payment-method',
     name: 'PaymentMethod',
     component: () => import('../components/checkout/PaymentMethod.vue'),

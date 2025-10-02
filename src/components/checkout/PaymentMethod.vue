@@ -399,12 +399,25 @@ export default {
     }
   },
   mounted() {
-    this.clearOldData();
-    this.loadCartData();
-    this.loadCheckoutData();
-    
-    console.log('Cart items loaded:', this.cartItems);
-    console.log('Cart items from store:', this.$store.state.cart);
+    try {
+      this.clearOldData();
+      this.loadCartData();
+      this.loadCheckoutData();
+      
+      console.log('🛒 Itens do carrinho carregados:', this.cartItems);
+      console.log('🏪 Dados da store Vuex:', this.$store.state.cart);
+      
+      // Verificar se há dados mínimos necessários
+      if (this.cartItems.length === 0 && this.$store.state.cart.length === 0) {
+        alert('Seu carrinho está vazio! Redirecionando para produtos...');
+        this.$router.push('/products');
+        return;
+      }
+    } catch (error) {
+      console.error('❌ Erro ao inicializar página de pagamento:', error);
+      alert('Erro ao carregar página de pagamento. Tente novamente.');
+      this.$router.push('/cart');
+    }
   },
   methods: {
     clearOldData() {
@@ -441,13 +454,26 @@ export default {
     },
     loadCheckoutData() {
       const checkoutData = JSON.parse(localStorage.getItem('checkoutData') || '{}');
-      this.checkoutData = checkoutData;
-      this.deliveryType = checkoutData.deliveryType || 'delivery';
+      console.log('📦 Dados de checkout carregados:', checkoutData); // ← DEBUG
       
-      if (this.deliveryType === 'delivery' && checkoutData.deliveryInfo) {
-        const info = checkoutData.deliveryInfo;
-        this.deliveryAddress = `${info.address}, ${info.city} - ${info.state}`;
+      this.checkoutData = checkoutData;
+      this.deliveryType = checkoutData.deliveryOption || checkoutData.deliveryType || 'delivery';
+      
+      if (this.deliveryType === 'delivery' && checkoutData.selectedAddress) {
+        const address = checkoutData.selectedAddress;
+        this.deliveryAddress = `${address.street}, ${address.number} - ${address.neighborhood}, ${address.city} - ${address.state}`;
+        this.checkoutData.deliveryInfo = address; // ← GARANTIR estrutura
+      } else if (this.deliveryType === 'pickup' && checkoutData.selectedStore) {
+        const store = checkoutData.selectedStore;
+        this.deliveryAddress = `${store.name} - ${store.address}`;
+        this.checkoutData.deliveryInfo = store; // ← GARANTIR estrutura
       }
+      
+      console.log('📍 Configuração de entrega:', {
+        deliveryType: this.deliveryType,
+        deliveryAddress: this.deliveryAddress,
+        deliveryInfo: this.checkoutData.deliveryInfo
+      });
     },
     getDeliveryCost() {
       if (this.subtotal >= 300) return 0;
@@ -493,23 +519,28 @@ export default {
       
       const paymentData = {
         method: this.selectedMethod,
+        paymentMethod: this.selectedMethod, // ← CORREÇÃO CRÍTICA: Adicionar paymentMethod
         cardData: this.selectedMethod !== 'pix' ? this.cardData : null,
         total: this.getTotal(),
         items: this.cartItems,
         deliveryType: this.deliveryType,
-        deliveryInfo: this.checkoutData.deliveryInfo,
+        deliveryInfo: this.checkoutData.deliveryInfo || this.checkoutData,
       };
+      
+      console.log('💳 Dados de pagamento enviados:', paymentData); // ← DEBUG
       
       // Salvar dados de pagamento no localStorage
       localStorage.setItem('paymentData', JSON.stringify(paymentData));
       
       // Processar no Vuex
       this.$store.dispatch('processPayment', paymentData)
-        .then(() => {
+        .then((result) => {
+          console.log('✅ Pagamento processado:', result);
           this.$router.push('/order-confirmation');
         })
         .catch(error => {
-          alert('Erro no pagamento: ' + error.message);
+          console.error('❌ Erro no pagamento:', error);
+          alert('Erro no pagamento: ' + (error.message || 'Tente novamente'));
         });
     }
   }
@@ -517,6 +548,7 @@ export default {
 </script>
 
 <style scoped>
+/* Seus estilos permanecem os mesmos */
 .payment-page {
   min-height: 100vh;
   background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
