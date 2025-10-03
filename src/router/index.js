@@ -99,6 +99,12 @@ const routes = [
     component: AdminLogin
   },
   {
+  path: '/orders',
+  name: 'Orders',
+  component: () => import('../views/Orders.vue')
+  },
+
+  {
     path: '/admin',
     component: AdminDashboard,
     meta: { requiresAuth: true, requiresAdmin: true },

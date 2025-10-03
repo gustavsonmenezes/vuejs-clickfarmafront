@@ -4,7 +4,7 @@
       <div class="col-md-6">
         <div class="card">
           <div class="card-header">
-            <h3 class="text-center">🔐 Entrar</h3>
+            <h3 class="text-center">🔐 Entrar na Minha Conta</h3>
           </div>
           <div class="card-body">
             <form @submit.prevent="handleLogin" ref="loginForm">
@@ -16,6 +16,7 @@
                   class="form-control" 
                   v-model="credentials.email"
                   required
+                  placeholder="seu@email.com"
                   @input="clearFieldError('email')"
                   :class="{ 'is-invalid': fieldErrors.email }"
                 >
@@ -23,6 +24,7 @@
                   {{ fieldErrors.email }}
                 </div>
               </div>
+              
               <div class="mb-3">
                 <label class="form-label">Senha:</label>
                 <input 
@@ -31,6 +33,7 @@
                   class="form-control" 
                   v-model="credentials.password"
                   required
+                  placeholder="Sua senha"
                   @input="clearFieldError('password')"
                   :class="{ 'is-invalid': fieldErrors.password }"
                 >
@@ -38,19 +41,27 @@
                   {{ fieldErrors.password }}
                 </div>
               </div>
+              
               <button 
                 ref="submitButton"
                 type="submit" 
                 class="btn btn-primary w-100"
                 :disabled="loading"
               >
-                {{ loading ? 'Entrando...' : 'Entrar' }}
+                <span v-if="loading" class="spinner-border spinner-border-sm me-2"></span>
+                {{ loading ? 'Entrando...' : 'Entrar na Minha Conta' }}
               </button>
             </form>
-            <div class="text-center mt-3">
-              <p>Não tem conta? <router-link to="/register">Cadastre-se</router-link></p>
-              <p>
-                <router-link to="/forgot-password">Esqueci minha senha</router-link>
+            
+            <div class="text-center mt-4">
+              <p class="mb-2">Ainda não tem conta? 
+                <router-link to="/register" class="fw-bold">Cadastre-se aqui</router-link>
+              </p>
+              <p class="mb-0">
+                <router-link to="/forgot-password" class="text-primary">
+                  <i class="fas fa-question-circle me-1"></i>
+                  Não lembro minha senha
+                </router-link>
               </p>
             </div>
           </div>
@@ -76,32 +87,16 @@ export default {
     }
   },
   mounted() {
-    console.log('🔑 Componente Login montado - configurando refs...');
     this.focusEmailField();
-    this.setupFormAccessibility();
   },
   methods: {
     ...mapActions(['login']),
     
-    
     focusEmailField() {
       if (this.$refs.emailInput) {
         this.$refs.emailInput.focus();
-        console.log('✅ Foco automático no campo email');
       }
     },
-    
-    // Configurações de acessibilidade
-    setupFormAccessibility() {
-      
-      if (this.$refs.emailInput) {
-        this.$refs.emailInput.setAttribute('aria-describedby', 'email-help');
-      }
-      if (this.$refs.passwordInput) {
-        this.$refs.passwordInput.setAttribute('aria-describedby', 'password-help');
-      }
-    },
-    
     
     validateForm() {
       this.fieldErrors = {};
@@ -124,20 +119,12 @@ export default {
         return false;
       }
       
-      if (this.credentials.password.length < 6) {
-        this.fieldErrors.password = 'Senha deve ter pelo menos 6 caracteres';
-        this.focusOnError('passwordInput');
-        return false;
-      }
-      
       return true;
     },
     
-    // Focar no campo com erro
     focusOnError(fieldRef) {
       if (this.$refs[fieldRef]) {
         this.$refs[fieldRef].focus();
-        
         this.$refs[fieldRef].scrollIntoView({ 
           behavior: 'smooth', 
           block: 'center' 
@@ -145,14 +132,12 @@ export default {
       }
     },
     
-    // Limpar erro do campo
     clearFieldError(fieldName) {
       if (this.fieldErrors[fieldName]) {
         this.fieldErrors[fieldName] = null;
       }
     },
     
-    // Shake animation no formulário em caso de erro
     shakeForm() {
       if (this.$refs.loginForm) {
         this.$refs.loginForm.classList.add('shake');
@@ -170,37 +155,32 @@ export default {
       
       this.loading = true;
       
-      // Desabilitar botão visualmente
-      if (this.$refs.submitButton) {
-        this.$refs.submitButton.style.opacity = '0.7';
-      }
-      
       try {
-        await this.login(this.credentials);
-        console.log('✅ Login realizado com sucesso');
+        const user = await this.login(this.credentials);
+        
+        // Saudação personalizada
+        const userName = user.name?.split(' ')[0] || '';
+        alert(`Olá, ${userName}! Que bom te ver de volta! 🎉`);
+        
         this.$router.push('/');
+        
       } catch (error) {
         console.error('Erro no login:', error);
         
-        // Focar no campo apropriado baseado no erro
-        if (error.message?.includes('email')) {
-          this.fieldErrors.email = error.message;
+        // Tratamento específico de erros
+        if (error.message?.includes('email') || error.message?.includes('não encontrado')) {
+          this.fieldErrors.email = 'Email não encontrado. Verifique ou crie uma conta.';
           this.focusOnError('emailInput');
-        } else if (error.message?.includes('senha') || error.message?.includes('password')) {
-          this.fieldErrors.password = error.message;
+        } else if (error.message?.includes('senha') || error.message?.includes('password') || error.message?.includes('incorreta')) {
+          this.fieldErrors.password = 'Senha incorreta. Tente novamente ou recupere sua senha.';
           this.focusOnError('passwordInput');
         } else {
-          alert(error.message || 'Erro ao fazer login');
+          alert(error.message || 'Erro ao fazer login. Tente novamente.');
         }
         
         this.shakeForm();
       } finally {
         this.loading = false;
-        
-        // Reabilitar botão
-        if (this.$refs.submitButton) {
-          this.$refs.submitButton.style.opacity = '1';
-        }
       }
     }
   }
@@ -222,11 +202,29 @@ export default {
   display: block;
 }
 
-.form-control.is-invalid {
-  border-color: #dc3545;
-  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' width='12' height='12' fill='none' stroke='%23dc3545'%3e%3ccircle cx='6' cy='6' r='4.5'/%3e%3cpath d='m5.8 3.6.4.4.4-.4'/%3e%3cpath d='M6 7v2'/%3e%3c/svg%3e");
-  background-repeat: no-repeat;
-  background-position: right calc(0.375em + 0.1875rem) center;
-  background-size: calc(0.75em + 0.375rem) calc(0.75em + 0.375rem);
+.card {
+  border: none;
+  border-radius: 15px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%);
+  border: none;
+  border-radius: 8px;
+  padding: 12px;
+  font-weight: 600;
+}
+
+.form-control {
+  border-radius: 8px;
+  padding: 12px;
+  border: 2px solid #e9ecef;
+  transition: all 0.3s;
+}
+
+.form-control:focus {
+  border-color: #0d6efd;
+  box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
 }
 </style>

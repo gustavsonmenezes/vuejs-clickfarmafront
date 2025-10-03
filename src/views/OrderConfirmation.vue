@@ -180,7 +180,7 @@
 
 <script>
 import { mapState } from 'vuex'
-import OrderTimeline from '@/components/orders/OrderTimeline.vue' // ← CORREÇÃO DO CAMINHO
+import OrderTimeline from '@/components/orders/OrderTimeline.vue' 
 
 export default {
   name: 'OrderConfirmation',
@@ -201,15 +201,15 @@ export default {
     console.log('💳 Dados do checkout:', JSON.parse(localStorage.getItem('checkoutData') || '{}'))
     console.log('💰 Dados do pagamento:', JSON.parse(localStorage.getItem('paymentData') || '{}'))
     
-    // Limpar dados temporários após confirmação
+    
     this.clearTemporaryData()
     
-    // Rolar para o topo
+    
     window.scrollTo(0, 0)
   },
   methods: {
     getRealOrderData() {
-      // 1. Primeiro tenta pegar do Vuex (se veio do processamento de pagamento)
+      
       if (this.lastOrder) {
         console.log('✅ Usando dados do Vuex (lastOrder)')
         return this.lastOrder
@@ -236,7 +236,7 @@ export default {
       
       let total = subtotal + deliveryCost
       
-      // Aplicar desconto PIX se aplicável
+      
       if (paymentData.paymentMethod === 'pix' || paymentData.method === 'pix') {
         total *= 0.95 // 5% de desconto
       }
@@ -258,7 +258,7 @@ export default {
     },
 
     getSampleOrderData() {
-      // Apenas como fallback se não houver dados reais
+      
       return {
         id: 'ORD-' + Math.random().toString(36).substr(2, 9).toUpperCase(),
         subtotal: 0,
@@ -318,12 +318,12 @@ export default {
     },
 
     clearTemporaryData() {
-      // Remove apenas dados temporários, mantém o lastOrder se existir
+      
       localStorage.removeItem('cart')
       localStorage.removeItem('checkoutData')
       localStorage.removeItem('paymentData')
       
-      // Limpa o carrinho no Vuex também
+      
       if (this.$store && this.$store.commit) {
         this.$store.commit('CLEAR_CART')
       }

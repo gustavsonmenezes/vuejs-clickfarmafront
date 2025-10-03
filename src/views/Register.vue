@@ -7,6 +7,26 @@
             <h3 class="text-center">👤 Criar Conta</h3>
           </div>
           <div class="card-body">
+            
+            <!-- Mensagem de Boas-Vindas -->
+            <div v-if="showWelcome" class="alert alert-success">
+              <h5>🎉 Bem-vindo(a) à família ClickFarma!</h5>
+              <p class="mb-0">Que bom ter você conosco! Agora você pode explorar farmácias perto de você e fazer suas compras com toda a praticidade.</p>
+            </div>
+
+            <!-- Sugestão quando email já existe -->
+            <div v-if="showRecoveryOption" class="alert alert-info">
+              <p class="mb-2">Parece que você já é da família! Que tal fazer login?</p>
+              <p class="mb-0">
+                <router-link to="/login" class="btn btn-sm btn-primary me-2">
+                  Fazer Login
+                </router-link>
+                <router-link to="/forgot-password" class="btn btn-sm btn-outline-primary">
+                  Recuperar Senha
+                </router-link>
+              </p>
+            </div>
+
             <form @submit.prevent="handleRegister" ref="registerForm">
               <div class="mb-3">
                 <label class="form-label">Nome completo:</label>
@@ -16,6 +36,7 @@
                   class="form-control" 
                   v-model="userData.name"
                   required
+                  placeholder="Seu nome completo"
                   @input="clearFieldError('name')"
                   :class="{ 'is-invalid': fieldErrors.name }"
                 >
@@ -23,6 +44,7 @@
                   {{ fieldErrors.name }}
                 </div>
               </div>
+              
               <div class="mb-3">
                 <label class="form-label">Email:</label>
                 <input 
@@ -31,6 +53,7 @@
                   class="form-control" 
                   v-model="userData.email"
                   required
+                  placeholder="seu@email.com"
                   @input="clearFieldError('email')"
                   :class="{ 'is-invalid': fieldErrors.email }"
                 >
@@ -38,6 +61,7 @@
                   {{ fieldErrors.email }}
                 </div>
               </div>
+              
               <div class="mb-3">
                 <label class="form-label">Senha:</label>
                 <input 
@@ -46,6 +70,7 @@
                   class="form-control" 
                   v-model="userData.password"
                   required
+                  placeholder="Mínimo 6 caracteres"
                   @input="validatePasswordStrength()"
                   :class="{ 
                     'is-invalid': fieldErrors.password,
@@ -62,12 +87,13 @@
                   <div class="progress mt-1" style="height: 3px;">
                     <div 
                       class="progress-bar" 
-                      :class="passwordStrength.class"
+                      :class="passwordStrength.class.replace('text-', 'bg-')"
                       :style="{ width: passwordStrength.percentage + '%' }"
                     ></div>
                   </div>
                 </div>
               </div>
+              
               <div class="mb-3">
                 <label class="form-label">Confirmar senha:</label>
                 <input 
@@ -76,6 +102,7 @@
                   class="form-control" 
                   v-model="userData.confirmPassword"
                   required
+                  placeholder="Digite novamente sua senha"
                   @input="clearFieldError('confirmPassword')"
                   :class="{ 'is-invalid': fieldErrors.confirmPassword }"
                 >
@@ -83,17 +110,20 @@
                   {{ fieldErrors.confirmPassword }}
                 </div>
               </div>
+              
               <button 
                 ref="submitButton"
                 type="submit" 
                 class="btn btn-primary w-100"
                 :disabled="loading"
               >
-                {{ loading ? 'Criando conta...' : 'Criar Conta' }}
+                <span v-if="loading" class="spinner-border spinner-border-sm me-2"></span>
+                {{ loading ? 'Criando conta...' : 'Criar Minha Conta' }}
               </button>
             </form>
+            
             <div class="text-center mt-3">
-              <p>Já tem conta? <router-link to="/login">Faça login</router-link></p>
+              <p>Já tem conta? <router-link to="/login">Faça login aqui</router-link></p>
             </div>
           </div>
         </div>
@@ -117,6 +147,8 @@ export default {
       },
       loading: false,
       fieldErrors: {},
+      showWelcome: false,
+      showRecoveryOption: false,
       passwordStrength: {
         score: 0,
         text: 'Muito fraca',
@@ -128,26 +160,16 @@ export default {
   mounted() {
     console.log('👤 Componente Register montado - configurando refs...');
     this.focusNameField();
-    this.setupPasswordVisibility();
   },
   methods: {
     ...mapActions(['register']),
     
-    // Foco automático no primeiro campo
     focusNameField() {
       if (this.$refs.nameInput) {
         this.$refs.nameInput.focus();
-        console.log('✅ Foco automático no campo nome');
       }
     },
     
-    // Configuração de visibilidade de senha (pode ser extendido)
-    setupPasswordVisibility() {
-      // Pode ser extendido para mostrar/ocultar senha
-      console.log('🔒 Configuração de senha inicializada');
-    },
-    
-    // Validação de força da senha em tempo real
     validatePasswordStrength() {
       const password = this.userData.password;
       let score = 0;
@@ -184,9 +206,9 @@ export default {
       }
     },
     
-    // Validação completa do formulário
     validateForm() {
       this.fieldErrors = {};
+      this.showRecoveryOption = false;
       let isValid = true;
       
       if (!this.userData.name.trim()) {
@@ -213,10 +235,6 @@ export default {
         this.fieldErrors.password = 'Senha deve ter pelo menos 6 caracteres';
         if (isValid) this.focusOnError('passwordInput');
         isValid = false;
-      } else if (this.passwordStrength.score < 2) {
-        this.fieldErrors.password = 'Senha muito fraca. Use letras maiúsculas, números e símbolos';
-        if (isValid) this.focusOnError('passwordInput');
-        isValid = false;
       }
       
       if (!this.userData.confirmPassword) {
@@ -232,7 +250,6 @@ export default {
       return isValid;
     },
     
-    // Focar no campo com erro
     focusOnError(fieldRef) {
       if (this.$refs[fieldRef]) {
         this.$refs[fieldRef].focus();
@@ -256,38 +273,37 @@ export default {
       }
 
       this.loading = true;
-      
-      // Feedback visual no botão
-      if (this.$refs.submitButton) {
-        this.$refs.submitButton.style.opacity = '0.7';
-      }
+      this.showWelcome = false;
       
       try {
         await this.register(this.userData);
-        console.log('✅ Conta criada com sucesso');
-        this.$router.push('/');
+        
+        // Sucesso - mostrar mensagem de boas-vindas
+        this.showWelcome = true;
+        
+        // Redirecionar após breve delay para usuário ver a mensagem
+        setTimeout(() => {
+          this.$router.push('/');
+        }, 3000);
+        
       } catch (error) {
         console.error('❌ Erro no registro:', error);
         
-        // Mapear erros para campos específicos
-        if (error.message?.includes('email')) {
-          this.fieldErrors.email = error.message;
+        // Tratamento específico para email já cadastrado
+        if (error.message?.includes('email') || error.message?.includes('já existe') || error.message?.includes('already')) {
+          this.fieldErrors.email = 'Parece que você já é da família!';
+          this.showRecoveryOption = true;
           this.focusOnError('emailInput');
         } else if (error.message?.includes('senha') || error.message?.includes('password')) {
           this.fieldErrors.password = error.message;
           this.focusOnError('passwordInput');
         } else {
-          alert(error.message || 'Erro ao criar conta');
+          alert(error.message || 'Erro ao criar conta. Tente novamente.');
         }
         
         this.shakeForm();
       } finally {
         this.loading = false;
-        
-        // Restaurar botão
-        if (this.$refs.submitButton) {
-          this.$refs.submitButton.style.opacity = '1';
-        }
       }
     },
     
@@ -324,5 +340,24 @@ export default {
 
 .invalid-feedback {
   display: block;
+}
+
+.alert {
+  border: none;
+  border-radius: 10px;
+}
+
+.card {
+  border: none;
+  border-radius: 15px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%);
+  border: none;
+  border-radius: 8px;
+  padding: 12px;
+  font-weight: 600;
 }
 </style>
