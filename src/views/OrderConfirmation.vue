@@ -196,17 +196,17 @@ export default {
     }
   },
   mounted() {
-  console.log('📦 Dados do último pedido (Vuex):', this.lastOrder)
-  console.log('🛒 Carrinho atual:', JSON.parse(localStorage.getItem('cart') || '[]'))
-  console.log('💳 Dados do checkout:', JSON.parse(localStorage.getItem('checkoutData') || '{}'))
-  console.log('💰 Dados do pagamento:', JSON.parse(localStorage.getItem('paymentData') || '{}'))
-  
-  this.clearTemporaryData()
-  this.clearBackupData() // ← ADICIONE ESTA LINHA AQUI
-  this.saveOrderToStorage(this.order)
-  
-  window.scrollTo(0, 0)
-},
+    console.log('📦 Dados do último pedido (Vuex):', this.lastOrder)
+    console.log('🛒 Carrinho atual:', JSON.parse(localStorage.getItem('cart') || '[]'))
+    console.log('💳 Dados do checkout:', JSON.parse(localStorage.getItem('checkoutData') || '{}'))
+    console.log('💰 Dados do pagamento:', JSON.parse(localStorage.getItem('paymentData') || '{}'))
+    
+    this.clearTemporaryData()
+    this.clearBackupData()
+    this.saveOrderToStorage(this.order)
+    
+    window.scrollTo(0, 0)
+  },
   methods: {
     saveOrderToStorage(order) {
       // VALIDAÇÃO FORTE - só salva se for pedido REAL
@@ -248,60 +248,58 @@ export default {
       console.log('💾 PEDIDO VÁLIDO SALVO:', validOrder.id)
     },
 
-    // NO OrderConfirmation.vue - método getRealOrderData
-getRealOrderData() {
-  // 1. Primeiro tenta usar o lastOrder do Vuex
-  if (this.lastOrder && this.lastOrder.items && this.lastOrder.items.length > 0) {
-    console.log('✅ Usando dados do Vuex (lastOrder)');
-    return this.lastOrder;
-  }
+    getRealOrderData() {
+      // 1. Primeiro tenta usar o lastOrder do Vuex
+      if (this.lastOrder && this.lastOrder.items && this.lastOrder.items.length > 0) {
+        console.log('✅ Usando dados do Vuex (lastOrder)');
+        return this.lastOrder;
+      }
 
-  // 2. Se não tem no Vuex, tenta montar com dados salvos
-  console.log('🔄 Montando pedido com dados salvos');
-  
-  const cartBackup = JSON.parse(localStorage.getItem('cart_backup') || '[]');
-  const checkoutData = JSON.parse(localStorage.getItem('checkoutData') || '{}');
-  const paymentData = JSON.parse(localStorage.getItem('paymentData') || '{}');
+      // 2. Se não tem no Vuex, tenta montar com dados salvos
+      console.log('🔄 Montando pedido com dados salvos');
+      
+      const cartBackup = JSON.parse(localStorage.getItem('cart_backup') || '[]');
+      const checkoutData = JSON.parse(localStorage.getItem('checkoutData') || '{}');
+      const paymentData = JSON.parse(localStorage.getItem('paymentData') || '{}');
 
-  console.log('📋 Backup do carrinho:', cartBackup);
-  console.log('🚚 Dados de entrega:', checkoutData);
-  console.log('💳 Dados de pagamento:', paymentData);
+      console.log('📋 Backup do carrinho:', cartBackup);
+      console.log('🚚 Dados de entrega:', checkoutData);
+      console.log('💳 Dados de pagamento:', paymentData);
 
-  // Se não tem itens, usa dados de exemplo
-  if (cartBackup.length === 0) {
-    console.warn('⚠️ Sem dados válidos! Mostrando dados de exemplo');
-    return this.getSampleOrderData();
-  }
+      // Se não tem itens, usa dados de exemplo
+      if (cartBackup.length === 0) {
+        console.warn('⚠️ Sem dados válidos! Mostrando dados de exemplo');
+        return this.getSampleOrderData();
+      }
 
-  const subtotal = cartBackup.reduce((total, item) => total + (item.price * item.quantity), 0);
-  const deliveryCost = paymentData.deliveryCost || this.calculateDeliveryCost(subtotal, checkoutData.deliveryType || checkoutData.deliveryOption);
-  
-  let total = subtotal + deliveryCost;
-  
-  // Aplicar desconto PIX se necessário
-  if (paymentData.paymentMethod === 'pix' || paymentData.method === 'pix') {
-    total *= 0.95; // 5% de desconto
-  }
+      const subtotal = cartBackup.reduce((total, item) => total + (item.price * item.quantity), 0);
+      const deliveryCost = paymentData.deliveryCost || this.calculateDeliveryCost(subtotal, checkoutData.deliveryType || checkoutData.deliveryOption);
+      
+      let total = subtotal + deliveryCost;
+      
+      // Aplicar desconto PIX se necessário
+      if (paymentData.paymentMethod === 'pix' || paymentData.method === 'pix') {
+        total *= 0.95; // 5% de desconto
+      }
 
-  const orderData = {
-    id: paymentData.transactionId || 'ORD-' + Math.random().toString(36).substr(2, 9).toUpperCase(),
-    subtotal: subtotal,
-    total: total,
-    paymentMethod: paymentData.paymentMethod || paymentData.method || 'credit_card',
-    cardData: paymentData.cardData || null,
-    status: 'confirmed',
-    deliveryType: checkoutData.deliveryType || checkoutData.deliveryOption || 'delivery',
-    deliveryInfo: checkoutData.deliveryInfo || checkoutData.selectedAddress || checkoutData.selectedStore || {},
-    items: [...cartBackup], // Usa o backup do carrinho
-    date: new Date().toISOString()
-  };
+      const orderData = {
+        id: paymentData.transactionId || 'ORD-' + Math.random().toString(36).substr(2, 9).toUpperCase(),
+        subtotal: subtotal,
+        total: total,
+        paymentMethod: paymentData.paymentMethod || paymentData.method || 'credit_card',
+        cardData: paymentData.cardData || null,
+        status: 'confirmed',
+        deliveryType: checkoutData.deliveryType || checkoutData.deliveryOption || 'delivery',
+        deliveryInfo: checkoutData.deliveryInfo || checkoutData.selectedAddress || checkoutData.selectedStore || {},
+        items: [...cartBackup], // Usa o backup do carrinho
+        date: new Date().toISOString()
+      };
 
-  console.log('🎯 Pedido final montado:', orderData);
-  return orderData;
-},
+      console.log('🎯 Pedido final montado:', orderData);
+      return orderData;
+    },
 
     getSampleOrderData() {
-      
       return {
         id: 'ORD-' + Math.random().toString(36).substr(2, 9).toUpperCase(),
         subtotal: 0,
@@ -361,11 +359,9 @@ getRealOrderData() {
     },
 
     clearTemporaryData() {
-      
       localStorage.removeItem('cart')
       localStorage.removeItem('checkoutData')
       localStorage.removeItem('paymentData')
-      
       
       if (this.$store && this.$store.commit) {
         this.$store.commit('CLEAR_CART')
@@ -375,13 +371,12 @@ getRealOrderData() {
     },
 
     clearBackupData() {
-    // Remove apenas os backups, mantém o lastOrder no Vuex
-    localStorage.removeItem('cart_backup');
-    localStorage.removeItem('checkoutData');
-    localStorage.removeItem('paymentData');
-    console.log('🧹 Dados de backup limpos');
-  },
-
+      // Remove apenas os backups, mantém o lastOrder no Vuex
+      localStorage.removeItem('cart_backup');
+      localStorage.removeItem('checkoutData');
+      localStorage.removeItem('paymentData');
+      console.log('🧹 Dados de backup limpos');
+    }
   }
 }
 </script>

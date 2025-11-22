@@ -89,9 +89,7 @@
                   <button class="btn btn-outline-primary btn-sm" @click="viewOrderDetails(order)">
                     <i class="fas fa-eye me-1"></i>Detalhes
                   </button>
-                  <button class="btn btn-outline-info btn-sm" @click="trackOrder(order)">
-                    <i class="fas fa-shipping-fast me-1"></i>Rastrear
-                  </button>
+                  
                   <button 
                     v-if="order.status === 'confirmed'" 
                     class="btn btn-outline-danger btn-sm" 
@@ -137,8 +135,15 @@
 </template>
 
 <script>
+import OrderTimeline from '@/components/orders/OrderTimeline.vue'
+import LiveTrackingMap from '@/components/orders/LiveTrackingMap.vue'
+
 export default {
   name: 'Orders',
+  components: {
+    OrderTimeline,
+    LiveTrackingMap
+  },
   data() {
     return {
       orders: [],

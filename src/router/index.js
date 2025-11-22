@@ -32,11 +32,10 @@ const routes = [
     component: Products 
   },
   {
-  path: '/promotions', 
-  name: 'Promotions',
-  component: () => import('../views/Promotions.vue')
+    path: '/promotions', 
+    name: 'Promotions',
+    component: () => import('../views/Promotions.vue')
   },
-
   {
     path: '/products/:id',
     name: 'ProductDetail',
@@ -99,34 +98,59 @@ const routes = [
     component: () => import('../components/checkout/PaymentMethod.vue'),
     meta: { requiresAuth: true }
   },
+
+  // 🔥 NOVAS ROTAS ADICIONADAS AQUI
+  {
+    path: '/orders',
+    name: 'Orders',
+    component: () => import('../views/Orders.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/dashboard',
+    name: 'UserDashboard',
+    component: () => import('../views/UserDashboard.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/tracking/:orderId',
+    name: 'OrderTracking',
+    component: () => import('../views/OrderTracking.vue'),
+    props: true,
+    meta: { requiresAuth: true }
+  },
+
+  // Rotas existentes de rastreamento (mantidas para compatibilidade)
+  {
+    path: '/track-order',
+    name: 'OrderTrackingOld',
+    component: () => import('../views/OrderTracking.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/track-order/:orderId',
+    name: 'OrderTrackingWithId',
+    component: () => import('../views/OrderTracking.vue'),
+    props: true,
+    meta: { requiresAuth: true }
+  },
+
+  // Outras rotas existentes
+  {
+    path: '/about',
+    name: 'About', 
+    component: () => import('../views/About.vue')
+  },
+  {
+    path: '/contact',
+    name: 'Contact',
+    component: () => import('../views/Contact.vue')
+  },
   {
     path: '/admin/login',
     name: 'AdminLogin',
     component: AdminLogin
   },
-  {
-  path: '/orders',
-  name: 'Orders', 
-  component: () => import('../views/Orders.vue'),
-  meta: { requiresAuth: true }
-  },
-
-  
-
-  {
-    path: '/about',
-    name: 'About', 
-    component: () => import('../views/About.vue') // Você precisa criar este componente
-  },
-  {
-    path: '/contact',
-    name: 'Contact',
-    component: () => import('../views/Contact.vue') // Você precisa criar este componente
-  },
-
-
-
-
   {
     path: '/admin',
     component: AdminDashboard,

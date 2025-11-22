@@ -33,6 +33,12 @@
               <i class="fas fa-tag me-1"></i>Promoções
             </router-link>
           </li>
+           <li class="nav-item">
+          <router-link to="/track-order" class="nav-link">
+            <i class="fas fa-truck me-1"></i>Rastrear Pedido
+          </router-link>
+          </li>  
+
           <li class="nav-item">
             <router-link to="/about" class="nav-link">
               <i class="fas fa-info-circle me-1"></i>Sobre
