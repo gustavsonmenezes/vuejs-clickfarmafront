@@ -128,7 +128,7 @@ export default {
     cartTotal() {
       return this.cart.reduce((total, item) => total + (item.price * item.quantity), 0)
     },
-    deliveryPrice() {
+    calculatedDeliveryPrice() {
       if (this.deliveryOption === 'delivery') {
         if (this.cartTotal >= 300) return 0;
         if (this.cartTotal < 100) return 10.00;
@@ -137,9 +137,11 @@ export default {
       return 0;
     },
     orderTotal() {
-      let total = this.cartTotal + this.deliveryPrice
+      const delivery = this.deliveryPrice !== undefined ? this.deliveryPrice : this.calculatedDeliveryPrice
+      let total = this.cartTotal + delivery
+      
       if (this.selectedPaymentMethod === 'pix') {
-        total -= this.cartTotal * 0.05 // 5% discount for PIX
+        total -= this.cartTotal * 0.05
       }
       return total
     },
@@ -154,6 +156,9 @@ export default {
   }
 }
 </script>
+
+
+
 
 
 <style scoped>

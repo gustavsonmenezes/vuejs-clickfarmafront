@@ -46,7 +46,7 @@
               </h5>
             </div>
             <div class="card-body">
-              <OrderTimeline :status="order.status" />
+              <OrderTimeline :order="order" />
             </div>
           </div>
 
@@ -196,66 +196,109 @@ export default {
     }
   },
   mounted() {
-    console.log('📦 Dados do último pedido (Vuex):', this.lastOrder)
-    console.log('🛒 Carrinho atual:', JSON.parse(localStorage.getItem('cart') || '[]'))
-    console.log('💳 Dados do checkout:', JSON.parse(localStorage.getItem('checkoutData') || '{}'))
-    console.log('💰 Dados do pagamento:', JSON.parse(localStorage.getItem('paymentData') || '{}'))
-    
-    
-    this.clearTemporaryData()
-    
-    
-    window.scrollTo(0, 0)
-  },
+  console.log('📦 Dados do último pedido (Vuex):', this.lastOrder)
+  console.log('🛒 Carrinho atual:', JSON.parse(localStorage.getItem('cart') || '[]'))
+  console.log('💳 Dados do checkout:', JSON.parse(localStorage.getItem('checkoutData') || '{}'))
+  console.log('💰 Dados do pagamento:', JSON.parse(localStorage.getItem('paymentData') || '{}'))
+  
+  this.clearTemporaryData()
+  this.clearBackupData() // ← ADICIONE ESTA LINHA AQUI
+  this.saveOrderToStorage(this.order)
+  
+  window.scrollTo(0, 0)
+},
   methods: {
-    getRealOrderData() {
+    saveOrderToStorage(order) {
+      // VALIDAÇÃO FORTE - só salva se for pedido REAL
+      if (!order || 
+          !order.id || 
+          !order.items || 
+          !Array.isArray(order.items) || 
+          order.items.length === 0 ||
+          !order.date ||
+          order.total === undefined ||
+          order.total === null) {
+        console.error('❌ PEDIDO INVÁLIDO - Não será salvo:', order)
+        return
+      }
       
-      if (this.lastOrder) {
-        console.log('✅ Usando dados do Vuex (lastOrder)')
-        return this.lastOrder
+      // Garante que todos os campos necessários existam
+      const validOrder = {
+        id: order.id,
+        date: order.date,
+        status: order.status || 'confirmed',
+        total: order.total,
+        subtotal: order.subtotal || order.total,
+        paymentMethod: order.paymentMethod || 'credit_card',
+        deliveryType: order.deliveryType || 'delivery',
+        deliveryInfo: order.deliveryInfo || {},
+        items: order.items.map(item => ({
+          id: item.id,
+          name: item.name || 'Produto',
+          price: item.price || 0,
+          quantity: item.quantity || 1,
+          image: item.image
+        }))
       }
 
-      // 2. Se não tem no Vuex, monta com dados reais do localStorage
-      console.log('🔄 Montando pedido com dados reais do localStorage')
-      
-      const cart = JSON.parse(localStorage.getItem('cart') || '[]')
-      const checkoutData = JSON.parse(localStorage.getItem('checkoutData') || '{}')
-      const paymentData = JSON.parse(localStorage.getItem('paymentData') || '{}')
-
-      console.log('📋 Itens do carrinho:', cart)
-      console.log('🚚 Dados de entrega:', checkoutData)
-      console.log('💳 Dados de pagamento:', paymentData)
-
-      if (cart.length === 0) {
-        console.warn('⚠️ Carrinho vazio! Mostrando dados de exemplo')
-        return this.getSampleOrderData()
-      }
-
-      const subtotal = cart.reduce((total, item) => total + (item.price * item.quantity), 0)
-      const deliveryCost = this.calculateDeliveryCost(subtotal, checkoutData.deliveryType || checkoutData.deliveryOption)
-      
-      let total = subtotal + deliveryCost
-      
-      
-      if (paymentData.paymentMethod === 'pix' || paymentData.method === 'pix') {
-        total *= 0.95 // 5% de desconto
-      }
-
-      const orderData = {
-        id: 'ORD-' + Math.random().toString(36).substr(2, 9).toUpperCase(),
-        subtotal: subtotal,
-        total: total,
-        paymentMethod: paymentData.paymentMethod || paymentData.method || 'credit_card',
-        cardData: paymentData.cardData || null,
-        status: 'confirmed',
-        deliveryType: checkoutData.deliveryType || checkoutData.deliveryOption || 'delivery',
-        deliveryInfo: checkoutData.deliveryInfo || checkoutData.selectedAddress || checkoutData.selectedStore || {},
-        items: [...cart] // Cópia dos itens do carrinho real
-      }
-
-      console.log('🎯 Pedido final montado:', orderData)
-      return orderData
+      const savedOrders = JSON.parse(localStorage.getItem('userOrders') || '[]')
+      const filteredOrders = savedOrders.filter(o => o.id !== validOrder.id)
+      filteredOrders.unshift(validOrder)
+      localStorage.setItem('userOrders', JSON.stringify(filteredOrders))
+      console.log('💾 PEDIDO VÁLIDO SALVO:', validOrder.id)
     },
+
+    // NO OrderConfirmation.vue - método getRealOrderData
+getRealOrderData() {
+  // 1. Primeiro tenta usar o lastOrder do Vuex
+  if (this.lastOrder && this.lastOrder.items && this.lastOrder.items.length > 0) {
+    console.log('✅ Usando dados do Vuex (lastOrder)');
+    return this.lastOrder;
+  }
+
+  // 2. Se não tem no Vuex, tenta montar com dados salvos
+  console.log('🔄 Montando pedido com dados salvos');
+  
+  const cartBackup = JSON.parse(localStorage.getItem('cart_backup') || '[]');
+  const checkoutData = JSON.parse(localStorage.getItem('checkoutData') || '{}');
+  const paymentData = JSON.parse(localStorage.getItem('paymentData') || '{}');
+
+  console.log('📋 Backup do carrinho:', cartBackup);
+  console.log('🚚 Dados de entrega:', checkoutData);
+  console.log('💳 Dados de pagamento:', paymentData);
+
+  // Se não tem itens, usa dados de exemplo
+  if (cartBackup.length === 0) {
+    console.warn('⚠️ Sem dados válidos! Mostrando dados de exemplo');
+    return this.getSampleOrderData();
+  }
+
+  const subtotal = cartBackup.reduce((total, item) => total + (item.price * item.quantity), 0);
+  const deliveryCost = paymentData.deliveryCost || this.calculateDeliveryCost(subtotal, checkoutData.deliveryType || checkoutData.deliveryOption);
+  
+  let total = subtotal + deliveryCost;
+  
+  // Aplicar desconto PIX se necessário
+  if (paymentData.paymentMethod === 'pix' || paymentData.method === 'pix') {
+    total *= 0.95; // 5% de desconto
+  }
+
+  const orderData = {
+    id: paymentData.transactionId || 'ORD-' + Math.random().toString(36).substr(2, 9).toUpperCase(),
+    subtotal: subtotal,
+    total: total,
+    paymentMethod: paymentData.paymentMethod || paymentData.method || 'credit_card',
+    cardData: paymentData.cardData || null,
+    status: 'confirmed',
+    deliveryType: checkoutData.deliveryType || checkoutData.deliveryOption || 'delivery',
+    deliveryInfo: checkoutData.deliveryInfo || checkoutData.selectedAddress || checkoutData.selectedStore || {},
+    items: [...cartBackup], // Usa o backup do carrinho
+    date: new Date().toISOString()
+  };
+
+  console.log('🎯 Pedido final montado:', orderData);
+  return orderData;
+},
 
     getSampleOrderData() {
       
@@ -329,7 +372,16 @@ export default {
       }
       
       console.log('🧹 Dados temporários limpos')
-    }
+    },
+
+    clearBackupData() {
+    // Remove apenas os backups, mantém o lastOrder no Vuex
+    localStorage.removeItem('cart_backup');
+    localStorage.removeItem('checkoutData');
+    localStorage.removeItem('paymentData');
+    console.log('🧹 Dados de backup limpos');
+  },
+
   }
 }
 </script>

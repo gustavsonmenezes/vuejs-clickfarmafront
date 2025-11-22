@@ -2,21 +2,28 @@
   <div class="card mb-3 cart-item">
     <div class="card-body">
       <div class="row align-items-center">
-        <!-- Ícone -->
+        <!-- Imagem do produto -->
         <div class="col-md-2 text-center">
-          <span class="item-icon">💊</span>
+          <img 
+            :src="itemImage" 
+            :alt="item.name"
+            class="img-fluid rounded item-image"
+            @error="handleImageError"
+            loading="lazy"
+          >
         </div>
         
         <!-- Informações do produto -->
         <div class="col-md-4">
           <h5 class="item-name">{{ item.name }}</h5>
           <p class="text-muted item-description">{{ truncatedDescription }}</p>
+          <span class="badge bg-secondary">{{ item.category }}</span>
         </div>
         
         <!-- Quantidade -->
         <div class="col-md-2">
           <div class="quantity-control">
-            <label for="quantity" class="visually-hidden">Quantidade</label>
+            <label :for="'quantity-' + item.id" class="form-label small">Quantidade</label>
             <input 
               type="number" 
               :id="'quantity-' + item.id"
@@ -51,6 +58,8 @@
 </template>
 
 <script>
+import { placeholderConfig } from '@/utils/placeholder'
+
 export default {
   name: 'CartItem',
   props: {
@@ -68,6 +77,11 @@ export default {
       }
     }
   },
+  data() {
+    return {
+      imageError: false
+    }
+  },
   computed: {
     truncatedDescription() {
       const maxLength = 60
@@ -80,12 +94,18 @@ export default {
     },
     itemPrice() {
       return this.item.price.toFixed(2)
+    },
+    itemImage() {
+      return placeholderConfig.getProductImage(this.item.image)
     }
   },
   methods: {
     handleQuantityChange(event) {
       const quantity = parseInt(event.target.value) || 1
       this.$emit('update-quantity', this.item.id, quantity)
+    },
+    handleImageError(event) {
+      placeholderConfig.handleImageError(event)
     }
   }
 }
@@ -98,11 +118,15 @@ export default {
 
 .cart-item:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
 }
 
-.item-icon {
-  font-size: 3rem;
+.item-image {
+  max-height: 80px;
+  object-fit: cover;
+  background-color: #f8f9fa;
+  padding: 4px;
+  border: 1px solid #dee2e6;
 }
 
 .item-name {
@@ -112,20 +136,26 @@ export default {
 
 .item-description {
   font-size: 0.9rem;
-  margin-bottom: 0;
+  margin-bottom: 0.5rem;
 }
 
 .quantity-control input {
   text-align: center;
+  max-width: 80px;
 }
 
 .item-total {
   font-size: 1.1rem;
   margin-bottom: 0.2rem;
+  color: #28a745;
 }
 
 .item-unit-price {
   font-size: 0.8rem;
   margin-bottom: 0;
+}
+
+.badge {
+  font-size: 0.7rem;
 }
 </style>

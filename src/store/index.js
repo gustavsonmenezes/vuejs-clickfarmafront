@@ -1,5 +1,4 @@
 import { createStore } from 'vuex'
-import axios from 'axios'
 
 // Serviço de pagamento mockado para ClickFarma
 class PaymentService {
@@ -47,13 +46,13 @@ class PaymentService {
           success: true,
           transactionId: this.generateTransactionId(),
           amount: paymentData.amount,
-          method: paymentData.paymentMethod, // Inclui se é credit_card ou debit_card
+          method: paymentData.paymentMethod,
           cardType: paymentData.paymentMethod,
           status: 'approved',
           timestamp: new Date().toISOString(),
           authorizationCode: this.generateAuthCode()
         });
-      }, 2000); // Simula delay de processamento
+      }, 2000);
     });
   }
 
@@ -70,7 +69,7 @@ class PaymentService {
           timestamp: new Date().toISOString(),
           pixCode: this.generatePixCode(),
           qrCode: this.generateQRCode(),
-          expiresAt: new Date(Date.now() + 30 * 60 * 1000).toISOString() // 30 minutos
+          expiresAt: new Date(Date.now() + 30 * 60 * 1000).toISOString()
         });
       }, 1000);
     });
@@ -88,7 +87,7 @@ class PaymentService {
           status: 'pending',
           timestamp: new Date().toISOString(),
           boletoCode: this.generateBoletoCode(),
-          dueDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(), // 3 dias
+          dueDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
           boletoUrl: `https://boleto.clickfarma.com.br/${this.generateTransactionId()}.pdf`
         });
       }, 1500);
@@ -149,12 +148,11 @@ class PaymentService {
   }
 
   static generateQRCode() {
-    // Em uma implementação real, isso geraria um QR code real
     return 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==';
   }
 
   static generateBoletoCode() {
-    const bank = '341'; // Itaú
+    const bank = '341';
     const dv = Math.floor(Math.random() * 10);
     const sequence = Math.random().toString().substr(2, 10);
     return `${bank}${dv}${sequence}`;
@@ -202,7 +200,6 @@ class PaymentService {
   static async getPaymentStatus(transactionId) {
     return new Promise((resolve) => {
       setTimeout(() => {
-        // Simula diferentes status baseado no ID
         const statuses = ['pending', 'approved', 'failed', 'cancelled'];
         const randomStatus = statuses[Math.floor(Math.random() * statuses.length)];
         
@@ -216,6 +213,104 @@ class PaymentService {
   }
 }
 
+// Serviço de rastreamento de entrega
+class DeliveryService {
+  static async trackOrder(orderId) {
+    try {
+      const response = await new Promise(resolve => {
+        setTimeout(() => {
+          const statuses = [
+            'confirmed', 'processing', 'shipped', 'out_for_delivery', 'delivered'
+          ];
+          const currentStatus = statuses[Math.floor(Math.random() * statuses.length)];
+          
+          resolve({
+            orderId,
+            status: currentStatus,
+            trackingCode: `TRK${orderId}`,
+            estimatedDelivery: this.calculateDeliveryDate(),
+            currentLocation: this.getRandomLocation(),
+            updates: this.generateTrackingUpdates(orderId, currentStatus),
+            carrier: 'ClickFarma Express',
+            contact: '(81) 99818-9999'
+          });
+        }, 1000);
+      });
+      
+      return response;
+    } catch (error) {
+      console.error('Erro no rastreamento:', error);
+      throw error;
+    }
+  }
+
+  static calculateDeliveryDate() {
+    const date = new Date();
+    date.setDate(date.getDate() + 3);
+    return date.toISOString();
+  }
+
+  static getRandomLocation() {
+    const locations = [
+      'Centro de Distribuição - Recife',
+      'Unidade Paulista',
+      'A caminho da entrega',
+      'Em separação'
+    ];
+    return locations[Math.floor(Math.random() * locations.length)];
+  }
+
+  static generateTrackingUpdates(orderId, currentStatus) {
+    const updates = [];
+    const now = new Date();
+    
+    updates.push({
+      status: 'confirmed',
+      description: 'Pedido confirmado e em processamento',
+      timestamp: new Date(now - 3600000).toISOString(),
+      location: 'ClickFarma - Loja Virtual'
+    });
+
+    if (['processing', 'shipped', 'out_for_delivery', 'delivered'].includes(currentStatus)) {
+      updates.push({
+        status: 'processing',
+        description: 'Produtos sendo separados',
+        timestamp: new Date(now - 1800000).toISOString(),
+        location: 'Centro de Distribuição'
+      });
+    }
+
+    if (['shipped', 'out_for_delivery', 'delivered'].includes(currentStatus)) {
+      updates.push({
+        status: 'shipped',
+        description: 'Pedido enviado para transporte',
+        timestamp: new Date(now - 900000).toISOString(),
+        location: 'Unidade de Logística'
+      });
+    }
+
+    if (['out_for_delivery', 'delivered'].includes(currentStatus)) {
+      updates.push({
+        status: 'out_for_delivery',
+        description: 'Pedido saiu para entrega',
+        timestamp: new Date(now - 300000).toISOString(),
+        location: 'A caminho do destino'
+      });
+    }
+
+    if (currentStatus === 'delivered') {
+      updates.push({
+        status: 'delivered',
+        description: 'Pedido entregue com sucesso',
+        timestamp: now.toISOString(),
+        location: 'Local de entrega'
+      });
+    }
+
+    return updates;
+  }
+}
+
 export default createStore({
   state: {
     user: null,
@@ -223,61 +318,73 @@ export default createStore({
     cart: [],
     categories: ['Medicamentos', 'Cosméticos', 'Higiene', 'Vitaminas', 'Maternidade'],
     authToken: localStorage.getItem('authToken') || null,
+    authChecked: false, // 🔥 ADICIONADO: Estado para verificação de auth
     lastOrder: null,
     paymentMethod: null,
     adminProducts: [],
     adminOrders: [],
     adminPrescriptions: [],
-    adminUsers: []
+    adminUsers: [],
+    orderTracking: {}
   },
   
   getters: {
-    isAuthenticated: state => !!state.authToken,
-    cartItemsCount: state => state.cart.reduce((total, item) => total + item.quantity, 0),
-    cartTotal: state => state.cart.reduce((total, item) => total + (item.price * item.quantity), 0),
-    products: state => state.products,
-    categories: state => state.categories,
-    adminProducts: state => state.adminProducts,
-    adminOrders: state => state.adminOrders,
-    adminPrescriptions: state => state.adminPrescriptions,
-    adminUsers: state => state.adminUsers
+    // 🔥 CORRIGIDO: Getter 'user' que estava faltando
+    user: (state) => state.user,
+    isAuthenticated: (state) => !!state.authToken,
+    authChecked: (state) => state.authChecked, // 🔥 ADICIONADO
+    cartItemsCount: (state) => state.cart.reduce((total, item) => total + item.quantity, 0),
+    cartTotal: (state) => state.cart.reduce((total, item) => total + (item.price * item.quantity), 0),
+    cart: (state) => state.cart,
+    products: (state) => state.products,
+    categories: (state) => state.categories,
+    adminProducts: (state) => state.adminProducts,
+    adminOrders: (state) => state.adminOrders,
+    adminPrescriptions: (state) => state.adminPrescriptions,
+    adminUsers: (state) => state.adminUsers,
+    getOrderTracking: (state) => (orderId) => state.orderTracking[orderId]
   },
   
   mutations: {
     SET_USER(state, user) {
-      state.user = user
+      state.user = user;
     },
     SET_AUTH_TOKEN(state, token) {
-      state.authToken = token
-      localStorage.setItem('authToken', token)
+      state.authToken = token;
+      localStorage.setItem('authToken', token);
+    },
+    SET_AUTH_CHECKED(state, status) { // 🔥 ADICIONADO
+      state.authChecked = status;
     },
     CLEAR_AUTH(state) {
-      state.authToken = null
-      state.user = null
-      localStorage.removeItem('authToken')
+      state.authToken = null;
+      state.user = null;
+      state.authChecked = false; // 🔥 ADICIONADO
+      localStorage.removeItem('authToken');
+      localStorage.removeItem('user');
     },
     SET_PRODUCTS(state, products) {
-      state.products = products
+      state.products = products;
     },
     ADD_TO_CART(state, product) {
-      const existingItem = state.cart.find(item => item.id === product.id)
+      const existingItem = state.cart.find(item => item.id === product.id);
       if (existingItem) {
-        existingItem.quantity++
+        existingItem.quantity += product.quantity || 1;
       } else {
-        state.cart.push({ ...product, quantity: 1 })
+        state.cart.push({ ...product, quantity: product.quantity || 1 });
       }
     },
     REMOVE_FROM_CART(state, productId) {
-      state.cart = state.cart.filter(item => item.id !== productId)
+      state.cart = state.cart.filter(item => item.id !== productId);
     },
     UPDATE_CART_QUANTITY(state, { productId, quantity }) {
-      const item = state.cart.find(item => item.id === productId)
+      const item = state.cart.find(item => item.id === productId);
       if (item) {
-        item.quantity = quantity
+        item.quantity = quantity;
       }
     },
     CLEAR_CART(state) {
-      state.cart = []
+      state.cart = [];
     },
     SET_ORDER(state, order) {
       state.lastOrder = order;
@@ -286,37 +393,68 @@ export default createStore({
       state.paymentMethod = method;
     },
     SET_ADMIN_PRODUCTS(state, products) {
-      state.adminProducts = products
+      state.adminProducts = products;
     },
     SET_ADMIN_ORDERS(state, orders) {
-      state.adminOrders = orders
+      state.adminOrders = orders;
     },
     SET_ADMIN_PRESCRIPTIONS(state, prescriptions) {
-      state.adminPrescriptions = prescriptions
+      state.adminPrescriptions = prescriptions;
     },
     SET_ADMIN_USERS(state, users) {
-      state.adminUsers = users
+      state.adminUsers = users;
+    },
+    SET_TRACKING_INFO(state, { orderId, trackingInfo }) {
+      if (!state.orderTracking) state.orderTracking = {};
+      state.orderTracking[orderId] = trackingInfo;
     }
   },
   
   actions: {
+    // 🔥 CORRIGIDO: Action 'checkAuthStatus' que estava faltando
+    async checkAuthStatus({ commit }) {
+      try {
+        console.log('🔐 Verificando status de autenticação...');
+        const token = localStorage.getItem('authToken');
+        if (token) {
+          const user = JSON.parse(localStorage.getItem('user') || 'null');
+          commit('SET_USER', user);
+          console.log('✅ Usuário autenticado:', user);
+        } else {
+          console.log('🔒 Usuário não autenticado');
+        }
+        commit('SET_AUTH_CHECKED', true);
+      } catch (error) {
+        console.error('❌ Erro ao verificar autenticação:', error);
+        commit('SET_AUTH_CHECKED', true);
+      }
+    },
+    
     async login({ commit }, credentials) {
       try {
         // Simulação de API
         const response = await new Promise(resolve => setTimeout(() => {
           resolve({ 
             data: { 
-              user: { id: 1, name: credentials.email, email: credentials.email, role: 'user' },
+              user: { 
+                id: 1, 
+                name: credentials.name || credentials.email, 
+                email: credentials.email, 
+                role: 'user' 
+              },
               token: 'mock-token-' + Math.random().toString(36).substr(2)
             }
-          })
-        }, 1000))
+          });
+        }, 1000));
         
-        commit('SET_USER', response.data.user)
-        commit('SET_AUTH_TOKEN', response.data.token)
-        return response.data
+        commit('SET_USER', response.data.user);
+        commit('SET_AUTH_TOKEN', response.data.token);
+        localStorage.setItem('user', JSON.stringify(response.data.user)); // 🔥 ADICIONADO
+        console.log('✅ Login realizado com sucesso');
+        return response.data;
       } catch (error) {
-        throw error.response ? error.response.data : { message: 'Erro de conexão' }
+        console.error('❌ Erro no login:', error);
+        throw error.response ? error.response.data : { message: 'Erro de conexão' };
       }
     },
     
@@ -326,22 +464,31 @@ export default createStore({
         const response = await new Promise(resolve => setTimeout(() => {
           resolve({ 
             data: { 
-              user: { id: 2, name: userData.name, email: userData.email, role: 'user' },
+              user: { 
+                id: 2, 
+                name: userData.name, 
+                email: userData.email, 
+                role: 'user' 
+              },
               token: 'mock-token-' + Math.random().toString(36).substr(2)
             }
-          })
-        }, 1000))
+          });
+        }, 1000));
         
-        commit('SET_USER', response.data.user)
-        commit('SET_AUTH_TOKEN', response.data.token)
-        return response.data
+        commit('SET_USER', response.data.user);
+        commit('SET_AUTH_TOKEN', response.data.token);
+        localStorage.setItem('user', JSON.stringify(response.data.user)); // 🔥 ADICIONADO
+        console.log('✅ Registro realizado com sucesso');
+        return response.data;
       } catch (error) {
-        throw error.response ? error.response.data : { message: 'Erro de conexão' }
+        console.error('❌ Erro no registro:', error);
+        throw error.response ? error.response.data : { message: 'Erro de conexão' };
       }
     },
     
     logout({ commit }) {
-      commit('CLEAR_AUTH')
+      commit('CLEAR_AUTH');
+      console.log('✅ Logout realizado com sucesso');
     },
     
     async fetchProducts({ commit }) {
@@ -354,144 +501,171 @@ export default createStore({
           { id: 4, name: 'Vitamina C 1000mg', price: 45.00, category: 'Vitaminas', description: 'Suplemento de vitamina C', inStock: true },
           { id: 5, name: 'Protetor Solar FPS 50', price: 32.90, category: 'Cosméticos', description: 'Protetor solar facial', inStock: false },
           { id: 6, name: 'Fralda P - 30 unidades', price: 28.90, category: 'Maternidade', description: 'Fraldas para bebê', inStock: true }
-        ]
+        ];
         
-        commit('SET_PRODUCTS', mockProducts)
+        commit('SET_PRODUCTS', mockProducts);
       } catch (error) {
-        console.error('Erro ao buscar produtos:', error)
+        console.error('Erro ao buscar produtos:', error);
       }
     },
     
-    addToCart({ commit }, product) {
-      commit('ADD_TO_CART', product)
-    },
+    addToCart({ commit, state }, product) {
+  console.log('🛒 Action addToCart chamada para:', product.name);
+  
+  // Verificar se já existe no carrinho
+  const existingItem = state.cart.find(item => item.id === product.id);
+  
+  if (existingItem) {
+    console.log('📦 Produto já existe no carrinho, incrementando quantidade');
+    commit('UPDATE_CART_QUANTITY', { 
+      productId: product.id, 
+      quantity: existingItem.quantity + 1 
+    });
+  } else {
+    console.log('🆕 Novo produto adicionado ao carrinho');
+    commit('ADD_TO_CART', { ...product, quantity: 1 });
+  }
+},
     
     removeFromCart({ commit }, productId) {
-      commit('REMOVE_FROM_CART', productId)
+      commit('REMOVE_FROM_CART', productId);
+      console.log('🗑️ Produto removido do carrinho:', productId);
     },
     
     updateCartQuantity({ commit }, payload) {
-      commit('UPDATE_CART_QUANTITY', payload)
+      commit('UPDATE_CART_QUANTITY', payload);
+      console.log('📦 Quantidade atualizada:', payload);
     },
     
     clearCart({ commit }) {
-      commit('CLEAR_CART')
+      commit('CLEAR_CART');
+      console.log('🛒 Carrinho limpo');
     },
     
-    async processPayment({ commit, state }, paymentData) {
+    // NO store/index.js - método processPayment
+  async processPayment({ commit, state }, paymentData) {
+    try {
+      let paymentResult;
+      const deliveryCost = paymentData.deliveryType === 'delivery' ? (state.cartTotal >= 100 ? 0 : 10) : 0;
+      const amount = state.cartTotal + deliveryCost;
+      
+      console.log('🔄 Processando pagamento com método:', paymentData.paymentMethod);
+      
+      switch (paymentData.paymentMethod) {
+        case 'credit_card':
+        case 'debit_card':
+          paymentResult = await PaymentService.processCardPayment({
+            ...paymentData,
+            amount: amount
+          });
+          break;
+          
+        case 'pix':
+          paymentResult = await PaymentService.processPixPayment({
+            amount: amount
+          });
+          break;
+          
+        case 'boleto':
+          paymentResult = await PaymentService.processBoletoPayment({
+            amount: amount
+          });
+          break;
+          
+        default:
+          throw new Error(`Método de pagamento não suportado: ${paymentData.paymentMethod}`);
+      }
+      
+      if (paymentResult.success) {
+        const order = {
+          id: 'ORD-' + Math.random().toString(36).substr(2, 9).toUpperCase(),
+          transactionId: paymentResult.transactionId,
+          items: [...state.cart], // ← FAZER CÓPIA DOS ITENS ANTES DE LIMPAR
+          total: amount,
+          subtotal: state.cartTotal, // ← ADICIONAR SUBTOTAL
+          status: paymentResult.status,
+          date: new Date().toISOString(),
+          paymentMethod: paymentData.paymentMethod,
+          deliveryType: paymentData.deliveryType,
+          deliveryInfo: paymentData.deliveryInfo,
+          paymentDetails: paymentResult
+        };
+        
+        // ✅ PRIMEIRO SALVAR O PEDIDO
+        commit('SET_ORDER', order);
+        
+        // ✅ DEPOIS LIMPAR O CARRINHO
+        commit('CLEAR_CART');
+        
+        console.log('✅ Pedido criado com sucesso:', order);
+      }
+      
+      return paymentResult;
+    } catch (error) {
+      console.error('❌ Erro no processamento do pagamento:', error);
+      throw error.response ? error.response.data : { message: error.message || 'Erro ao processar pagamento' };
+    }
+  },
+
+    async fetchOrderTracking({ commit }, orderId) {
       try {
-        let paymentResult;
-        const deliveryCost = paymentData.deliveryType === 'delivery' ? (state.cartTotal >= 100 ? 0 : 10) : 0;
-        const amount = state.cartTotal + deliveryCost;
-        
-        // Processa o pagamento de acordo com o método selecionado
-        console.log('🔄 Processando pagamento com método:', paymentData.paymentMethod);
-        
-        switch (paymentData.paymentMethod) {
-          case 'credit_card':
-          case 'debit_card': // ← CORREÇÃO: Agora suporta cartão de débito
-            paymentResult = await PaymentService.processCardPayment({
-              ...paymentData,
-              amount: amount
-            });
-            break;
-            
-          case 'pix':
-            paymentResult = await PaymentService.processPixPayment({
-              amount: amount
-            });
-            break;
-            
-          case 'boleto':
-            paymentResult = await PaymentService.processBoletoPayment({
-              amount: amount
-            });
-            break;
-            
-          default:
-            throw new Error(`Método de pagamento não suportado: ${paymentData.paymentMethod}`);
-        }
-        
-        if (paymentResult.success) {
-          // Criar objeto de pedido
-          const order = {
-            id: 'ORD-' + Math.random().toString(36).substr(2, 9).toUpperCase(),
-            transactionId: paymentResult.transactionId,
-            items: [...state.cart],
-            total: amount,
-            status: paymentResult.status,
-            date: new Date().toISOString(),
-            paymentMethod: paymentData.paymentMethod,
-            deliveryType: paymentData.deliveryType,
-            deliveryInfo: paymentData.deliveryInfo,
-            paymentDetails: paymentResult
-          };
-          
-          commit('SET_ORDER', order);
-          commit('CLEAR_CART');
-          
-          console.log('✅ Pedido criado com sucesso:', order);
-        }
-        
-        return paymentResult;
+        const trackingInfo = await DeliveryService.trackOrder(orderId);
+        commit('SET_TRACKING_INFO', { orderId, trackingInfo });
+        return trackingInfo;
       } catch (error) {
-        console.error('❌ Erro no processamento do pagamento:', error);
-        throw error.response ? error.response.data : { message: error.message || 'Erro ao processar pagamento' };
+        console.error('Erro ao buscar rastreamento:', error);
+        throw error;
       }
     },
 
     async requestPasswordReset({ commit }, email) {
       try {
-        // Simulação de API
-        await new Promise(resolve => setTimeout(resolve, 1000))
-        return { success: true }
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        return { success: true };
       } catch (error) {
-        throw new Error('Erro ao solicitar redefinição de senha')
+        throw new Error('Erro ao solicitar redefinição de senha');
       }
     },
     
     async updateUserProfile({ commit }, userData) {
       try {
-        // Simulação de atualização
-        await new Promise(resolve => setTimeout(resolve, 1000))
-        commit('SET_USER', userData)
-        return { success: true }
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        commit('SET_USER', userData);
+        localStorage.setItem('user', JSON.stringify(userData)); // 🔥 ADICIONADO
+        return { success: true };
       } catch (error) {
-        throw new Error('Erro ao atualizar perfil')
+        throw new Error('Erro ao atualizar perfil');
       }
     },
     
     // Admin actions
     async fetchAdminProducts({ commit }) {
       try {
-        // Mock data - substituir por API real
         const mockProducts = [
           { id: 1, name: 'Paracetamol 500mg', price: 12.90, category: 'Medicamentos', stock: 150, status: 'active' },
           { id: 2, name: 'Dipirona 500mg', price: 8.50, category: 'Medicamentos', stock: 89, status: 'active' },
           { id: 3, name: 'Shampoo Anti-Caspa', price: 24.90, category: 'Higiene', stock: 45, status: 'active' },
           { id: 4, name: 'Vitamina C 1000mg', price: 45.00, category: 'Vitaminas', stock: 23, status: 'inactive' }
-        ]
-        commit('SET_ADMIN_PRODUCTS', mockProducts)
+        ];
+        commit('SET_ADMIN_PRODUCTS', mockProducts);
       } catch (error) {
-        console.error('Erro ao buscar produtos admin:', error)
+        console.error('Erro ao buscar produtos admin:', error);
       }
     },
     
-    async updateProductStock({ commit }, { productId, newStock }) {
+    async updateProductStock({ commit, state }, { productId, newStock }) {
       try {
-        // Mock - substituir por API real
-        await new Promise(resolve => setTimeout(resolve, 500))
-        // Atualizar localmente
-        const products = JSON.parse(JSON.stringify(this.state.adminProducts))
-        const product = products.find(p => p.id === productId)
+        await new Promise(resolve => setTimeout(resolve, 500));
+        const products = JSON.parse(JSON.stringify(state.adminProducts));
+        const product = products.find(p => p.id === productId);
         if (product) {
-          product.stock = newStock
-          commit('SET_ADMIN_PRODUCTS', products)
+          product.stock = newStock;
+          commit('SET_ADMIN_PRODUCTS', products);
         }
       } catch (error) {
-        console.error('Erro ao atualizar estoque:', error)
-        throw error
+        console.error('Erro ao atualizar estoque:', error);
+        throw error;
       }
     }
   }
-})
+});

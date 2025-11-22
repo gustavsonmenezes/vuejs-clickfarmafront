@@ -1,0 +1,17 @@
+<svg width="400" height="300" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="featureGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#4facfe"/>
+      <stop offset="100%" stop-color="#00f2fe"/>
+    </linearGradient>
+  </defs>
+  <rect width="400" height="300" fill="url(#featureGradient)" rx="10"/>
+  <circle cx="200" cy="120" r="40" fill="white" opacity="0.9"/>
+  <path d="M180 110 L220 110 L200 140 Z" fill="#4facfe"/>
+  <text x="200" y="200" text-anchor="middle" font-family="Arial" font-size="20" fill="white" font-weight="bold">
+    Entrega Rápida
+  </text>
+  <text x="200" y="230" text-anchor="middle" font-family="Arial" font-size="14" fill="white" opacity="0.9">
+    Receba em até 2 horas
+  </text>
+</svg>

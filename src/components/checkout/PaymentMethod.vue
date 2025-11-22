@@ -514,35 +514,43 @@ export default {
     getItemImage(item) {
       return item.image || '/placeholder-product.jpg';
     },
-    handlePayment() {
-      if (!this.isFormValid) return;
-      
-      const paymentData = {
-        method: this.selectedMethod,
-        paymentMethod: this.selectedMethod, // ← CORREÇÃO CRÍTICA: Adicionar paymentMethod
-        cardData: this.selectedMethod !== 'pix' ? this.cardData : null,
-        total: this.getTotal(),
-        items: this.cartItems,
-        deliveryType: this.deliveryType,
-        deliveryInfo: this.checkoutData.deliveryInfo || this.checkoutData,
-      };
-      
-      console.log('💳 Dados de pagamento enviados:', paymentData); // ← DEBUG
-      
-      // Salvar dados de pagamento no localStorage
-      localStorage.setItem('paymentData', JSON.stringify(paymentData));
-      
-      // Processar no Vuex
-      this.$store.dispatch('processPayment', paymentData)
-        .then((result) => {
-          console.log('✅ Pagamento processado:', result);
-          this.$router.push('/order-confirmation');
-        })
-        .catch(error => {
-          console.error('❌ Erro no pagamento:', error);
-          alert('Erro no pagamento: ' + (error.message || 'Tente novamente'));
-        });
-    }
+
+
+    // NO PaymentMethod.vue - método handlePayment
+handlePayment() {
+  if (!this.isFormValid) return;
+  
+  const paymentData = {
+    method: this.selectedMethod,
+    paymentMethod: this.selectedMethod,
+    cardData: this.selectedMethod !== 'pix' ? this.cardData : null,
+    total: this.getTotal(),
+    subtotal: this.subtotal, // ← ADICIONAR
+    items: [...this.cartItems], // ← FAZER CÓPIA
+    deliveryType: this.deliveryType,
+    deliveryInfo: this.checkoutData.deliveryInfo || this.checkoutData,
+    deliveryCost: this.getDeliveryCost(), // ← ADICIONAR
+  };
+  
+  console.log('💳 Dados de pagamento enviados:', paymentData);
+  
+  // ✅ SALVAR DADOS COMPLETOS NO LOCALSTORAGE
+  localStorage.setItem('paymentData', JSON.stringify(paymentData));
+  
+  // ✅ SALVAR CARRINHO ATUAL COMO BACKUP
+  localStorage.setItem('cart_backup', JSON.stringify(this.cartItems));
+  
+  // Processar no Vuex
+  this.$store.dispatch('processPayment', paymentData)
+    .then((result) => {
+      console.log('✅ Pagamento processado:', result);
+      this.$router.push('/order-confirmation');
+    })
+    .catch(error => {
+      console.error('❌ Erro no pagamento:', error);
+      alert('Erro no pagamento: ' + (error.message || 'Tente novamente'));
+    });
+}
   }
 }
 </script>

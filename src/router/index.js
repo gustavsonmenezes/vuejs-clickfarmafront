@@ -32,6 +32,12 @@ const routes = [
     component: Products 
   },
   {
+  path: '/promotions', 
+  name: 'Promotions',
+  component: () => import('../views/Promotions.vue')
+  },
+
+  {
     path: '/products/:id',
     name: 'ProductDetail',
     component: ProductDetail
@@ -100,9 +106,26 @@ const routes = [
   },
   {
   path: '/orders',
-  name: 'Orders',
-  component: () => import('../views/Orders.vue')
+  name: 'Orders', 
+  component: () => import('../views/Orders.vue'),
+  meta: { requiresAuth: true }
   },
+
+  
+
+  {
+    path: '/about',
+    name: 'About', 
+    component: () => import('../views/About.vue') // Você precisa criar este componente
+  },
+  {
+    path: '/contact',
+    name: 'Contact',
+    component: () => import('../views/Contact.vue') // Você precisa criar este componente
+  },
+
+
+
 
   {
     path: '/admin',
