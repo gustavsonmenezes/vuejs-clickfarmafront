@@ -6,11 +6,11 @@
         <div class="confirmation-icon mb-3">
           <i class="fas fa-check-circle fa-5x text-success"></i>
         </div>
-        <h1 class="text-primary mb-3">Pedido Confirmado!</h1>
-        <p class="lead text-muted">Obrigado por comprar na ClickFarma. Seu pedido foi recebido com sucesso.</p>
-        <p class="order-number">
+        <h1 class="text-primary mb-3 display-4 fw-bold">Pedido Confirmado!</h1>
+        <p class="lead text-muted">Obrigado por comprar na ClickFarma. Seu pedido foi recebido com sucesso e está sendo processado.</p>
+        <p class="order-number fs-4">
           <strong>Número do Pedido:</strong> 
-          <span class="text-primary">#{{ order.id }}</span>
+          <span class="text-primary me-2">#{{ order.id }}</span><button class="btn btn-sm btn-outline-secondary" @click="copyOrderId"><i class="fas fa-copy"></i></button>
         </p>
       </div>
 
@@ -131,7 +131,7 @@
                   <span>Entrega:</span>
                   <span>{{ getDeliveryCostLabel() }}</span>
                 </div>
-                <div v-if="order.paymentMethod === 'pix'" class="d-flex justify-content-between mb-2 text-success">
+                <div v-if="order.paymentMethod === 'pix'" class="d-flex justify-content-between mb-2 text-success fw-bold">
                   <span>Desconto PIX (5%):</span>
                   <span>- R$ {{ (order.subtotal * 0.05).toFixed(2) }}</span>
                 </div>
@@ -146,10 +146,13 @@
             <!-- Ações -->
             <div class="card">
               <div class="card-body">
-                <h6 class="mb-3">Próximos Passos</h6>
-                <button class="btn btn-primary w-100 mb-2" @click="continueShopping">
+                <h6 class="mb-3 fw-bold"><i class="fas fa-arrow-right me-2 text-primary"></i>Próximos Passos</h6>
+                <button class="btn btn-outline-secondary w-100 mb-2" @click="continueShopping">
                   <i class="fas fa-shopping-bag me-2"></i>Continuar Comprando
                 </button>
+                <router-link :to="{ name: 'OrderTracking', params: { orderId: order.id } }" class="btn btn-primary w-100 mb-2">
+                  <i class="fas fa-map-marker-alt me-2"></i>Acompanhar Pedido
+                </router-link>
                 <router-link to="/orders" class="btn btn-outline-primary w-100 mb-2">
                   <i class="fas fa-list me-2"></i>Ver Meus Pedidos
                 </router-link>
@@ -162,12 +165,18 @@
             <!-- Suporte -->
             <div class="card mt-4">
               <div class="card-body text-center">
-                <i class="fas fa-headset fa-2x text-primary mb-3"></i>
-                <h6>Precisa de Ajuda?</h6>
-                <p class="small text-muted mb-2">Estamos aqui para ajudar com seu pedido</p>
+                <i class="fas fa-headset fa-3x text-primary mb-3"></i>
+                <h6 class="fw-bold">Precisa de Ajuda?</h6>
+                <p class="small text-muted mb-3">Estamos aqui para ajudar com seu pedido</p>
+                <p class="mb-2">
+                  <a href="tel:+5581998189999" class="btn btn-sm btn-outline-primary w-100 mb-2">
+                    <i class="fas fa-phone me-2"></i>(81) 99818-9999
+                  </a>
+                </p>
                 <p class="mb-0">
-                  <strong>📞 (81) 99818-9999</strong><br>
-                  <strong>✉️ gustavson.adm@gmail.com</strong>
+                  <a href="mailto:gustavson.adm@gmail.com" class="btn btn-sm btn-outline-primary w-100">
+                    <i class="fas fa-envelope me-2"></i>gustavson.adm@gmail.com
+                  </a>
                 </p>
               </div>
             </div>
@@ -350,6 +359,14 @@ export default {
       return item.image || 'https://via.placeholder.com/60x60?text=Produto'
     },
 
+    copyOrderId() {
+      navigator.clipboard.writeText(this.order.id).then(() => {
+        alert('Número do pedido copiado: #' + this.order.id)
+      }).catch(err => {
+        console.error('Erro ao copiar: ', err)
+      })
+    },
+
     continueShopping() {
       this.$router.push('/products')
     },
@@ -384,11 +401,20 @@ export default {
 <style scoped>
 .order-confirmation-page {
   min-height: 100vh;
-  background-color: #f8f9fa;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  padding: 2rem 0;
 }
 
 .confirmation-icon {
   animation: bounce 1s ease-in-out;
+  display: inline-block;
+}
+
+.confirmation-header {
+  padding: 2rem 0;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border-radius: 12px;
+  margin-bottom: 2rem;
 }
 
 @keyframes bounce {
@@ -403,17 +429,83 @@ export default {
   }
 }
 
+.card {
+  border: 1px solid #e9ecef;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s ease;
+}
+
+.card:hover {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+}
+
+.card-header {
+  border-bottom: 2px solid #e9ecef;
+}
+
+.btn-primary {
+  background-color: #0d6efd;
+  border-color: #0d6efd;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.btn-primary:hover {
+  background-color: #0b5ed7;
+  border-color: #0b5ed7;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(13, 110, 253, 0.3);
+}
+
+.btn-outline-primary:hover {
+  background-color: #0d6efd;
+  border-color: #0d6efd;
+  color: white;
+  transform: translateY(-2px);
+}
+
+.btn-outline-secondary:hover {
+  background-color: #6c757d;
+  border-color: #6c757d;
+  color: white;
+  transform: translateY(-2px);
+}
+
+.card-body a.btn {
+  text-decoration: none;
+  transition: all 0.3s ease;
+}
+
 .order-number {
   font-size: 1.2rem;
-  background-color: #f8f9fa;
-  padding: 1rem;
-  border-radius: 8px;
+  background-color: #f0f7ff;
+  padding: 1.5rem;
+  border-radius: 12px;
   display: inline-block;
+  border: 2px solid #0d6efd;
+  margin-top: 1rem;
+}
+
+.order-number button {
+  transition: all 0.3s ease;
+}
+
+.order-number button:hover {
+  background-color: #0d6efd;
+  color: white;
+  transform: scale(1.05);
 }
 
 .sticky-top {
   position: sticky;
   z-index: 100;
+  top: 20px;
+}
+
+@media (max-width: 991px) {
+  .sticky-top {
+    position: static;
+  }
 }
 
 @media print {
@@ -423,6 +515,16 @@ export default {
   
   .btn, .sticky-top {
     display: none !important;
+  }
+  
+  .confirmation-header {
+    background: white;
+    border: 2px solid #333;
+  }
+  
+  .card {
+    page-break-inside: avoid;
+    border: 1px solid #333;
   }
 }
 </style>

@@ -146,6 +146,23 @@ export default {
     getBasicTimeline() {
       if (!this.order) return []
       
+      // Se o pedido foi confirmado recentemente, mostra apenas o status atual
+      if (this.order.status === 'confirmed') {
+        return [
+          {
+            status: 'confirmed',
+            title: 'Pedido Confirmado',
+            description: 'Seu pedido foi recebido e confirmado com sucesso',
+            icon: 'fas fa-check-circle',
+            completed: true,
+            current: true,
+            pending: false,
+            timestamp: this.order.date
+          }
+        ]
+      }
+      
+      // Para outros status, mostra a timeline completa
       const basicSteps = [
         {
           status: 'confirmed',
