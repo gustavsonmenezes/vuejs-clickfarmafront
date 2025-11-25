@@ -4,7 +4,7 @@ module.exports = defineConfig({
   transpileDependencies: true,
   devServer: {
     host: '0.0.0.0',
-    port: 8081, // Mude para 8081 ou outra porta disponível
+    port: 8081,
     allowedHosts: 'all'
   },
   configureWebpack: {
@@ -20,5 +20,11 @@ module.exports = defineConfig({
         __VUE_PROD_HYDRATION_MISMATCH_DETAILS__: JSON.stringify(false)
       })
     ]
+  },
+  // Configuração do Jest para Vue CLI
+  pluginOptions: {
+    jest: {
+      setupFiles: ['<rootDir>/src/tests/setup.js']
+    }
   }
 })

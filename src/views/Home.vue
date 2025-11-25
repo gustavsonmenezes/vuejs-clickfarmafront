@@ -106,8 +106,23 @@
         </div>
       </section>
 
+      <!-- Farmácias Próximas Section -->
+      <section class="farmacias-section py-5 bg-light">
+        <div class="container">
+          <div class="row justify-content-center">
+            <div class="col-lg-8">
+              <div class="text-center mb-4">
+                <h2 class="fw-bold text-primary mb-3">📍 Encontre Farmácias Próximas</h2>
+                <p class="text-muted">Localize as farmácias mais perto de você com facilidade e rapidez</p>
+              </div>
+              <FarmaciasProximas />
+            </div>
+          </div>
+        </div>
+      </section>
+
       <!-- Categories Section -->
-      <section class="categories-section bg-light py-5">
+      <section class="categories-section bg-white py-5">
         <div class="container">
           <div class="row text-center mb-5">
             <div class="col-12">
@@ -153,9 +168,13 @@
 <script>
 import { mapGetters } from 'vuex'
 import { placeholderConfig } from '@/utils/placeholder'
+import FarmaciasProximas from '@/components/common/FarmaciasProximas.vue'
 
 export default {
   name: 'Home',
+  components: {
+    FarmaciasProximas
+  },
   data() {
     return {
       loading: false,
@@ -391,6 +410,40 @@ export default {
 }
 
 .btn-outline-light:hover {
+  transform: scale(1.05);
+}
+
+/* Estilos para a seção de Farmácias Próximas */
+.farmacias-section {
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+}
+
+:deep(.farmacias-proximas .card) {
+  border-radius: 12px;
+  border: none;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.08);
+  transition: all 0.3s ease;
+}
+
+:deep(.farmacias-proximas .card:hover) {
+  box-shadow: 0 6px 20px rgba(0,0,0,0.12);
+}
+
+:deep(.farmacias-proximas .btn-primary) {
+  border-radius: 25px;
+  transition: all 0.3s ease;
+}
+
+:deep(.farmacias-proximas .btn-primary:hover) {
+  transform: scale(1.03);
+}
+
+:deep(.farmacias-proximas .btn-outline-primary) {
+  border-radius: 20px;
+  transition: all 0.3s ease;
+}
+
+:deep(.farmacias-proximas .btn-outline-primary:hover) {
   transform: scale(1.05);
 }
 </style>
