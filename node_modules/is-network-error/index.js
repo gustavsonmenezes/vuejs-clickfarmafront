@@ -4,7 +4,6 @@ const isError = value => objectToString.call(value) === '[object Error]';
 
 const errorMessages = new Set([
 	'network error', // Chrome
-	'Failed to fetch', // Chrome
 	'NetworkError when attempting to fetch resource.', // Firefox
 	'The Internet connection appears to be offline.', // Safari 16
 	'Network request failed', // `cross-fetch`
@@ -35,6 +34,11 @@ export default function isNetworkError(error) {
 
 	// Deno network errors start with specific text
 	if (message.startsWith('error sending request for url')) {
+		return true;
+	}
+
+	// Chrome: exact "Failed to fetch" or with hostname: "Failed to fetch (example.com)"
+	if (message === 'Failed to fetch' || (message.startsWith('Failed to fetch (') && message.endsWith(')'))) {
 		return true;
 	}
 
