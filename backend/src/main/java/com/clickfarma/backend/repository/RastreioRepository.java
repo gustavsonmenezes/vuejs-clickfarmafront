@@ -11,4 +11,6 @@ public interface RastreioRepository extends JpaRepository<Rastreio, Long> {
     Optional<Rastreio> findByPedidoId(Long pedidoId);
 
     Optional<Rastreio> findByCodigoRastreio(String codigoRastreio);
+
+    boolean existsByPedidoId(Long pedidoId);
 }

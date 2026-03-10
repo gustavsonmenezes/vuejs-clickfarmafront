@@ -6,9 +6,12 @@ import com.clickfarma.backend.repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -170,5 +173,99 @@ public class PedidoService {
 
         return new RastreioResponseDTO(rastreio);
     }
-}
 
+    // Buscar por status
+    public List<PedidoResponseDTO> buscarPorStatus(String status) {
+        try {
+            Pedido.StatusPedido statusEnum = Pedido.StatusPedido.valueOf(status);
+            return pedidoRepository.findByStatus(statusEnum)
+                    .stream()
+                    .map(PedidoResponseDTO::new)
+                    .collect(Collectors.toList());
+        } catch (IllegalArgumentException e) {
+            throw new RuntimeException("Status inválido: " + status);
+        }
+    }
+
+    // Buscar por período
+    public List<PedidoResponseDTO> buscarPorPeriodo(LocalDateTime inicio, LocalDateTime fim) {
+        return pedidoRepository.findByDataPedidoBetween(inicio, fim)
+                .stream()
+                .map(PedidoResponseDTO::new)
+                .collect(Collectors.toList());
+    }
+
+    // Buscar pedidos recentes
+    public List<PedidoResponseDTO> buscarRecentes() {
+        return pedidoRepository.findTop10ByOrderByDataPedidoDesc()
+                .stream()
+                .map(PedidoResponseDTO::new)
+                .collect(Collectors.toList());
+    }
+
+    // Cancelar pedido
+    @Transactional
+    public void cancelarPedido(Long id) {
+        Pedido pedido = pedidoRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Pedido não encontrado"));
+
+        // Verificar se pode cancelar
+        if (pedido.getStatus() == Pedido.StatusPedido.ENTREGUE) {
+            throw new RuntimeException("Pedido já entregue não pode ser cancelado");
+        }
+
+        if (pedido.getStatus() == Pedido.StatusPedido.CANCELADO) {
+            throw new RuntimeException("Pedido já está cancelado");
+        }
+
+        // Devolver produtos ao estoque
+        for (ItemPedido item : pedido.getItens()) {
+            Produto produto = item.getProduto();
+            produto.setEstoque(produto.getEstoque() + item.getQuantidade());
+            produtoRepository.save(produto);
+        }
+
+        pedido.setStatus(Pedido.StatusPedido.CANCELADO);
+        pedido.setDataAtualizacao(LocalDateTime.now());
+        pedidoRepository.save(pedido);
+    }
+
+    // Gerar relatório
+    public Map<String, Object> gerarRelatorio(LocalDateTime inicio, LocalDateTime fim) {
+        if (inicio == null) {
+            inicio = LocalDateTime.now().minusMonths(1);
+        }
+        if (fim == null) {
+            fim = LocalDateTime.now();
+        }
+
+        List<Pedido> pedidos = pedidoRepository.findByDataPedidoBetween(inicio, fim);
+
+        Map<String, Object> relatorio = new HashMap<>();
+        relatorio.put("periodo", inicio + " até " + fim);
+        relatorio.put("totalPedidos", pedidos.size());
+
+        // Calcular valor total
+        BigDecimal valorTotal = pedidos.stream()
+                .map(Pedido::getValorTotal)
+                .filter(v -> v != null)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        relatorio.put("valorTotal", valorTotal);
+
+        // Contar por status
+        Map<String, Long> contagemStatus = pedidos.stream()
+                .collect(Collectors.groupingBy(
+                        p -> p.getStatus() != null ? p.getStatus().name() : "SEM_STATUS",
+                        Collectors.counting()
+                ));
+        relatorio.put("contagemStatus", contagemStatus);
+
+        // Média de valor por pedido
+        if (!pedidos.isEmpty()) {
+            BigDecimal media = valorTotal.divide(BigDecimal.valueOf(pedidos.size()), 2, BigDecimal.ROUND_HALF_UP);
+            relatorio.put("mediaValor", media);
+        }
+
+        return relatorio;
+    }
+}

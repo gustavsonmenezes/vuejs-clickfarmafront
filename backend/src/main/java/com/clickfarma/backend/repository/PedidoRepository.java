@@ -18,11 +18,11 @@ public interface PedidoRepository extends JpaRepository<Pedido, Long> {
 
     List<Pedido> findByDataPedidoBetween(LocalDateTime inicio, LocalDateTime fim);
 
+    List<Pedido> findTop10ByOrderByDataPedidoDesc();
+
     @Query("SELECT p FROM Pedido p LEFT JOIN FETCH p.itens WHERE p.usuario.id = :usuarioId")
     List<Pedido> findPedidosComItensByUsuario(@Param("usuarioId") Long usuarioId);
 
     @Query("SELECT p FROM Pedido p LEFT JOIN FETCH p.rastreio WHERE p.codigoPedido = :codigo")
     Pedido findByCodigoPedidoWithRastreio(@Param("codigo") String codigo);
-
-    List<Pedido> findTop10ByOrderByDataPedidoDesc();
 }

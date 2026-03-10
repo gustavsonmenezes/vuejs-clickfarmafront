@@ -30,7 +30,7 @@ public class Rastreio {
     @Column(name = "data_entrega_real")
     private LocalDateTime dataEntregaReal;
 
-    @Column(length = 100)
+    @Column(length = 50)
     private String status;
 
     @Column(length = 200)
@@ -39,14 +39,18 @@ public class Rastreio {
     @Column(name = "ultima_atualizacao")
     private LocalDateTime ultimaAtualizacao;
 
+    @Column(length = 500)
+    private String historico; // Armazenar histórico em JSON
+
     // Construtores
     public Rastreio() {}
 
     public Rastreio(Pedido pedido) {
         this.pedido = pedido;
-        this.codigoRastreio = "R" + System.currentTimeMillis() + pedido.getId();
+        this.codigoRastreio = gerarCodigoRastreio();
         this.status = "AGUARDANDO_ENVIO";
         this.ultimaAtualizacao = LocalDateTime.now();
+        this.historico = "[]";
     }
 
     // Getters e Setters
@@ -79,4 +83,19 @@ public class Rastreio {
 
     public LocalDateTime getUltimaAtualizacao() { return ultimaAtualizacao; }
     public void setUltimaAtualizacao(LocalDateTime ultimaAtualizacao) { this.ultimaAtualizacao = ultimaAtualizacao; }
+
+    public String getHistorico() { return historico; }
+    public void setHistorico(String historico) { this.historico = historico; }
+
+    // Métodos auxiliares
+    private String gerarCodigoRastreio() {
+        return "CLF" + System.currentTimeMillis() +
+                String.format("%04d", (int)(Math.random() * 10000));
+    }
+
+    public void adicionarEvento(String localizacao, String descricao) {
+        // Implementar lógica para adicionar evento ao histórico
+        this.ultimaLocalizacao = localizacao;
+        this.ultimaAtualizacao = LocalDateTime.now();
+    }
 }
