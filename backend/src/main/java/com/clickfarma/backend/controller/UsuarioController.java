@@ -1,7 +1,11 @@
 package com.clickfarma.backend.controller;
+import com.clickfarma.backend.dto.MensagemResponseDTO;
 
-import com.clickfarma.backend.model.Usuario;
+import com.clickfarma.backend.dto.UsuarioRequestDTO;
+import com.clickfarma.backend.dto.UsuarioResponseDTO;
+import com.clickfarma.backend.dto.MensagemResponseDTO;
 import com.clickfarma.backend.service.UsuarioService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -17,30 +21,76 @@ public class UsuarioController {
     private UsuarioService usuarioService;
 
     @PostMapping
-    public ResponseEntity<?> criarUsuario(@RequestBody Usuario usuario) {
+    public ResponseEntity<?> criarUsuario(@Valid @RequestBody UsuarioRequestDTO usuarioDTO) {
         try {
-            Usuario novoUsuario = usuarioService.criarUsuario(usuario);
-            return ResponseEntity.status(HttpStatus.CREATED).body(novoUsuario);
+            UsuarioResponseDTO novoUsuario = usuarioService.criarUsuario(usuarioDTO);
+            return ResponseEntity.status(HttpStatus.CREATED)
+                    .body(new MensagemResponseDTO(
+                            "Usuário criado com sucesso!",
+                            true,
+                            novoUsuario
+                    ));
         } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
+            return ResponseEntity.badRequest()
+                    .body(new MensagemResponseDTO(e.getMessage(), false));
         }
     }
 
     @GetMapping
-    public ResponseEntity<List<Usuario>> listarTodos() {
+    public ResponseEntity<List<UsuarioResponseDTO>> listarTodos() {
         return ResponseEntity.ok(usuarioService.listarTodos());
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Usuario> buscarPorId(@PathVariable Long id) {
-        return usuarioService.buscarPorId(id)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+    public ResponseEntity<?> buscarPorId(@PathVariable Long id) {
+        try {
+            UsuarioResponseDTO usuario = usuarioService.buscarPorId(id);
+            return ResponseEntity.ok(usuario);
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(new MensagemResponseDTO(e.getMessage(), false));
+        }
+    }
+
+    @GetMapping("/email/{email}")
+    public ResponseEntity<?> buscarPorEmail(@PathVariable String email) {
+        try {
+            UsuarioResponseDTO usuario = usuarioService.buscarPorEmail(email);
+            return ResponseEntity.ok(usuario);
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(new MensagemResponseDTO(e.getMessage(), false));
+        }
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<?> atualizarUsuario(
+            @PathVariable Long id,
+            @Valid @RequestBody UsuarioRequestDTO usuarioDTO) {
+        try {
+            UsuarioResponseDTO usuarioAtualizado = usuarioService.atualizarUsuario(id, usuarioDTO);
+            return ResponseEntity.ok(new MensagemResponseDTO(
+                    "Usuário atualizado com sucesso!",
+                    true,
+                    usuarioAtualizado
+            ));
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(new MensagemResponseDTO(e.getMessage(), false));
+        }
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deletarUsuario(@PathVariable Long id) {
-        usuarioService.deletarUsuario(id);
-        return ResponseEntity.noContent().build();
+    public ResponseEntity<?> deletarUsuario(@PathVariable Long id) {
+        try {
+            usuarioService.deletarUsuario(id);
+            return ResponseEntity.ok(new MensagemResponseDTO(
+                    "Usuário deletado com sucesso!",
+                    true
+            ));
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(new MensagemResponseDTO(e.getMessage(), false));
+        }
     }
 }
