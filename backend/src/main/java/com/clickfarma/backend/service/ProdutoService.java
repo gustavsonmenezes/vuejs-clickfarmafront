@@ -8,6 +8,7 @@ import com.clickfarma.backend.repository.CategoriaRepository;
 import com.clickfarma.backend.repository.ProdutoRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -63,10 +64,32 @@ public class ProdutoService {
                 .collect(Collectors.toList());
     }
 
-    // Buscar com filtros
-    public List<ProdutoResponseDTO> buscarComFiltros(String nome, Long categoriaId,
-                                                     BigDecimal precoMin, BigDecimal precoMax) {
-        return produtoRepository.buscarProdutosFiltrados(nome, categoriaId, precoMin, precoMax)
+    // Buscar com filtros (atualizado com emEstoque)
+    public List<ProdutoResponseDTO> buscarComFiltros(
+            String nome,
+            Long categoriaId,
+            BigDecimal precoMin,
+            BigDecimal precoMax,
+            Boolean emEstoque) {
+
+        List<Produto> produtos = produtoRepository.buscarProdutosFiltrados(
+                nome, categoriaId, precoMin, precoMax);
+
+        // Filtrar por disponibilidade em estoque se solicitado
+        if (emEstoque != null && emEstoque) {
+            produtos = produtos.stream()
+                    .filter(p -> p.getEstoque() > 0)
+                    .collect(Collectors.toList());
+        }
+
+        return produtos.stream()
+                .map(ProdutoResponseDTO::new)
+                .collect(Collectors.toList());
+    }
+
+    // Buscar produtos com estoque baixo
+    public List<ProdutoResponseDTO> buscarEstoqueBaixo(Integer limite) {
+        return produtoRepository.findByEstoqueLessThan(limite)
                 .stream()
                 .map(ProdutoResponseDTO::new)
                 .collect(Collectors.toList());

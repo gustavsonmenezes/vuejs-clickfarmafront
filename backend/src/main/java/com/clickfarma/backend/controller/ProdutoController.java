@@ -1,5 +1,5 @@
 package com.clickfarma.backend.controller;
-import com.clickfarma.backend.dto.MensagemResponseDTO;
+
 import com.clickfarma.backend.dto.ProdutoRequestDTO;
 import com.clickfarma.backend.dto.ProdutoResponseDTO;
 import com.clickfarma.backend.dto.MensagemResponseDTO;
@@ -20,6 +20,7 @@ public class ProdutoController {
     @Autowired
     private ProdutoService produtoService;
 
+    // POST - Criar novo produto
     @PostMapping
     public ResponseEntity<?> criarProduto(@Valid @RequestBody ProdutoRequestDTO produtoDTO) {
         try {
@@ -36,11 +37,13 @@ public class ProdutoController {
         }
     }
 
+    // GET - Listar todos os produtos
     @GetMapping
     public ResponseEntity<List<ProdutoResponseDTO>> listarTodos() {
         return ResponseEntity.ok(produtoService.listarTodos());
     }
 
+    // GET - Buscar produto por ID
     @GetMapping("/{id}")
     public ResponseEntity<?> buscarPorId(@PathVariable Long id) {
         try {
@@ -52,21 +55,33 @@ public class ProdutoController {
         }
     }
 
+    // GET - Buscar produtos por categoria
     @GetMapping("/categoria/{categoriaId}")
     public ResponseEntity<List<ProdutoResponseDTO>> buscarPorCategoria(@PathVariable Long categoriaId) {
         return ResponseEntity.ok(produtoService.buscarPorCategoria(categoriaId));
     }
 
+    // GET - Buscar produtos com estoque baixo
+    @GetMapping("/estoque-baixo")
+    public ResponseEntity<List<ProdutoResponseDTO>> buscarEstoqueBaixo(
+            @RequestParam(defaultValue = "10") Integer limite) {
+        return ResponseEntity.ok(produtoService.buscarEstoqueBaixo(limite));
+    }
+
+    // GET - Buscar produtos com filtros
     @GetMapping("/buscar")
     public ResponseEntity<List<ProdutoResponseDTO>> buscarComFiltros(
             @RequestParam(required = false) String nome,
             @RequestParam(required = false) Long categoriaId,
             @RequestParam(required = false) BigDecimal precoMin,
-            @RequestParam(required = false) BigDecimal precoMax) {
+            @RequestParam(required = false) BigDecimal precoMax,
+            @RequestParam(required = false) Boolean emEstoque) {
 
-        return ResponseEntity.ok(produtoService.buscarComFiltros(nome, categoriaId, precoMin, precoMax));
+        return ResponseEntity.ok(produtoService.buscarComFiltros(
+                nome, categoriaId, precoMin, precoMax, emEstoque));
     }
 
+    // PUT - Atualizar produto completo
     @PutMapping("/{id}")
     public ResponseEntity<?> atualizarProduto(
             @PathVariable Long id,
@@ -84,6 +99,7 @@ public class ProdutoController {
         }
     }
 
+    // PATCH - Atualizar apenas o estoque
     @PatchMapping("/{id}/estoque")
     public ResponseEntity<?> atualizarEstoque(
             @PathVariable Long id,
@@ -101,6 +117,7 @@ public class ProdutoController {
         }
     }
 
+    // DELETE - Deletar produto
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deletarProduto(@PathVariable Long id) {
         try {
