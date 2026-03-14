@@ -50,6 +50,7 @@ public class Pedido {
 
     // Enum para status
     public enum StatusPedido {
+        CARRINHO,
         AGUARDANDO_PAGAMENTO,
         PAGO,
         EM_PREPARACAO,
@@ -63,14 +64,14 @@ public class Pedido {
     public Pedido() {
         this.dataPedido = LocalDateTime.now();
         this.dataAtualizacao = LocalDateTime.now();
-        this.status = StatusPedido.AGUARDANDO_PAGAMENTO;
+        this.status = StatusPedido.CARRINHO;
     }
 
     public Pedido(Usuario usuario) {
         this.usuario = usuario;
         this.dataPedido = LocalDateTime.now();
         this.dataAtualizacao = LocalDateTime.now();
-        this.status = StatusPedido.AGUARDANDO_PAGAMENTO;
+        this.status = StatusPedido.CARRINHO;
         this.codigoPedido = "PED" + System.currentTimeMillis();
     }
 

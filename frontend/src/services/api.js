@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: 'http://localhost:8080/api', // URL COMPLETA do backend (SEM PROXY)
+  baseURL: process.env.VUE_APP_API_URL || 'http://localhost:8080/api', // URL do backend configurada por variável de ambiente
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json',

@@ -1,6 +1,7 @@
 const path = require('path');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const { VueLoaderPlugin } = require('vue-loader');
+const webpack = require('webpack');
 
 module.exports = {
   mode: 'development',
@@ -12,12 +13,10 @@ module.exports = {
     publicPath: '/'
   },
   devServer: {
-    static: './public',
     host: '0.0.0.0',
-    allowedHosts: 'all',
     port: 8080,
     hot: true,
-    open: true,
+    open: false,
     historyApiFallback: true
   },
   module: {
@@ -46,6 +45,10 @@ module.exports = {
       templateParameters: {
         BASE_URL: '/'
       }
+    }),
+    new webpack.DefinePlugin({
+      'process.env.VUE_APP_API_URL': JSON.stringify(process.env.VUE_APP_API_URL),
+      'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV)
     })
   ],
   resolve: {

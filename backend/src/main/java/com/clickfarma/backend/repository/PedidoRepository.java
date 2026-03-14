@@ -9,6 +9,9 @@ import org.springframework.stereotype.Repository;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import com.clickfarma.backend.model.Usuario;
+import java.util.Optional;
+
 @Repository
 public interface PedidoRepository extends JpaRepository<Pedido, Long> {
 
@@ -19,6 +22,8 @@ public interface PedidoRepository extends JpaRepository<Pedido, Long> {
     List<Pedido> findByDataPedidoBetween(LocalDateTime inicio, LocalDateTime fim);
 
     List<Pedido> findTop10ByOrderByDataPedidoDesc();
+
+    Optional<Pedido> findFirstByUsuarioAndStatusOrderByDataPedidoDesc(Usuario usuario, StatusPedido status);
 
     @Query("SELECT p FROM Pedido p LEFT JOIN FETCH p.itens WHERE p.usuario.id = :usuarioId")
     List<Pedido> findPedidosComItensByUsuario(@Param("usuarioId") Long usuarioId);
