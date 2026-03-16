@@ -17,7 +17,14 @@ module.exports = {
     port: 8080,
     hot: true,
     open: false,
-    historyApiFallback: true
+    historyApiFallback: true,
+    allowedHosts: 'all',
+    static: {
+      directory: path.join(__dirname, 'public'),
+    },
+    client: {
+      webSocketURL: 'auto://0.0.0.0:0/ws',
+    }
   },
   module: {
     rules: [
@@ -35,6 +42,10 @@ module.exports = {
       {
         test: /\.css$/,
         use: ['style-loader', 'css-loader']
+      },
+      {
+        test: /\.(png|jpe?g|gif|svg)$/i,
+        type: 'asset/resource'
       }
     ]
   },

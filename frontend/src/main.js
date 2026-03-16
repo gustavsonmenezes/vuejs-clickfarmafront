@@ -8,8 +8,8 @@ import 'bootstrap/dist/js/bootstrap.bundle.min.js'
 import Toast from 'vue-toastification'
 import 'vue-toastification/dist/index.css'
 
-// Configurar axios
-axios.defaults.baseURL = 'http://localhost:3000/api'
+// Configurar axios para usar variável de ambiente ou a porta correta do backend
+axios.defaults.baseURL = process.env.VUE_APP_API_URL || 'http://localhost:8080/api'
 
 const app = createApp(App)
 
