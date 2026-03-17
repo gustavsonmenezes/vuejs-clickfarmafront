@@ -7,16 +7,16 @@
       <div class="summary-details">
         <div class="d-flex justify-content-between mb-2">
           <span>Itens ({{ itemsCount }}):</span>
-          <span>R$ {{ subtotal.toFixed(2) }}</span>
+          <span>R$ {{ Number(subtotal).toFixed(2) }}</span>
         </div>
         <div class="d-flex justify-content-between mb-2">
           <span>Frete:</span>
-          <span>{{ shippingCost > 0 ? 'R$ ' + shippingCost.toFixed(2) : 'Grátis' }}</span>
+          <span>{{ Number(shippingCost) > 0 ? 'R$ ' + Number(shippingCost).toFixed(2) : 'Grátis' }}</span>
         </div>
         <hr>
         <div class="d-flex justify-content-between total-row">
           <strong>Total:</strong>
-          <strong>R$ {{ totalWithShipping.toFixed(2) }}</strong>
+          <strong>R$ {{ Number(totalWithShipping).toFixed(2) }}</strong>
         </div>
       </div>
       
@@ -45,14 +45,14 @@ export default {
   },
   computed: {
     subtotal() {
-      return this.total
+      return this.total || 0
     },
     shippingCost() {
       // Frete grátis para compras acima de R$ 100
       return this.total > 100 ? 0 : 10
     },
     totalWithShipping() {
-      return this.total + this.shippingCost
+      return (this.total || 0) + this.shippingCost
     }
   }
 }

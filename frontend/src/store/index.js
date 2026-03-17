@@ -335,9 +335,21 @@ export default createStore({
     user: (state) => state.user,
     isAuthenticated: (state) => !!state.authToken,
     authChecked: (state) => state.authChecked,
-    cartItemsCount: (state) => state.cart.reduce((total, item) => total + item.quantidade, 0),
-    cartTotal: (state) => state.cart.reduce((total, item) => total + ((item.produto?.preco || item.price) * item.quantidade), 0),
-    cart: (state) => state.cart,
+    // Garante que itera de forma segura
+    cartItemsCount: (state) => {
+      if (!Array.isArray(state.cart)) return 0;
+      return state.cart.reduce((total, item) => total + (item.quantidade || item.quantity || 1), 0);
+    },
+    cartTotal: (state) => {
+      if (!Array.isArray(state.cart)) return 0;
+      return state.cart.reduce((total, item) => {
+         // Verificando profundamente de onde vem o preco para não quebrar a soma do Total
+         const price = Number(item.produto?.preco || item.preco || item.price || 0);
+         const qty = Number(item.quantidade || item.quantity || 1);
+         return total + (price * qty);
+      }, 0);
+    },
+    cart: (state) => state.cart || [],
     products: (state) => state.products,
     categories: (state) => state.categories,
     adminProducts: (state) => state.adminProducts,
@@ -369,7 +381,8 @@ export default createStore({
       state.products = products;
     },
     SET_CART(state, cartData) {
-      state.cart = cartData;
+      // Garante que seja sempre um array para nao dar erro no length
+      state.cart = Array.isArray(cartData) ? cartData : [];
     },
     SET_ORDER(state, order) {
       state.lastOrder = order;
@@ -473,7 +486,7 @@ export default createStore({
         
         // A API retorna response.data (que no Axios já é o JSON parseado).
         // Nosso backend retorna direto List<ProdutoResponseDTO> (um Array).
-        const responseData = response.data || [];
+        const responseData = Array.isArray(response.data) ? response.data : (response.data.dados || []);
         
         const apiProducts = responseData.map(p => ({
           id: p.id,
@@ -494,7 +507,9 @@ export default createStore({
       if (!state.authToken) return;
       try {
         const response = await cartService.getCart();
-        commit('SET_CART', response.data);
+        // Garantir que a API não retorne String, Null ou Objeto único, mas sim um Array de itens
+        const cartData = Array.isArray(response.data) ? response.data : [];
+        commit('SET_CART', cartData);
       } catch (error) {
         console.error('Erro ao buscar carrinho do servidor:', error);
       }
@@ -503,20 +518,30 @@ export default createStore({
     async addToCart({ commit, state, dispatch }, product) {
       if (!state.authToken) {
          console.warn("Usuário não logado. O carrinho não será salvo no servidor.");
-         const cart = [...state.cart];
-         const existing = cart.find(i => i.produto?.id === product.id || i.id === product.id);
+         const cart = Array.isArray(state.cart) ? [...state.cart] : [];
+         // Tentamos encontrar o id independentemente do nível onde o produto esteja
+         const existing = cart.find(i => (i.produto?.id || i.id) === product.id);
+         
          if(existing) {
-             existing.quantidade += product.quantidade || 1;
+             existing.quantidade = (existing.quantidade || existing.quantity || 1) + 1;
+             existing.quantity = existing.quantidade; // Manter os dois para compatibilidade
          } else {
-             cart.push({ produto: product, quantidade: product.quantidade || 1, price: product.preco });
+             // O ProdutoCard emite o objeto product. Mapeamos ele para que fique igual ao formato do Backend (com a chave 'produto')
+             cart.push({ 
+                 id: product.id,
+                 produto: product, 
+                 quantidade: 1, 
+                 quantity: 1, 
+                 price: product.price || product.preco 
+             });
          }
          commit('SET_CART', cart);
          return;
       }
       
       try {
-        const response = await cartService.addItem(product.id, product.quantidade || 1);
-        commit('SET_CART', response.data);
+        await cartService.addItem(product.id, product.quantidade || 1);
+        dispatch('fetchCart'); // Recarrega o carrinho inteiro do backend para garantir os dados e a renderizacao corretos
       } catch (error) {
         console.error('Erro ao adicionar produto no backend:', error);
       }
@@ -524,14 +549,15 @@ export default createStore({
     
     async removeFromCart({ commit, state }, productId) {
       if (!state.authToken) {
-          const cart = state.cart.filter(item => item.produto?.id !== productId && item.id !== productId);
+          const cart = Array.isArray(state.cart) ? state.cart.filter(item => (item.produto?.id || item.id) !== productId) : [];
           commit('SET_CART', cart);
           return;
       }
 
       try {
         await cartService.removeItem(productId);
-        const newCart = state.cart.filter(i => i.produto.id !== productId);
+        const cart = Array.isArray(state.cart) ? state.cart : [];
+        const newCart = cart.filter(i => (i.produto?.id || i.id) !== productId);
         commit('SET_CART', newCart);
       } catch (error) {
         console.error('Erro ao remover produto no backend:', error);
@@ -540,16 +566,19 @@ export default createStore({
     
     async updateCartQuantity({ commit, state, dispatch }, { productId, quantity }) {
       if (!state.authToken) {
-          const cart = [...state.cart];
-          const item = cart.find(i => i.produto?.id === productId || i.id === productId);
-          if (item) item.quantidade = quantity;
+          const cart = Array.isArray(state.cart) ? [...state.cart] : [];
+          const item = cart.find(i => (i.produto?.id || i.id) === productId);
+          if (item) {
+              item.quantidade = quantity;
+              item.quantity = quantity;
+          }
           commit('SET_CART', cart);
           return;
       }
 
       try {
-        const response = await cartService.updateItem(productId, quantity);
-        commit('SET_CART', response.data);
+        await cartService.updateItem(productId, quantity);
+        dispatch('fetchCart');
       } catch (error) {
         console.error('Erro ao atualizar quantidade no backend:', error);
       }

@@ -1,9 +1,9 @@
 <template>
   <div class="container mt-4">
     <h2 class="page-title">🛒 Meu Carrinho</h2>
-    
+
     <!-- Carrinho vazio -->
-    <EmptyCart v-if="cart.length === 0" />
+    <EmptyCart v-if="!cart || cart.length === 0" />
     
     <!-- Carrinho com itens -->
     <div v-else>
@@ -13,7 +13,7 @@
           <div class="cart-items">
             <CartItem 
               v-for="item in cart" 
-              :key="item.id" 
+              :key="item.produto?.id || item.id"
               :item="item"
               @update-quantity="updateQuantity"
               @remove-item="removeFromCart"
@@ -49,6 +49,11 @@ export default {
   computed: {
     ...mapState(['cart']),
     ...mapGetters(['cartItemsCount', 'cartTotal'])
+  },
+  mounted() {
+    if (this.$store.state.authToken) {
+      this.$store.dispatch('fetchCart');
+    }
   },
   methods: {
     ...mapActions(['removeFromCart', 'updateCartQuantity']),

@@ -6,7 +6,7 @@
         <div class="col-md-2 text-center">
           <img 
             :src="itemImage" 
-            :alt="item.name"
+            :alt="itemName"
             class="img-fluid rounded item-image"
             @error="handleImageError"
             loading="lazy"
@@ -15,19 +15,19 @@
         
         <!-- Informações do produto -->
         <div class="col-md-4">
-          <h5 class="item-name">{{ item.name }}</h5>
+          <h5 class="item-name">{{ itemName }}</h5>
           <p class="text-muted item-description">{{ truncatedDescription }}</p>
-          <span class="badge bg-secondary">{{ item.category }}</span>
+          <span class="badge bg-secondary">{{ itemCategory }}</span>
         </div>
         
         <!-- Quantidade -->
         <div class="col-md-2">
           <div class="quantity-control">
-            <label :for="'quantity-' + item.id" class="form-label small">Quantidade</label>
+            <label :for="'quantity-' + itemId" class="form-label small">Quantidade</label>
             <input 
               type="number" 
-              :id="'quantity-' + item.id"
-              :value="item.quantity" 
+              :id="'quantity-' + itemId"
+              :value="itemQuantity"
               min="1" 
               class="form-control"
               @input="handleQuantityChange($event)"
@@ -45,7 +45,7 @@
         <!-- Remover -->
         <div class="col-md-2 text-center">
           <button 
-            @click="$emit('remove-item', item.id)" 
+            @click="$emit('remove-item', itemId)"
             class="btn btn-outline-danger btn-sm"
             aria-label="Remover item do carrinho"
           >
@@ -65,16 +65,7 @@ export default {
   props: {
     item: {
       type: Object,
-      required: true,
-      validator: (item) => {
-        return (
-          item.id &&
-          item.name &&
-          item.description &&
-          typeof item.price === 'number' &&
-          typeof item.quantity === 'number'
-        )
-      }
+      required: true
     }
   },
   data() {
@@ -83,26 +74,56 @@ export default {
     }
   },
   computed: {
+    // Normalização defensiva das propriedades vindas da API ou do LocalStorage
+    itemId() {
+      // Se o objeto for diretamente o produto, usa id, senao procura em produto.id
+      return this.item.produto?.id || this.item.id;
+    },
+    itemName() {
+      // De acordo com o debug fornecido, a propriedade está vindo como "name" dentro de "produto".
+      // Ou seja: item.produto.name
+      return this.item.produto?.name || this.item.produto?.nome || this.item.nome || this.item.name || 'Produto sem nome';
+    },
+    itemDescription() {
+      return this.item.produto?.description || this.item.produto?.descricao || this.item.descricao || this.item.description || '';
+    },
+    itemPriceRaw() {
+      return Number(this.item.produto?.price || this.item.produto?.preco || this.item.preco || this.item.price || 0);
+    },
+    itemQuantity() {
+      return Number(this.item.quantidade || this.item.quantity || 1);
+    },
+    itemCategory() {
+      // Adicionando fallback para 'Medicamentos' caso venha nulo
+      return this.item.produto?.category || this.item.produto?.categoria?.nome || this.item.produto?.categoriaNome || this.item.categoriaNome || this.item.category || 'Medicamentos';
+    },
+    itemImageSrc() {
+      return this.item.produto?.imagem || this.item.imagem || this.item.image;
+    },
+
+    // Computeds Formatados
     truncatedDescription() {
-      const maxLength = 60
-      return this.item.description.length > maxLength 
-        ? this.item.description.substring(0, maxLength) + '...' 
-        : this.item.description
+      const desc = this.itemDescription;
+      if (!desc) return '';
+      const maxLength = 60;
+      return desc.length > maxLength
+        ? desc.substring(0, maxLength) + '...'
+        : desc;
     },
     itemTotal() {
-      return (this.item.price * this.item.quantity).toFixed(2)
+      return (this.itemPriceRaw * this.itemQuantity).toFixed(2).replace('.', ',');
     },
     itemPrice() {
-      return this.item.price.toFixed(2)
+      return this.itemPriceRaw.toFixed(2).replace('.', ',');
     },
     itemImage() {
-      return placeholderConfig.getProductImage(this.item.image)
+      return placeholderConfig.getProductImage(this.itemImageSrc);
     }
   },
   methods: {
     handleQuantityChange(event) {
       const quantity = parseInt(event.target.value) || 1
-      this.$emit('update-quantity', this.item.id, quantity)
+      this.$emit('update-quantity', this.itemId, quantity)
     },
     handleImageError(event) {
       placeholderConfig.handleImageError(event)
