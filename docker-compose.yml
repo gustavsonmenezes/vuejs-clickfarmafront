@@ -43,9 +43,7 @@ services:
       - /app/node_modules
     environment:
       - NODE_ENV=development
-      - VUE_APP_API_URL=http://backend:8080/api
-
-
+      - VUE_APP_API_URL=http://localhost:8080/api
 
 volumes:
   mysql-data:

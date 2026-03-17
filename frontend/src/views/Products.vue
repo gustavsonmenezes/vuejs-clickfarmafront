@@ -195,28 +195,35 @@ export default {
       }
       
       let filtered = this.products.filter(product => {
-        const matchesSearch = product.name.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
-                             product.description.toLowerCase().includes(this.searchTerm.toLowerCase())
-        const matchesCategory = !this.filters.category || product.category === this.filters.category
+        // Garantindo que propriedades não sejam nulas para evitar crash no toLowerCase
+        const name = product.name || '';
+        const desc = product.description || '';
+        const search = (this.searchTerm || '').toLowerCase();
+
+        const matchesSearch = name.toLowerCase().includes(search) ||
+                             desc.toLowerCase().includes(search);
+
+        const matchesCategory = !this.filters.category || product.category === this.filters.category;
+
         const matchesStock = this.filters.stock === 'all' || 
                            (this.filters.stock === 'in_stock' && product.inStock) ||
-                           (this.filters.stock === 'out_of_stock' && !product.inStock)
+                           (this.filters.stock === 'out_of_stock' && !product.inStock);
         
-        return matchesSearch && matchesCategory && matchesStock
+        return matchesSearch && matchesCategory && matchesStock;
       })
 
       switch (this.filters.sortBy) {
         case 'name_desc':
-          filtered.sort((a, b) => b.name.localeCompare(a.name))
+          filtered.sort((a, b) => (b.name || '').localeCompare(a.name || ''))
           break
         case 'price':
-          filtered.sort((a, b) => a.price - b.price)
+          filtered.sort((a, b) => (a.price || 0) - (b.price || 0))
           break
         case 'price_desc':
-          filtered.sort((a, b) => b.price - a.price)
+          filtered.sort((a, b) => (b.price || 0) - (a.price || 0))
           break
         default: // 'name'
-          filtered.sort((a, b) => a.name.localeCompare(b.name))
+          filtered.sort((a, b) => (a.name || '').localeCompare(b.name || ''))
       }
 
       return filtered
@@ -231,7 +238,7 @@ export default {
     await this.initializeComponent();
   },
   methods: {
-    ...mapActions(['fetchProducts']), // 🔥 REMOVIDO: addToCart daqui
+    ...mapActions(['fetchProducts']),
     
     getCategoryIcon(category) {
       const icons = {
@@ -271,11 +278,8 @@ export default {
       }
     },
     
-    // 🔥 CORRIGIDO: Este método não deve chamar addToCart
-    // Apenas recebe o evento do ProductCard para tracking
     handleAddToCart(product) {
       console.log(`📦 Products.vue - Produto adicionado via ProductCard: ${product.name}`);
-      // Aqui você pode adicionar analytics ou tracking, mas NÃO chamar addToCart
     },
     
     retryLoading() {
