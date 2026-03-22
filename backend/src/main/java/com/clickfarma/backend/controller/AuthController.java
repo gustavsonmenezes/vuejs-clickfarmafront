@@ -17,7 +17,7 @@ import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/auth")
-@CrossOrigin(origins = "http://localhost:8082")
+@CrossOrigin(origins = "http://localhost:3000") // 👈 CORRIGIDO: Era 8082, agora é 3000
 public class AuthController {
 
     @Autowired

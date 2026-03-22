@@ -6,7 +6,7 @@ export const authService = {
   },
   
   async register(userData) {
-    return api.post('/usuarios', userData)  // ✅ Endpoint correto para registro
+    return api.post('/auth/register', userData)  // 👈 CORRIGIDO: Era /usuarios, agora aponta para o AuthController
   },
 
   async logout() {
