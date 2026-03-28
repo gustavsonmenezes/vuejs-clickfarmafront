@@ -106,39 +106,6 @@
 
 <script>
 import { mapGetters, mapActions } from 'vuex'
-import { library } from '@fortawesome/fontawesome-svg-core'
-import { 
-  faHome, 
-  faPills, 
-  faTag, 
-  faTruck, 
-  faInfoCircle, 
-  faCartShopping, 
-  faSignInAlt, 
-  faUserPlus, 
-  faUserCircle, 
-  faUser, 
-  faFileMedical, 
-  faShoppingBag, 
-  faSignOutAlt 
-} from '@fortawesome/free-solid-vector-icons'
-
-// Adicionar ícones à biblioteca
-library.add(
-  faHome, 
-  faPills, 
-  faTag, 
-  faTruck, 
-  faInfoCircle, 
-  faCartShopping, 
-  faSignInAlt, 
-  faUserPlus, 
-  faUserCircle, 
-  faUser, 
-  faFileMedical, 
-  faShoppingBag, 
-  faSignOutAlt
-)
 
 export default {
   name: 'Header',
