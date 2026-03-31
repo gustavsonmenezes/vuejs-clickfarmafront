@@ -22,6 +22,8 @@
 		<jjwt.version>0.11.5</jjwt.version>
 		<springdoc.version>2.3.0</springdoc.version>
 		<maven-compiler-plugin.version>3.14.1</maven-compiler-plugin.version>
+		<!-- Adicionar versão do Gemini -->
+		<google-cloud-vertexai.version>1.5.0</google-cloud-vertexai.version>
 	</properties>
 
 	<dependencies>
@@ -82,6 +84,29 @@
 			<groupId>org.springdoc</groupId>
 			<artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
 			<version>${springdoc.version}</version>
+		</dependency>
+
+		<!-- ========================================== -->
+		<!-- Google Gemini AI Dependencies              -->
+		<!-- ========================================== -->
+		<dependency>
+			<groupId>com.google.cloud</groupId>
+			<artifactId>google-cloud-vertexai</artifactId>
+			<version>${google-cloud-vertexai.version}</version>
+		</dependency>
+
+		<!-- JSON Processing (necessário para o Gemini) -->
+		<dependency>
+			<groupId>com.google.code.gson</groupId>
+			<artifactId>gson</artifactId>
+			<version>2.10.1</version>
+		</dependency>
+
+		<!-- HttpClient para chamadas HTTP (fallback caso necessário) -->
+		<dependency>
+			<groupId>org.apache.httpcomponents</groupId>
+			<artifactId>httpclient</artifactId>
+			<version>4.5.14</version>
 		</dependency>
 
 		<!-- Testes -->
