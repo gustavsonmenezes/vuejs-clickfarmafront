@@ -47,6 +47,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/categorias/**").permitAll()
                         // Usuários - apenas GET para lista (público)
                         .requestMatchers(HttpMethod.GET, "/api/usuarios").permitAll()
+                        // Gemini Chat - público
+                        .requestMatchers("/api/gemini/**").permitAll()
                         // Qualquer outra requisição precisa de autenticação
                         .anyRequest().authenticated()
                 )

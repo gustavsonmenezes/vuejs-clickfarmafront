@@ -19,6 +19,6 @@ public class GeminiController {
     public Mono<Map<String, String>> chat(@RequestBody Map<String, String> request) {
         String mensagem = request.get("message");
         return geminiService.chat(mensagem)
-            .map(resposta -> Map.of("response", resposta));
+                .map(resposta -> Map.of("response", resposta));
     }
 }
