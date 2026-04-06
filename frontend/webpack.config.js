@@ -25,6 +25,7 @@ module.exports = {
     client: {
       webSocketURL: 'auto://0.0.0.0:0/ws',
     }
+    historyApiFallback: true
   },
   module: {
     rules: [

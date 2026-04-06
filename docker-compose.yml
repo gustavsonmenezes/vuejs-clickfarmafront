@@ -16,6 +16,24 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+services:
+  # Banco de dados MySQL
+  db:
+    image: mysql:8.0
+    container_name: clickfarma-db
+    environment:
+      MYSQL_ROOT_PASSWORD: guga1010@
+      MYSQL_DATABASE: clickfarma
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost"]55
+ 
+
+      timeout: 20s
+      retries: 10
 
   backend:
     build:
@@ -32,6 +50,10 @@ services:
       - SPRING_DATASOURCE_PASSWORD=password
       - SPRING_JPA_HIBERNATE_DDL_AUTO=update
       - SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT=org.hibernate.dialect.PostgreSQLDialect
+      - SPRING_DATASOURCE_URL=jdbc:mysql://db:3306/clickfarma?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true&autoReconnect=true
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=root
+      - SPRING_JPA_HIBERNATE_DDL_AUTO=update
 
   frontend:
     build:
@@ -41,6 +63,7 @@ services:
       - backend
     ports:
       - "3000:8080"
+      - "8081:8080"
     volumes:
       - ./frontend:/app
       - /app/node_modules
@@ -50,3 +73,58 @@ services:
 
 volumes:
   postgres-data:
+      - VUE_APP_API_URL=http://backend:8080/api
+
+
+
+volumes:
+  mysql-data:
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+
+  # Backend Java
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: clickfarma-backend
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_DATASOURCE_URL=jdbc:mysql://db:3306/clickfarma?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=guga1010@
+      - SPRING_JPA_HIBERNATE_DDL_AUTO=update
+      - JWT_SECRET=clickfarmaSecretKey2026VeryLongSecretKeyForJWTGeneration
+      - JWT_EXPIRATION=86400000
+      - GEMINI_API_KEY=AIzaSyDSoJB97VTSTQRnP_Fy9XHQriXNeVIQezE
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - app-network
+
+  # Frontend Vue.js
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    container_name: clickfarma-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - app-network
+
+volumes:
+  mysql-data:
+
+networks:
+  app-network:
+    driver: bridge
