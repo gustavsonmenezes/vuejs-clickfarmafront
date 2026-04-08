@@ -131,7 +131,7 @@ export default {
 
 <style scoped>
 .footer-custom {
-  background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+  background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
   color: #ecf0f1;
   margin-top: auto;
 }
@@ -156,15 +156,18 @@ export default {
 }
 
 .footer-brand-text {
+  font-family: 'Cormorant', serif;
   font-size: 1.5rem;
   font-weight: 700;
   color: white;
+  letter-spacing: -0.02em;
 }
 
 .footer-description {
   color: #bdc3c7;
-  line-height: 1.6;
+  line-height: 1.8;
   margin-bottom: 1.5rem;
+  font-size: 0.95rem;
 }
 
 .social-links {
@@ -178,28 +181,30 @@ export default {
   justify-content: center;
   width: 40px;
   height: 40px;
-  background: rgba(255, 255, 255, 0.1);
-  color: #ecf0f1;
-  border-radius: 50%;
+  background: rgba(212, 175, 55, 0.15);
+  color: #d4af37;
+  border-radius: 8px;
   text-decoration: none;
-  transition: all 0.3s ease;
+  transition: all 250ms ease-in-out;
   font-size: 1rem;
 }
 
 .social-link:hover {
-  background: #198754;
-  color: white;
+  background: #d4af37;
+  color: #1a1a1a;
   transform: translateY(-3px);
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 5px 15px rgba(212, 175, 55, 0.3);
 }
 
 .footer-title {
+  font-family: 'Cormorant', serif;
   color: white;
   font-weight: 600;
   margin-bottom: 1.2rem;
   font-size: 1.1rem;
   position: relative;
   padding-bottom: 0.5rem;
+  letter-spacing: -0.01em;
 }
 
 .footer-title::after {
@@ -209,7 +214,7 @@ export default {
   left: 0;
   width: 30px;
   height: 2px;
-  background: #198754;
+  background: #d4af37;
   border-radius: 2px;
 }
 
@@ -226,14 +231,15 @@ export default {
 .footer-link {
   color: #bdc3c7;
   text-decoration: none;
-  transition: all 0.3s ease;
+  transition: all 250ms ease-in-out;
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  font-size: 0.95rem;
 }
 
 .footer-link:hover {
-  color: #198754;
+  color: #d4af37;
   transform: translateX(5px);
 }
 
@@ -250,20 +256,24 @@ export default {
 }
 
 .contact-icon {
-  color: #198754;
+  color: #d4af37;
   margin-top: 0.2rem;
   min-width: 16px;
 }
 
 .contact-label {
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   color: #95a5a6;
   margin-bottom: 0.2rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 600;
 }
 
 .contact-value {
   color: #ecf0f1;
   font-weight: 500;
+  font-size: 0.95rem;
 }
 
 .footer-divider {

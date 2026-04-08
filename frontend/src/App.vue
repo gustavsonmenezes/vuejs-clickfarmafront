@@ -48,6 +48,7 @@ export default {
 <style>
 .main-content {
   min-height: calc(100vh - 160px);
+  background-color: #ffffff;
 }
 
 /* Botão flutuante */
@@ -57,19 +58,23 @@ export default {
   right: 20px;
   width: 60px;
   height: 60px;
-  background: linear-gradient(135deg, #4285f4, #34a853);
+  background: linear-gradient(135deg, #d4af37, #e8c547);
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-  transition: 0.3s;
+  box-shadow: 0 8px 24px rgba(212, 175, 55, 0.3);
+  transition: all 250ms ease-in-out;
   z-index: 999;
+  color: #1a1a1a;
+  font-size: 1.5rem;
+  font-weight: 600;
 }
 
 .gemini-floating-btn:hover {
   transform: scale(1.1);
+  box-shadow: 0 12px 32px rgba(212, 175, 55, 0.4);
 }
 
 /* Modal do chat */
@@ -80,6 +85,21 @@ export default {
   width: 380px;
   height: 600px;
   z-index: 1000;
+  border-radius: 12px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.18);
+  overflow: hidden;
+  animation: slideInUp 300ms ease-in-out;
+}
+
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* Responsivo */
@@ -89,6 +109,7 @@ export default {
     height: 100%;
     bottom: 0;
     right: 0;
+    border-radius: 0;
   }
 }
 </style>
