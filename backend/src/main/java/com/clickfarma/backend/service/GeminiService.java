@@ -23,6 +23,57 @@ public class GeminiService {
                 .build();
     }
 
+    /**
+     * Analisa o carrinho do usuário e fornece sugestões inteligentes
+     * Inclui: economia potencial, dicas de uso, alertas de interação
+     */
+    public Mono<String> analyzeCart(List<Map<String, Object>> cartItems, Double totalPrice) {
+        if (apiKey == null || apiKey.isEmpty()) {
+            System.err.println("❌ Chave da API Gemini não configurada");
+            return Mono.just("⚠️ Chave da API Gemini não configurada. Configure a variável GEMINI_API_KEY.");
+        }
+
+        // Construir prompt inteligente para análise de carrinho
+        String prompt = buildCartAnalysisPrompt(cartItems, totalPrice);
+        System.out.println("📤 Enviando análise de carrinho para Gemini");
+
+        return this.chat(prompt);
+    }
+
+    /**
+     * Constrói um prompt estruturado para análise de carrinho
+     */
+    private String buildCartAnalysisPrompt(List<Map<String, Object>> cartItems, Double totalPrice) {
+        StringBuilder prompt = new StringBuilder();
+        prompt.append("Você é um assistente especializado em farmácia e saúde. ");
+        prompt.append("Analise o carrinho de compras a seguir e forneça sugestões úteis em MARKDOWN:\n\n");
+        
+        prompt.append("**Itens no Carrinho:**\n");
+        for (Map<String, Object> item : cartItems) {
+            String name = (String) item.get("name");
+            Double price = ((Number) item.get("price")).doubleValue();
+            Integer quantity = ((Number) item.get("quantity")).intValue();
+            String category = (String) item.get("category");
+            String description = (String) item.get("description");
+            
+            prompt.append(String.format("- **%s** (Categoria: %s)\n", name, category));
+            prompt.append(String.format("  - Descrição: %s\n", description));
+            prompt.append(String.format("  - Preço unitário: R$ %.2f | Quantidade: %d | Subtotal: R$ %.2f\n\n",
+                    price, quantity, price * quantity));
+        }
+        
+        prompt.append(String.format("**Total do Carrinho:** R$ %.2f\n\n", totalPrice));
+        
+        prompt.append("Por favor, forneça:\n");
+        prompt.append("1. **Análise de Economia**: Existem genéricos ou versões mais baratas disponíveis?\n");
+        prompt.append("2. **Dicas de Uso**: Conselhos sobre como usar os medicamentos (horários, com/sem alimentos)?\n");
+        prompt.append("3. **Alertas**: Possíveis interações entre medicamentos ou contraindicações?\n");
+        prompt.append("4. **Sugestões**: Outros produtos que poderiam complementar a compra?\n\n");
+        prompt.append("Responda de forma clara e concisa, usando MARKDOWN com negrito, listas e seções bem definidas.");
+        
+        return prompt.toString();
+    }
+
     public Mono<String> chat(String mensagem) {
         if (apiKey == null || apiKey.isEmpty()) {
             System.err.println("❌ Chave da API Gemini não configurada");
