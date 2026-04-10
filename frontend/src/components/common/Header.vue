@@ -63,6 +63,11 @@
             </router-link>
             <router-link to="/register" class="btn btn-light btn-sm">
               <font-awesome-icon icon="user-plus" class="me-1" />Cadastrar
+            <router-link to="/login" class="btn btn-outline-primary btn-sm">
+              <i class="fas fa-sign-in-alt me-1"></i>Entrar
+            </router-link>
+            <router-link to="/register" class="btn btn-accent btn-sm">
+              <i class="fas fa-user-plus me-1"></i>Cadastrar
             </router-link>
           </div>
           
@@ -183,9 +188,10 @@ export default {
 
 <style scoped>
 .navbar-custom {
-  background: linear-gradient(135deg, #198754 0%, #146c43 100%);
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-  padding: 0.8rem 0;
+  background: linear-gradient(135deg, #ffffff 0%, #fafafa 100%);
+  border-bottom: 2px solid #e0e0e0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  padding: 1rem 0;
 }
 
 .brand-logo {
@@ -196,51 +202,71 @@ export default {
 
 .logo-icon {
   font-size: 2rem;
-  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
 }
 
 .brand-text {
-  font-size: 1.5rem;
+  font-family: 'Cormorant', serif;
+  font-size: 1.75rem;
   font-weight: 700;
-  color: white;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  color: #1a1a1a;
+  letter-spacing: -0.02em;
 }
 
 .navbar-nav .nav-link {
-  color: rgba(255, 255, 255, 0.9) !important;
+  color: #666666 !important;
   font-weight: 500;
-  padding: 0.5rem 1rem;
+  font-size: 0.95rem;
+  padding: 0.5rem 1rem !important;
   border-radius: 8px;
-  transition: all 0.3s ease;
+  transition: all 250ms ease-in-out;
   margin: 0 0.2rem;
+  position: relative;
+}
+
+.navbar-nav .nav-link::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 1rem;
+  width: 0;
+  height: 2px;
+  background: #d4af37;
+  transition: width 250ms ease-in-out;
 }
 
 .navbar-nav .nav-link:hover,
 .navbar-nav .nav-link.router-link-active {
-  color: white !important;
-  background: rgba(255, 255, 255, 0.15);
-  transform: translateY(-1px);
+  color: #1a1a1a !important;
+  background: rgba(212, 175, 55, 0.08);
+}
+
+.navbar-nav .nav-link.router-link-active::after {
+  width: calc(100% - 2rem);
 }
 
 .cart-btn {
-  color: white;
+  color: #1a1a1a;
   font-size: 1.3rem;
   padding: 0.5rem;
   border-radius: 8px;
   transition: all 0.3s ease;
+  transition: all 250ms ease-in-out;
+  text-decoration: none;
   position: relative;
 }
 
 .cart-btn:hover {
-  background: rgba(255, 255, 255, 0.15);
+  background: rgba(212, 175, 55, 0.15);
   transform: scale(1.1);
+  color: #d4af37;
 }
 
 .cart-badge {
   position: absolute;
   top: -5px;
   right: -5px;
-  background: #dc3545;
+  background: #c41e3a;
   color: white;
   border-radius: 50%;
   width: 20px;
@@ -260,51 +286,72 @@ export default {
 }
 
 .user-dropdown-btn {
-  background: rgba(255, 255, 255, 0.15);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  color: white;
+  background: rgba(212, 175, 55, 0.1);
+  border: 1px solid rgba(212, 175, 55, 0.3);
+  color: #1a1a1a;
   padding: 0.5rem 1rem;
   border-radius: 25px;
-  transition: all 0.3s ease;
+  transition: all 250ms ease-in-out;
+  font-weight: 500;
 }
 
 .user-dropdown-btn:hover {
-  background: rgba(255, 255, 255, 0.25);
+  background: rgba(212, 175, 55, 0.2);
   transform: translateY(-1px);
 }
 
 .user-avatar {
   font-size: 1.5rem;
+  color: #d4af37;
 }
 
 .user-name {
   font-weight: 500;
+  color: #1a1a1a;
 }
 
 .dropdown-menu {
-  border: none;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-  border-radius: 10px;
+  border: 1px solid #e0e0e0;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  border-radius: 8px;
   margin-top: 0.5rem;
+  background-color: #ffffff;
 }
 
 .dropdown-item {
   padding: 0.7rem 1rem;
-  transition: all 0.3s ease;
+  transition: all 250ms ease-in-out;
   border-radius: 5px;
   margin: 0.1rem 0.5rem;
   width: auto;
+  color: #666666;
 }
 
 .dropdown-item:hover {
-  background: linear-gradient(135deg, #198754, #146c43);
-  color: white;
+  background: rgba(212, 175, 55, 0.1);
+  color: #1a1a1a;
   transform: translateX(5px);
 }
 
-.btn-outline-light:hover {
-  background: rgba(255, 255, 255, 0.1);
-  transform: translateY(-1px);
+.btn-outline-primary {
+  color: #1a1a1a;
+  border: 2px solid #1a1a1a;
+}
+
+.btn-outline-primary:hover {
+  background: #1a1a1a;
+  color: white;
+  border-color: #1a1a1a;
+}
+
+.btn-accent {
+  background-color: #d4af37;
+  color: #1a1a1a;
+}
+
+.btn-accent:hover {
+  background-color: #e8c547;
+  color: #1a1a1a;
 }
 
 /* Responsividade */
@@ -312,7 +359,7 @@ export default {
   .navbar-actions {
     margin-top: 1rem;
     padding-top: 1rem;
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    border-top: 1px solid rgba(0, 0, 0, 0.1);
   }
   
   .auth-buttons {

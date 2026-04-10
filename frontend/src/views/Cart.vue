@@ -7,6 +7,12 @@
     
     <!-- Carrinho com itens -->
     <div v-else>
+      <!-- Consultor de IA -->
+      <CartAIAdvisor 
+        :cartItems="cart"
+        :cartTotal="cartTotal"
+      />
+
       <div class="row">
         <!-- Lista de itens -->
         <div class="col-md-8">
@@ -38,13 +44,15 @@ import { mapState, mapGetters, mapActions } from 'vuex'
 import EmptyCart from '@/components/cart/EmptyCart.vue'
 import CartItem from '@/components/cart/CartItem.vue'
 import OrderSummary from '@/components/cart/OrderSummary.vue'
+import CartAIAdvisor from '@/components/cart/CartAIAdvisor.vue'
 
 export default {
   name: 'CartPage',
   components: {
     EmptyCart,
     CartItem,
-    OrderSummary
+    OrderSummary,
+    CartAIAdvisor
   },
   computed: {
     ...mapState(['cart']),

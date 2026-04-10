@@ -20,6 +20,9 @@ axios.interceptors.request.use(
   error => Promise.reject(error)
 )
 
+// Importar Tema Global
+import './theme.css'
+
 // Importar Bootstrap
 import 'bootstrap/dist/css/bootstrap.min.css'
 import 'bootstrap/dist/js/bootstrap.bundle.min.js'
