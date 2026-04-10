@@ -80,7 +80,7 @@ export default {
     return {
       credentials: {
         email: '',
-        password: ''
+        password: '' // Mudado para manter consistência com o v-model
       },
       loading: false,
       fieldErrors: {}
@@ -156,26 +156,32 @@ export default {
       this.loading = true;
       
       try {
-        const user = await this.login(this.credentials);
+        // Envia 'senha' para o backend em vez de 'password'
+        const loginData = {
+          email: this.credentials.email,
+          senha: this.credentials.password
+        };
         
-        // Saudação personalizada
-        const userName = user.name?.split(' ')[0] || '';
-        alert(`Olá, ${userName}! Que bom te ver de volta! 🎉`);
+        const user = await this.login(loginData);
         
-        this.$router.push('/');
+        const userName = user.nome?.split(' ')[0] || user.name?.split(' ')[0] || '';
+        this.$toast?.success(`Olá, ${userName}! Que bom te ver de volta! 🎉`) || alert(`Olá, ${userName}! Que bom te ver de volta! 🎉`);
+
+        // Verifica se há uma rota de redirecionamento (caso venha do checkout)
+        const redirectPath = this.$route.query.redirect || '/';
+        this.$router.push(redirectPath);
         
       } catch (error) {
         console.error('Erro no login:', error);
         
-        // Tratamento específico de erros
         if (error.message?.includes('email') || error.message?.includes('não encontrado')) {
           this.fieldErrors.email = 'Email não encontrado. Verifique ou crie uma conta.';
           this.focusOnError('emailInput');
-        } else if (error.message?.includes('senha') || error.message?.includes('password') || error.message?.includes('incorreta')) {
+        } else if (error.message?.includes('senha') || error.message?.includes('password') || error.message?.includes('inválido')) {
           this.fieldErrors.password = 'Senha incorreta. Tente novamente ou recupere sua senha.';
           this.focusOnError('passwordInput');
         } else {
-          alert(error.message || 'Erro ao fazer login. Tente novamente.');
+          this.$toast?.error(error.message || 'Erro ao fazer login. Tente novamente.') || alert(error.message || 'Erro ao fazer login. Tente novamente.');
         }
         
         this.shakeForm();

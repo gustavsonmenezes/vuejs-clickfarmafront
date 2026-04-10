@@ -1,5 +1,20 @@
 // src/services/deliveryService.js
+import api from './api';
+
 export class DeliveryService {
+  static async calculateDelivery(cep, cartTotal) {
+    try {
+      const response = await api.post('/delivery/calculate', {
+        cep: cep,
+        valorTotalCarrinho: cartTotal
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Erro ao calcular frete na API:', error);
+      throw error;
+    }
+  }
+
   static async trackOrder(orderId) {
     try {
       // Simulação de API de rastreamento

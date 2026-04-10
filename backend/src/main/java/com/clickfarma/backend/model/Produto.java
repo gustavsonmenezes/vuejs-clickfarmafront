@@ -1,11 +1,13 @@
 package com.clickfarma.backend.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "produtos")
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class Produto {
 
     @Id

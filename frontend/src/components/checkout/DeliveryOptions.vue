@@ -7,6 +7,18 @@
         </h5>
       </div>
       <div class="card-body">
+
+        <!-- Alerta de erro da API de frete -->
+        <div v-if="deliveryError" class="alert alert-danger">
+          {{ deliveryError }}
+        </div>
+
+        <!-- Alerta de carregamento -->
+        <div v-if="loadingDelivery" class="alert alert-info text-center">
+          <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+          Calculando melhores opções de entrega para você...
+        </div>
+
         <!-- Opção de Entrega -->
         <div class="delivery-option mb-4">
           <div class="form-check">
@@ -21,19 +33,8 @@
             <label class="form-check-label w-100" for="delivery-home">
               <div class="d-flex justify-content-between align-items-center">
                 <div>
-                  <h6 class="mb-1">Entrega em Casa</h6>
+                  <h6 class="mb-1">Entrega no Endereço</h6>
                   <p class="mb-0 text-muted">Receba seus produtos no conforto do seu lar</p>
-                  <small class="text-success" v-if="deliveryTime">
-                    <i class="fas fa-clock me-1"></i>Entrega em {{ deliveryTime }}
-                  </small>
-                </div>
-                <div class="text-end">
-                  <span class="fw-bold text-primary" v-if="deliveryPrice > 0">
-                    R$ {{ deliveryPrice.toFixed(2) }}
-                  </span>
-                  <span class="fw-bold text-success" v-else>
-                    Grátis
-                  </span>
                 </div>
               </div>
             </label>
@@ -46,6 +47,32 @@
               :selected-address="selectedAddress"
               @select-address="handleAddressSelect"
             />
+
+            <!-- Mostra opções retornadas pela API APÓS selecionar endereço -->
+            <div v-if="selectedAddress && !loadingDelivery && apiDeliveryOptions.length > 0" class="mt-3">
+              <h6>Escolha a modalidade de envio:</h6>
+              <div
+                v-for="opt in apiDeliveryOptions.filter(o => o.tipo !== 'RETIRADA')"
+                :key="opt.tipo"
+                class="card mb-2 p-2"
+                :class="{ 'border-primary': selectedApiOption === opt.tipo }"
+                @click="selectApiOption(opt)"
+                style="cursor: pointer;"
+              >
+                <div class="d-flex justify-content-between align-items-center">
+                  <div>
+                    <i class="fas fa-shipping-fast text-primary me-2"></i>
+                    <strong>{{ opt.nome }}</strong>
+                    <div class="text-muted small mt-1">{{ opt.prazoEstimado }}</div>
+                  </div>
+                  <div>
+                    <span v-if="opt.valor === 0" class="text-success fw-bold">Grátis</span>
+                    <span v-else class="fw-bold">R$ {{ opt.valor.toFixed(2).replace('.', ',') }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
           </div>
         </div>
 
@@ -98,8 +125,8 @@
             <li v-if="selectedOption === 'pickup'">
               • Horário de funcionamento: Segunda a Sábado, 8h às 20h
             </li>
-            <li>• Pedidos acima de R$ 300,00 têm frete grátis</li>
-            <li>• Medicamentos controlados exigem receita médica na retirada</li>
+            <li>• Pedidos acima de R$ 100,00 podem ter frete grátis na modalidade PAC</li>
+            <li>• Medicamentos controlados exigem retenção de receita médica na entrega ou retirada</li>
           </ul>
         </div>
       </div>
@@ -110,6 +137,7 @@
 <script>
 import AddressSelection from './AddressSelection.vue'
 import PickupStoreSelection from './PickupStoreSelection.vue'
+import { DeliveryService } from '@/services/deliveryService'
 
 export default {
   name: 'DeliveryOptions',
@@ -137,7 +165,11 @@ export default {
   },
   data() {
     return {
-      selectedOption: this.selectedDeliveryOption,
+      selectedOption: this.selectedDeliveryOption || 'delivery',
+      apiDeliveryOptions: [],
+      selectedApiOption: null,
+      loadingDelivery: false,
+      deliveryError: null,
       stores: [
         {
           id: 1,
@@ -173,19 +205,15 @@ export default {
     }
   },
   computed: {
-    deliveryPrice() {
-      const cartTotal = this.$store.getters.cartTotal
-      if (cartTotal >= 300) return 0;
-      if (cartTotal < 100) return 10.00;
-      return 0;
-    },
-    deliveryTime() {
-      return '2-3 dias úteis'
+    cartTotal() {
+      return this.$store.getters.cartTotal;
     }
   },
   watch: {
     selectedDeliveryOption(newValue) {
-      this.selectedOption = newValue
+      if (newValue) {
+        this.selectedOption = newValue;
+      }
     }
   },
   methods: {
@@ -193,18 +221,66 @@ export default {
       this.selectedOption = option
       this.$emit('update:delivery-option', option)
       
-      // Limpar seleções quando mudar a opção
+      // Limpar seleções quando mudar a opção principal
       if (option === 'delivery') {
         this.$emit('update:selected-store', null)
+        // Se já tiver endereço selecionado, busca o frete
+        if (this.selectedAddress) {
+           this.fetchDeliveryRates(this.selectedAddress.zipcode);
+        }
       } else {
         this.$emit('update:selected-address', null)
+        this.$store.commit('SET_DELIVERY_COST', 0); // Zera o frete no total se for retirada
       }
     },
-    handleAddressSelect(address) {
-      this.$emit('update:selected-address', address)
+
+    async handleAddressSelect(address) {
+      this.$emit('update:selected-address', address);
+      if (address && address.zipcode) {
+        await this.fetchDeliveryRates(address.zipcode);
+      }
     },
+
     handleStoreSelect(store) {
-      this.$emit('update:selected-store', store)
+      this.$emit('update:selected-store', store);
+      // Aqui podemos zerar a taxa de entrega no state do Vuex, caso futuramente seja integrado no CheckoutSummary
+    },
+
+    async fetchDeliveryRates(cep) {
+      this.loadingDelivery = true;
+      this.deliveryError = null;
+      this.apiDeliveryOptions = [];
+      this.selectedApiOption = null;
+
+      try {
+        const response = await DeliveryService.calculateDelivery(cep, this.cartTotal);
+        this.apiDeliveryOptions = response;
+
+        // Auto-selecionar a primeira opção (a mais barata ou normal geralmente)
+        if (this.apiDeliveryOptions.length > 0) {
+          const defaultOpt = this.apiDeliveryOptions.find(o => o.tipo !== 'RETIRADA');
+          if(defaultOpt) {
+            this.selectApiOption(defaultOpt);
+          }
+        }
+      } catch (error) {
+        this.deliveryError = error.response?.data?.mensagem || "Não foi possível calcular o frete para este CEP.";
+      } finally {
+        this.loadingDelivery = false;
+      }
+    },
+
+    selectApiOption(opt) {
+      this.selectedApiOption = opt.tipo;
+      // Aqui idealmente emitimos esse valor para o componente pai Checkout.vue atualizar o Total.
+      this.$emit('update:delivery-cost', opt.valor);
+      this.$emit('update:delivery-details', opt);
+    }
+  },
+  mounted() {
+    // Se a página carregar e já houver endereço (porque o usuário voltou na navegação), busca
+    if (this.selectedOption === 'delivery' && this.selectedAddress && this.selectedAddress.zipcode) {
+      this.fetchDeliveryRates(this.selectedAddress.zipcode);
     }
   }
 }

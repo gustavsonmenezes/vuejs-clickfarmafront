@@ -6,6 +6,7 @@ export const authService = {
   },
   
   async register(userData) {
+    return api.post('/auth/register', userData)  // 👈 CORRIGIDO: Era /usuarios, agora aponta para o AuthController
     return api.post('/auth/register', userData)
   },
 

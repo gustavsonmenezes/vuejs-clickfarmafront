@@ -1,5 +1,7 @@
 import { createStore } from 'vuex'
-import authService from '../services/auth' // 👈 ADICIONADO
+import authService from '../services/auth' 
+import cartService from '../services/cart'
+import productsService from '../services/products' 
 
 // Serviço de pagamento mockado para ClickFarma
 class PaymentService {
@@ -333,9 +335,21 @@ export default createStore({
     user: (state) => state.user,
     isAuthenticated: (state) => !!state.authToken,
     authChecked: (state) => state.authChecked,
-    cartItemsCount: (state) => state.cart.reduce((total, item) => total + item.quantity, 0),
-    cartTotal: (state) => state.cart.reduce((total, item) => total + (item.price * item.quantity), 0),
-    cart: (state) => state.cart,
+    // Garante que itera de forma segura
+    cartItemsCount: (state) => {
+      if (!Array.isArray(state.cart)) return 0;
+      return state.cart.reduce((total, item) => total + (item.quantidade || item.quantity || 1), 0);
+    },
+    cartTotal: (state) => {
+      if (!Array.isArray(state.cart)) return 0;
+      return state.cart.reduce((total, item) => {
+         // Verificando profundamente de onde vem o preco para não quebrar a soma do Total
+         const price = Number(item.produto?.preco || item.preco || item.price || 0);
+         const qty = Number(item.quantidade || item.quantity || 1);
+         return total + (price * qty);
+      }, 0);
+    },
+    cart: (state) => state.cart || [],
     products: (state) => state.products,
     categories: (state) => state.categories,
     adminProducts: (state) => state.adminProducts,
@@ -366,25 +380,9 @@ export default createStore({
     SET_PRODUCTS(state, products) {
       state.products = products;
     },
-    ADD_TO_CART(state, product) {
-      const existingItem = state.cart.find(item => item.id === product.id);
-      if (existingItem) {
-        existingItem.quantity += product.quantity || 1;
-      } else {
-        state.cart.push({ ...product, quantity: product.quantity || 1 });
-      }
-    },
-    REMOVE_FROM_CART(state, productId) {
-      state.cart = state.cart.filter(item => item.id !== productId);
-    },
-    UPDATE_CART_QUANTITY(state, { productId, quantity }) {
-      const item = state.cart.find(item => item.id === productId);
-      if (item) {
-        item.quantity = quantity;
-      }
-    },
-    CLEAR_CART(state) {
-      state.cart = [];
+    SET_CART(state, cartData) {
+      // Garante que seja sempre um array para nao dar erro no length
+      state.cart = Array.isArray(cartData) ? cartData : [];
     },
     SET_ORDER(state, order) {
       state.lastOrder = order;
@@ -408,11 +406,10 @@ export default createStore({
       if (!state.orderTracking) state.orderTracking = {};
       state.orderTracking[orderId] = trackingInfo;
     },
-    // NOVA MUTATION: Salvar pedido no localStorage
     SAVE_ORDER_TO_LOCAL_STORAGE(state, order) {
       try {
         const savedOrders = JSON.parse(localStorage.getItem('userOrders') || '[]');
-        savedOrders.unshift(order); // Adiciona no início do array
+        savedOrders.unshift(order); 
         localStorage.setItem('userOrders', JSON.stringify(savedOrders));
       } catch (error) {
         console.error('Erro ao salvar pedido no localStorage:', error);
@@ -421,7 +418,7 @@ export default createStore({
   },
 
   actions: {
-    async checkAuthStatus({ commit }) {
+    async checkAuthStatus({ commit, dispatch }) {
       try {
         console.log('🔐 Verificando status de autenticação...');
         const token = localStorage.getItem('authToken');
@@ -429,6 +426,8 @@ export default createStore({
           const user = JSON.parse(localStorage.getItem('user') || 'null');
           commit('SET_USER', user);
           console.log('✅ Usuário autenticado:', user);
+          
+          dispatch('fetchCart');
         } else {
           console.log('🔒 Usuário não autenticado');
         }
@@ -439,109 +438,163 @@ export default createStore({
       }
     },
 
-    async login({ commit }, credentials) {
+    async login({ commit, dispatch }, credentials) {
       try {
-        const response = await new Promise(resolve => setTimeout(() => {
-          resolve({
-            data: {
-              user: {
-                id: 1,
-                name: credentials.name || credentials.email,
-                email: credentials.email,
-                role: 'user'
-              },
-              token: 'mock-token-' + Math.random().toString(36).substr(2)
-            }
-          });
-        }, 1000));
-
-        commit('SET_USER', response.data.user);
-        commit('SET_AUTH_TOKEN', response.data.token);
-        localStorage.setItem('user', JSON.stringify(response.data.user));
-        console.log('✅ Login realizado com sucesso');
-        return response.data;
+        const response = await authService.login(credentials);
+        
+        const user = response.data;
+        commit('SET_USER', user);
+        commit('SET_AUTH_TOKEN', user.token);
+        localStorage.setItem('user', JSON.stringify(user));
+        
+        console.log('✅ Login realizado com sucesso no backend');
+        
+        dispatch('fetchCart');
+        
+        return user;
       } catch (error) {
         console.error('❌ Erro no login:', error);
         throw error.response ? error.response.data : { message: 'Erro de conexão' };
       }
     },
 
-    // ⬇️⬇️⬇️ ACTION REGISTER CORRIGIDA ⬇️⬇️⬇️
     async register({ commit }, userData) {
       try {
         console.log('📤 Enviando registro para o backend:', userData);
-
-        // 👇 AGORA CHAMA O SERVIÇO DE VERDADE!
         const response = await authService.register(userData);
-
-        const user = response.data;
-        commit('SET_USER', user);
-        commit('SET_AUTH_TOKEN', user.token || 'token-' + Date.now());
-        localStorage.setItem('user', JSON.stringify(user));
-
-        console.log('✅ Registro realizado com sucesso no backend:', user);
-        return user;
+        console.log('✅ Registro realizado com sucesso no backend');
+        return response.data;
       } catch (error) {
         console.error('❌ Erro no registro:', error.response?.data || error.message);
         throw error.response?.data || { message: 'Erro de conexão com o servidor' };
       }
     },
-    // ⬆️⬆️⬆️ FIM DA CORREÇÃO ⬆️⬆️⬆️
     
     logout({ commit }) {
       commit('CLEAR_AUTH');
+      commit('SET_CART', []);
       console.log('✅ Logout realizado com sucesso');
     },
     
+    // 👇 CARREGANDO PRODUTOS DA API 👇
     async fetchProducts({ commit }) {
       try {
-        const mockProducts = [
-          { id: 1, name: 'Paracetamol 500mg', price: 12.90, category: 'Medicamentos', description: 'Analgésico e antitérmico', inStock: true },
-          { id: 2, name: 'Dipirona 500mg', price: 8.50, category: 'Medicamentos', description: 'Analgésico e antitérmico', inStock: true },
-          { id: 3, name: 'Shampoo Anti-Caspa', price: 24.90, category: 'Higiene', description: 'Shampoo para controle de caspa', inStock: true },
-          { id: 4, name: 'Vitamina C 1000mg', price: 45.00, category: 'Vitaminas', description: 'Suplemento de vitamina C', inStock: true },
-          { id: 5, name: 'Protetor Solar FPS 50', price: 32.90, category: 'Cosméticos', description: 'Protetor solar facial', inStock: false },
-          { id: 6, name: 'Fralda P - 30 unidades', price: 28.90, category: 'Maternidade', description: 'Fraldas para bebê', inStock: true }
-        ];
+        console.log('Buscando produtos do backend...');
+        const response = await productsService.getProducts();
         
-        commit('SET_PRODUCTS', mockProducts);
+        console.log('Produtos recebidos e extraídos:', response.data);
+        
+        // A API retorna response.data (que no Axios já é o JSON parseado).
+        // Nosso backend retorna direto List<ProdutoResponseDTO> (um Array).
+        const responseData = Array.isArray(response.data) ? response.data : (response.data.dados || []);
+        
+        const apiProducts = responseData.map(p => ({
+          id: p.id,
+          name: p.nome,
+          description: p.descricao || 'Sem descrição',
+          price: Number(p.preco) || 0,
+          inStock: p.estoque > 0,
+          category: p.categoriaNome || 'Medicamentos'
+        }));
+
+        commit('SET_PRODUCTS', apiProducts);
       } catch (error) {
-        console.error('Erro ao buscar produtos:', error);
+        console.error('Erro ao buscar produtos da API:', error);
       }
     },
     
-    addToCart({ commit, state }, product) {
-      console.log('🛒 Action addToCart chamada para:', product.name);
+    async fetchCart({ commit, state }) {
+      if (!state.authToken) return;
+      try {
+        const response = await cartService.getCart();
+        // Garantir que a API não retorne String, Null ou Objeto único, mas sim um Array de itens
+        const cartData = Array.isArray(response.data) ? response.data : [];
+        commit('SET_CART', cartData);
+      } catch (error) {
+        console.error('Erro ao buscar carrinho do servidor:', error);
+      }
+    },
+
+    async addToCart({ commit, state, dispatch }, product) {
+      if (!state.authToken) {
+         console.warn("Usuário não logado. O carrinho não será salvo no servidor.");
+         const cart = Array.isArray(state.cart) ? [...state.cart] : [];
+         // Tentamos encontrar o id independentemente do nível onde o produto esteja
+         const existing = cart.find(i => (i.produto?.id || i.id) === product.id);
+         
+         if(existing) {
+             existing.quantidade = (existing.quantidade || existing.quantity || 1) + 1;
+             existing.quantity = existing.quantidade; // Manter os dois para compatibilidade
+         } else {
+             // O ProdutoCard emite o objeto product. Mapeamos ele para que fique igual ao formato do Backend (com a chave 'produto')
+             cart.push({ 
+                 id: product.id,
+                 produto: product, 
+                 quantidade: 1, 
+                 quantity: 1, 
+                 price: product.price || product.preco 
+             });
+         }
+         commit('SET_CART', cart);
+         return;
+      }
       
-      const existingItem = state.cart.find(item => item.id === product.id);
-      
-      if (existingItem) {
-        console.log('📦 Produto já existe no carrinho, incrementando quantidade');
-        commit('UPDATE_CART_QUANTITY', { 
-          productId: product.id, 
-          quantity: existingItem.quantity + 1 
-        });
-      } else {
-        console.log('🆕 Novo produto adicionado ao carrinho');
-        commit('ADD_TO_CART', { ...product, quantity: 1 });
+      try {
+        await cartService.addItem(product.id, product.quantidade || 1);
+        dispatch('fetchCart'); // Recarrega o carrinho inteiro do backend para garantir os dados e a renderizacao corretos
+      } catch (error) {
+        console.error('Erro ao adicionar produto no backend:', error);
       }
     },
     
-    removeFromCart({ commit }, productId) {
-      commit('REMOVE_FROM_CART', productId);
-      console.log('🗑️ Produto removido do carrinho:', productId);
+    async removeFromCart({ commit, state }, productId) {
+      if (!state.authToken) {
+          const cart = Array.isArray(state.cart) ? state.cart.filter(item => (item.produto?.id || item.id) !== productId) : [];
+          commit('SET_CART', cart);
+          return;
+      }
+
+      try {
+        await cartService.removeItem(productId);
+        const cart = Array.isArray(state.cart) ? state.cart : [];
+        const newCart = cart.filter(i => (i.produto?.id || i.id) !== productId);
+        commit('SET_CART', newCart);
+      } catch (error) {
+        console.error('Erro ao remover produto no backend:', error);
+      }
     },
     
-    updateCartQuantity({ commit }, payload) {
-      commit('UPDATE_CART_QUANTITY', payload);
-      console.log('📦 Quantidade atualizada:', payload);
+    async updateCartQuantity({ commit, state, dispatch }, { productId, quantity }) {
+      if (!state.authToken) {
+          const cart = Array.isArray(state.cart) ? [...state.cart] : [];
+          const item = cart.find(i => (i.produto?.id || i.id) === productId);
+          if (item) {
+              item.quantidade = quantity;
+              item.quantity = quantity;
+          }
+          commit('SET_CART', cart);
+          return;
+      }
+
+      try {
+        await cartService.updateItem(productId, quantity);
+        dispatch('fetchCart');
+      } catch (error) {
+        console.error('Erro ao atualizar quantidade no backend:', error);
+      }
     },
     
-    clearCart({ commit }) {
-      commit('CLEAR_CART');
-      console.log('🛒 Carrinho limpo');
+    async clearCart({ commit, state }) {
+      if(state.authToken) {
+         try {
+           await cartService.clearCart();
+         } catch(error) {
+           console.error("Erro limpando carrinho do backend", error);
+         }
+      }
+      commit('SET_CART', []);
     },
-    
+
     async processPayment({ commit, state }, paymentData) {
       try {
         let paymentResult;
@@ -592,7 +645,7 @@ export default createStore({
           };
           
           commit('SET_ORDER', order);
-          commit('CLEAR_CART');
+          commit('SET_CART', []);
           
           // SALVAR PEDIDO NO LOCALSTORAGE
           commit('SAVE_ORDER_TO_LOCAL_STORAGE', order);
@@ -618,12 +671,10 @@ export default createStore({
       }
     },
 
-    // 🔥 CORREÇÃO: Rastreamento em tempo real com funções internas
     async fetchRealTimeTracking({ commit }, orderId) {
       try {
         console.log('📍 Buscando localização em tempo real para:', orderId);
         
-        // Funções auxiliares dentro da ação
         const generateMockCoordinates = () => {
           const baseLat = -8.0476;
           const baseLng = -34.8770;
@@ -680,7 +731,6 @@ export default createStore({
           return updates;
         };
 
-        // Simulação de API de rastreamento real
         const trackingInfo = await new Promise(resolve => {
           setTimeout(() => {
             const locations = [

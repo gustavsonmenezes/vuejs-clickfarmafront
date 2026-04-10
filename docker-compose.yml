@@ -1,3 +1,21 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: clickfarma
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d clickfarma"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 services:
   # Banco de dados MySQL
   db:
@@ -27,6 +45,11 @@ services:
     ports:
       - "8080:8080"
     environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://db:5432/clickfarma
+      - SPRING_DATASOURCE_USERNAME=user
+      - SPRING_DATASOURCE_PASSWORD=password
+      - SPRING_JPA_HIBERNATE_DDL_AUTO=update
+      - SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT=org.hibernate.dialect.PostgreSQLDialect
       - SPRING_DATASOURCE_URL=jdbc:mysql://db:3306/clickfarma?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true&autoReconnect=true
       - SPRING_DATASOURCE_USERNAME=root
       - SPRING_DATASOURCE_PASSWORD=root
@@ -39,12 +62,17 @@ services:
     depends_on:
       - backend
     ports:
+      - "3000:8080"
       - "8081:8080"
     volumes:
       - ./frontend:/app
       - /app/node_modules
     environment:
       - NODE_ENV=development
+      - VUE_APP_API_URL=http://localhost:8080/api
+
+volumes:
+  postgres-data:
       - VUE_APP_API_URL=http://backend:8080/api
 
 

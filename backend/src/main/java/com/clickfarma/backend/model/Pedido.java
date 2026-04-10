@@ -1,5 +1,8 @@
 package com.clickfarma.backend.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -8,6 +11,7 @@ import java.util.List;
 
 @Entity
 @Table(name = "pedidos")
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class Pedido {
 
     @Id
@@ -17,10 +21,12 @@ public class Pedido {
     @Column(name = "codigo_pedido", unique = true)
     private String codigoPedido;
 
-    @ManyToOne
+    @JsonIgnore 
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "usuario_id", nullable = false)
     private Usuario usuario;
 
+    @JsonManagedReference
     @OneToMany(mappedBy = "pedido", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ItemPedido> itens = new ArrayList<>();
 
@@ -46,6 +52,7 @@ public class Pedido {
     private LocalDateTime dataAtualizacao;
 
     @OneToOne(mappedBy = "pedido", cascade = CascadeType.ALL)
+    @JsonIgnore
     private Rastreio rastreio;
 
     // Enum para status

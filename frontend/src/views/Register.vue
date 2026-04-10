@@ -61,6 +61,29 @@
                   {{ fieldErrors.email }}
                 </div>
               </div>
+
+              <!-- Novos campos: Telefone e Endereço para bater com a API -->
+              <div class="mb-3">
+                <label class="form-label">Telefone:</label>
+                <input
+                  ref="telefoneInput"
+                  type="text"
+                  class="form-control"
+                  v-model="userData.telefone"
+                  placeholder="(DDD) 99999-9999"
+                >
+              </div>
+
+              <div class="mb-3">
+                <label class="form-label">Endereço (opcional):</label>
+                <input
+                  ref="enderecoInput"
+                  type="text"
+                  class="form-control"
+                  v-model="userData.endereco"
+                  placeholder="Rua, Número, Bairro, CEP..."
+                >
+              </div>
               
               <div class="mb-3">
                 <label class="form-label">Senha:</label>
@@ -143,7 +166,9 @@ export default {
         name: '',
         email: '',
         password: '',
-        confirmPassword: ''
+        confirmPassword: '',
+        telefone: '',
+        endereco: ''
       },
       loading: false,
       fieldErrors: {},
@@ -266,7 +291,6 @@ export default {
       }
     },
     
-    // ⬇️⬇️⬇️ MÉTODO CORRIGIDO ⬇️⬇️⬇️
     async handleRegister() {
       if (!this.validateForm()) {
         this.shakeForm();
@@ -277,29 +301,27 @@ export default {
       this.showWelcome = false;
 
       try {
-        // Converter os campos para o formato que o backend espera
         const userDataToSend = {
-          nome: this.userData.name,        // name → nome
+          nome: this.userData.name,
           email: this.userData.email,
-          senha: this.userData.password     // password → senha
+          senha: this.userData.password,
+          telefone: this.userData.telefone || '',
+          endereco: this.userData.endereco || ''
         };
 
         console.log('📤 Enviando dados convertidos:', userDataToSend);
         await this.register(userDataToSend);
 
-        // Sucesso - mostrar mensagem de boas-vindas
         this.showWelcome = true;
 
-        // Redirecionar após breve delay para usuário ver a mensagem
         setTimeout(() => {
-          this.$router.push('/');
+          this.$router.push('/login');
         }, 3000);
 
       } catch (error) {
         console.error('❌ Erro no registro:', error);
 
-        // Tratamento específico para email já cadastrado
-        if (error.message?.includes('email') || error.message?.includes('já existe') || error.message?.includes('already')) {
+        if (error.message?.includes('email') || error.message?.includes('já existe') || error.message?.includes('already') || error.mensagem?.includes('já cadastrado')) {
           this.fieldErrors.email = 'Parece que você já é da família!';
           this.showRecoveryOption = true;
           this.focusOnError('emailInput');
@@ -307,7 +329,7 @@ export default {
           this.fieldErrors.password = error.message;
           this.focusOnError('passwordInput');
         } else {
-          alert(error.message || 'Erro ao criar conta. Tente novamente.');
+          this.$toast?.error(error.mensagem || error.message || 'Erro ao criar conta.') || alert(error.mensagem || error.message || 'Erro ao criar conta.');
         }
 
         this.shakeForm();
@@ -315,8 +337,7 @@ export default {
         this.loading = false;
       }
     },
-    // ⬆️⬆️⬆️ FIM DA CORREÇÃO ⬆️⬆️⬆️
-    
+
     shakeForm() {
       if (this.$refs.registerForm) {
         this.$refs.registerForm.classList.add('shake');

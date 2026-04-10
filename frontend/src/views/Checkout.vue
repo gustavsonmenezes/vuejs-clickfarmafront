@@ -16,6 +16,8 @@
             @update:delivery-option="updateDeliveryOption"
             @update:selected-address="updateSelectedAddress"
             @update:selected-store="updateSelectedStore"
+            @update:delivery-cost="updateDeliveryCost"
+            @update:delivery-details="updateDeliveryDetails"
           />
           
           <!-- Botão de Continuar -->
@@ -39,6 +41,7 @@
             :selected-store="selectedStore"
             :selected-payment-method="''"
             :current-step="1"
+            :delivery-cost="deliveryCost"
           />
         </div>
       </div>
@@ -63,7 +66,10 @@ export default {
     return {
       deliveryOption: 'delivery',
       selectedAddress: null,
-      selectedStore: null
+      selectedStore: null,
+      deliveryCost: 0,
+      deliveryDetails: null,
+      dynamicAddresses: []
     }
   },
   computed: {
@@ -71,38 +77,47 @@ export default {
     ...mapState(['cart', 'user']),
     
     userAddresses() {
-      // Endereços mockados - em produção viriam da API
-      return [
-        {
-          id: 1,
-          nickname: 'Casa',
-          street: 'Rua das Flores',
-          number: '123',
-          complement: 'Apto 101',
-          neighborhood: 'Centro',
-          city: 'Recife',
-          state: 'PE',
-          zipcode: '50000-000',
-          isDefault: true
-        },
-        {
-          id: 2,
-          nickname: 'Trabalho',
-          street: 'Av. Boa Viagem',
-          number: '456',
-          complement: 'Sala 501',
-          neighborhood: 'Boa Viagem',
-          city: 'Recife',
-          state: 'PE',
-          zipcode: '51000-000',
-          isDefault: false
-        }
-      ]
+      // Retorna a lista de endereços carregada do localStorage,
+      // Ou se estiver vazio, retorna um endereço padrão baseado no perfil (fallback opcional)
+      if (this.dynamicAddresses && this.dynamicAddresses.length > 0) {
+         // Converte as chaves do formato do Addresses.vue para o esperado pelo DeliveryOptions
+         return this.dynamicAddresses.map(addr => ({
+            id: addr.id,
+            nickname: addr.label,
+            street: addr.street,
+            number: addr.number,
+            complement: addr.complement,
+            neighborhood: addr.neighborhood || '',
+            city: addr.city,
+            state: addr.state,
+            zipcode: addr.zip,
+            isDefault: addr.isDefault
+         }));
+      }
+
+      // Fallback
+      if (this.user && this.user.endereco) {
+         return [
+           {
+             id: 1,
+             nickname: 'Meu Endereço de Cadastro',
+             street: this.user.endereco,
+             number: '',
+             complement: '',
+             neighborhood: '',
+             city: 'N/A',
+             state: 'N/A',
+             zipcode: '01001000', // CEP padrão
+             isDefault: true
+           }
+         ];
+      }
+      return [];
     },
     
     canProceed() {
       if (this.deliveryOption === 'delivery') {
-        return this.selectedAddress !== null
+        return this.selectedAddress !== null && this.deliveryDetails !== null
       } else if (this.deliveryOption === 'pickup') {
         return this.selectedStore !== null
       }
@@ -110,8 +125,23 @@ export default {
     }
   },
   methods: {
+    loadUserAddresses() {
+       const saved = localStorage.getItem('userAddressesList');
+       if (saved) {
+         try {
+           this.dynamicAddresses = JSON.parse(saved);
+         } catch(e) {
+           console.error("Erro ao ler endereços do usuario", e);
+         }
+       }
+    },
+
     updateDeliveryOption(option) {
       this.deliveryOption = option
+      if (option === 'pickup') {
+        this.deliveryCost = 0
+        this.deliveryDetails = null
+      }
     },
     
     updateSelectedAddress(address) {
@@ -121,35 +151,45 @@ export default {
     updateSelectedStore(store) {
       this.selectedStore = store
     },
+
+    updateDeliveryCost(cost) {
+      this.deliveryCost = cost
+    },
+
+    updateDeliveryDetails(details) {
+      this.deliveryDetails = details
+    },
     
     proceedToPayment() {
       if (!this.canProceed) {
-        alert('Por favor, selecione uma opção de entrega válida.')
+        alert('Por favor, selecione uma opção de entrega válida e escolha o frete.')
         return
       }
       
-      // Salvar dados do checkout com estrutura consistente
       const checkoutData = {
         deliveryOption: this.deliveryOption,
-        deliveryType: this.deliveryOption, // ← ADICIONADO: alias para consistência
+        deliveryType: this.deliveryOption,
         selectedAddress: this.selectedAddress,
         selectedStore: this.selectedStore,
-        deliveryInfo: this.selectedAddress || this.selectedStore, // ← ADICIONADO: estrutura unificada
+        deliveryInfo: this.selectedAddress || this.selectedStore,
+        deliveryCost: this.deliveryCost,
+        deliveryDetails: this.deliveryDetails,
         timestamp: new Date().toISOString()
       }
       
-      console.log('🚚 Dados de checkout salvos:', checkoutData) // ← DEBUG
+      console.log('🚚 Dados de checkout salvos:', checkoutData)
       
       localStorage.setItem('checkoutData', JSON.stringify(checkoutData))
-      
-      // Ir para pagamento
+
       this.$router.push('/payment-method')
     }
   },
   
   mounted() {
+    this.loadUserAddresses();
+
     // Verificar se há itens no carrinho
-    if (this.cart.length === 0) {
+    if (!this.cart || this.cart.length === 0) {
       alert('Seu carrinho está vazio!')
       this.$router.push('/products')
       return
@@ -163,6 +203,8 @@ export default {
         this.deliveryOption = data.deliveryOption || 'delivery'
         this.selectedAddress = data.selectedAddress || null
         this.selectedStore = data.selectedStore || null
+        this.deliveryCost = data.deliveryCost || 0
+        this.deliveryDetails = data.deliveryDetails || null
       } catch (error) {
         console.error('Erro ao carregar dados do checkout:', error)
       }

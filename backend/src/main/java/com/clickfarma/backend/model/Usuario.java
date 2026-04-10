@@ -1,5 +1,7 @@
 package com.clickfarma.backend.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -7,6 +9,7 @@ import java.util.List;
 
 @Entity
 @Table(name = "usuarios")
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class Usuario {
 
     @Id
@@ -19,6 +22,7 @@ public class Usuario {
     @Column(nullable = false, unique = true)
     private String email;
 
+    @JsonIgnore
     @Column(nullable = false)
     private String senha;
 
@@ -31,7 +35,8 @@ public class Usuario {
     @Column(name = "data_cadastro")
     private LocalDateTime dataCadastro;
 
-    @OneToMany(mappedBy = "usuario", cascade = CascadeType.ALL)
+    @JsonIgnore 
+    @OneToMany(mappedBy = "usuario", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<Pedido> pedidos = new ArrayList<>();
 
     // Construtores

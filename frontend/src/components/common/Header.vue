@@ -20,28 +20,28 @@
         <ul class="navbar-nav me-auto">
           <li class="nav-item">
             <router-link to="/" class="nav-link">
-              <i class="fas fa-home me-1"></i>Home
+              <font-awesome-icon icon="home" class="me-1" />Home
             </router-link>
           </li>
           <li class="nav-item">
             <router-link to="/products" class="nav-link">
-              <i class="fas fa-pills me-1"></i>Produtos
+              <font-awesome-icon icon="pills" class="me-1" />Produtos
             </router-link>
           </li>
           <li class="nav-item">
             <router-link to="/promotions" class="nav-link">
-              <i class="fas fa-tag me-1"></i>Promoções
+              <font-awesome-icon icon="tag" class="me-1" />Promoções
             </router-link>
           </li>
            <li class="nav-item">
           <router-link to="/track-order" class="nav-link">
-            <i class="fas fa-truck me-1"></i>Rastrear Pedido
+            <font-awesome-icon icon="truck" class="me-1" />Rastrear Pedido
           </router-link>
           </li>  
 
           <li class="nav-item">
             <router-link to="/about" class="nav-link">
-              <i class="fas fa-info-circle me-1"></i>Sobre
+              <font-awesome-icon icon="info-circle" class="me-1" />Sobre
             </router-link>
           </li>
         </ul>
@@ -50,7 +50,7 @@
         <div class="navbar-actions d-flex align-items-center gap-3">
           <!-- Cart -->
           <router-link to="/cart" class="cart-btn position-relative">
-            <i class="fas fa-shopping-cart"></i>
+            <font-awesome-icon icon="cart-shopping" />
             <span v-if="cartItemsCount > 0" class="cart-badge">
               {{ cartItemsCount }}
             </span>
@@ -58,6 +58,11 @@
           
           <!-- Auth Section -->
           <div v-if="!isAuthenticated" class="auth-buttons d-flex gap-2">
+            <router-link to="/login" class="btn btn-outline-light btn-sm">
+              <font-awesome-icon icon="sign-in-alt" class="me-1" />Entrar
+            </router-link>
+            <router-link to="/register" class="btn btn-light btn-sm">
+              <font-awesome-icon icon="user-plus" class="me-1" />Cadastrar
             <router-link to="/login" class="btn btn-outline-primary btn-sm">
               <i class="fas fa-sign-in-alt me-1"></i>Entrar
             </router-link>
@@ -70,30 +75,30 @@
           <div v-else class="user-menu dropdown">
             <button class="user-dropdown-btn dropdown-toggle d-flex align-items-center" type="button" data-bs-toggle="dropdown">
               <div class="user-avatar">
-                <i class="fas fa-user-circle"></i>
+                <font-awesome-icon icon="user-circle" />
               </div>
               <span class="user-name ms-2">{{ user?.name || 'Usuário' }}</span>
             </button>
             <ul class="dropdown-menu dropdown-menu-end">
               <li>
                 <router-link to="/profile" class="dropdown-item">
-                  <i class="fas fa-user me-2"></i>Meu Perfil
+                  <font-awesome-icon icon="user" class="me-2" />Meu Perfil
                 </router-link>
               </li>
               <li>
                 <router-link to="/prescriptions" class="dropdown-item">
-                  <i class="fas fa-file-medical me-2"></i>Minhas Receitas
+                  <font-awesome-icon icon="file-medical" class="me-2" />Minhas Receitas
                 </router-link>
               </li>
               <li>
                 <router-link to="/orders" class="dropdown-item">
-                  <i class="fas fa-shopping-bag me-2"></i>Meus Pedidos
+                  <font-awesome-icon icon="shopping-bag" class="me-2" />Meus Pedidos
                 </router-link>
               </li>
               <li><hr class="dropdown-divider"></li>
               <li>
                 <button class="dropdown-item text-danger" @click="handleLogout">
-                  <i class="fas fa-sign-out-alt me-2"></i>Sair
+                  <font-awesome-icon icon="sign-out-alt" class="me-2" />Sair
                 </button>
               </li>
             </ul>
@@ -245,6 +250,7 @@ export default {
   font-size: 1.3rem;
   padding: 0.5rem;
   border-radius: 8px;
+  transition: all 0.3s ease;
   transition: all 250ms ease-in-out;
   text-decoration: none;
   position: relative;

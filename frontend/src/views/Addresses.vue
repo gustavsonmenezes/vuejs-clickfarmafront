@@ -97,19 +97,7 @@ export default {
   name: 'Addresses',
   data() {
     return {
-      addresses: [
-        {
-          id: 1,
-          label: 'Casa',
-          street: 'Rua das Flores',
-          number: '123',
-          complement: 'Apto 45',
-          city: 'São Paulo',
-          state: 'SP',
-          zip: '01234-567',
-          isDefault: true
-        }
-      ],
+      addresses: [],
       addressForm: {
         label: '',
         street: '',
@@ -123,14 +111,33 @@ export default {
       editingAddress: null
     }
   },
+  mounted() {
+    this.loadAddresses();
+  },
   methods: {
+    loadAddresses() {
+      // Tenta carregar do LocalStorage
+      const savedAddresses = localStorage.getItem('userAddressesList');
+      if (savedAddresses) {
+        try {
+          this.addresses = JSON.parse(savedAddresses);
+        } catch(e) {
+          console.error("Erro ao ler endereços", e);
+        }
+      }
+    },
+    saveAddressesToStorage() {
+      localStorage.setItem('userAddressesList', JSON.stringify(this.addresses));
+    },
     saveAddress() {
+      let savedId;
       if (this.editingAddress) {
         // Atualizar endereço existente
         const index = this.addresses.findIndex(addr => addr.id === this.editingAddress.id);
         if (index !== -1) {
           this.addresses[index] = { ...this.addressForm, id: this.editingAddress.id };
         }
+        savedId = this.editingAddress.id;
         this.editingAddress = null;
       } else {
         // Adicionar novo endereço
@@ -139,17 +146,19 @@ export default {
           id: Date.now()
         };
         this.addresses.push(newAddress);
+        savedId = newAddress.id;
       }
       
       // Se este endereço foi marcado como principal, desmarcar os outros
       if (this.addressForm.isDefault) {
         this.addresses.forEach(addr => {
-          if (addr.id !== (this.editingAddress?.id || newAddress.id)) {
+          if (addr.id !== savedId) {
             addr.isDefault = false;
           }
         });
       }
       
+      this.saveAddressesToStorage();
       this.resetForm();
       alert('Endereço salvo com sucesso!');
     },
@@ -162,6 +171,7 @@ export default {
     deleteAddress(addressId) {
       if (confirm('Tem certeza que deseja excluir este endereço?')) {
         this.addresses = this.addresses.filter(addr => addr.id !== addressId);
+        this.saveAddressesToStorage();
         alert('Endereço excluído com sucesso!');
       }
     },
