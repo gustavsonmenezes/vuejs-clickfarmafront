@@ -74,6 +74,21 @@ public class GeminiService {
         return prompt.toString();
     }
 
+    /**
+     * Gera recomendações de bem-estar personalizadas
+     */
+    public Mono<String> getWellnessSuggestions(String userId, String userName) {
+        String prompt = String.format(
+                "Olá Gemini! Você é um assistente de saúde da ClickFarma. " +
+                        "O usuário %s (ID: %s) solicitou recomendações de bem-estar. " +
+                        "Forneça 3 dicas práticas de saúde, nutrição ou cuidados pessoais em MARKDOWN. " +
+                        "Seja amigável e use emojis.",
+                userName != null ? userName : "Cliente",
+                userId != null ? userId : "N/A"
+        );
+        return this.chat(prompt);
+    }
+
     public Mono<String> chat(String mensagem) {
         if (apiKey == null || apiKey.isEmpty()) {
             System.err.println("❌ Chave da API Gemini não configurada");
@@ -92,7 +107,7 @@ public class GeminiService {
         request.put("contents", List.of(content));
 
         return webClient.post()
-                .uri("/models/gemini-2.0-flash:generateContent?key=" + apiKey)
+                .uri("/models/gemini-1.5-flash:generateContent?key=" + apiKey)
                 .header("Content-Type", "application/json")
                 .bodyValue(request)
                 .retrieve()

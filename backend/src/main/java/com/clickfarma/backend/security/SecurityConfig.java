@@ -31,7 +31,6 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
-                        // Swagger - URLs completas
                         .requestMatchers(
                                 "/swagger-ui/**",
                                 "/swagger-ui.html",
@@ -40,16 +39,11 @@ public class SecurityConfig {
                                 "/swagger-resources/**",
                                 "/webjars/**"
                         ).permitAll()
-                        // Auth endpoints
                         .requestMatchers("/api/auth/**").permitAll()
-                        // Produtos e Categorias - públicos
                         .requestMatchers("/api/produtos/**").permitAll()
                         .requestMatchers("/api/categorias/**").permitAll()
-                        // Usuários - apenas GET para lista (público)
                         .requestMatchers(HttpMethod.GET, "/api/usuarios").permitAll()
-                        // Gemini Chat - público
                         .requestMatchers("/api/gemini/**").permitAll()
-                        // Qualquer outra requisição precisa de autenticação
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session
@@ -63,15 +57,7 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(Arrays.asList(
-                "http://localhost:3000",
-                "http://localhost:8080",
-                "http://localhost:8082",
-                "http://localhost:80",
-                "http://localhost",
-                "http://backend:8080",
-                "http://frontend:80"
-        ));
+        configuration.setAllowedOriginPatterns(Arrays.asList("*"));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
         configuration.setAllowedHeaders(Arrays.asList("*"));
         configuration.setAllowCredentials(true);

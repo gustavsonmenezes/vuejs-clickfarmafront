@@ -8,9 +8,9 @@
 
     <div class="chat-messages" ref="messagesContainer">
       <div
-        v-for="(msg, index) in messages"
-        :key="index"
-        :class="['message', msg.role]"
+          v-for="(msg, index) in messages"
+          :key="index"
+          :class="['message', msg.role]"
       >
         <div class="message-avatar">
           <i :class="msg.role === 'user' ? 'fas fa-user' : 'fas fa-robot'"></i>
@@ -37,12 +37,12 @@
 
     <div class="chat-input">
       <textarea
-        v-model="userMessage"
-        @keyup.enter.exact="sendMessage"
-        @keyup.enter.shift.exact="userMessage += '\n'"
-        placeholder="Digite sua mensagem..."
-        rows="1"
-        :disabled="loading"
+          v-model="userMessage"
+          @keyup.enter.exact="sendMessage"
+          @keyup.enter.shift.exact="userMessage += '\n'"
+          placeholder="Digite sua mensagem..."
+          rows="1"
+          :disabled="loading"
       ></textarea>
       <button @click="sendMessage" :disabled="loading || !userMessage.trim()">
         <i class="fas fa-paper-plane"></i>
@@ -51,10 +51,10 @@
 
     <div class="chat-suggestions">
       <button
-        v-for="suggestion in suggestions"
-        :key="suggestion"
-        @click="sendSuggestion(suggestion)"
-        class="suggestion-btn"
+          v-for="suggestion in suggestions"
+          :key="suggestion"
+          @click="sendSuggestion(suggestion)"
+          class="suggestion-btn"
       >
         {{ suggestion }}
       </button>
