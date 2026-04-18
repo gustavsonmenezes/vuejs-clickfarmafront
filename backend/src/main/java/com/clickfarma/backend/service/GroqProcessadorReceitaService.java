@@ -34,53 +34,41 @@ public class GroqProcessadorReceitaService {
             return Mono.just(dto);
         }
 
+        // PROMPT MELHORADO: Mais resiliente a ruídos de OCR e focado em identificar medicamentos mesmo com erros de digitação
         String prompt = String.format("""
                 Você é um assistente farmacêutico especializado em extrair informações de receitas médicas para um e-commerce de farmácia.
                 
-                TEXTO DA RECEITA:
+                TEXTO DA RECEITA (Extraído via OCR, pode conter ruídos e erros de leitura):
+                ---
                 %s
+                ---
                 
                 INSTRUÇÕES CRÍTICAS:
-                1. Retorne APENAS um JSON válido (sem markdown ```json ```, sem texto adicional, sem explicações)
+                1. Analise o texto acima e identifique os medicamentos prescritos. Ignore caracteres aleatórios e ruídos comuns de OCR.
                 
-                2. Para cada medicamento, extraia APENAS o PRINCÍPIO ATIVO ou NOME GENÉRICO:
-                   - Correto: "paracetamol", "ibuprofeno", "dipirona", "amoxicilina", "loratadina"
-                   - Incorreto: "Paracetamol 500mg", "Tylenol", "Novalgina", "Amoxil"
-                   - Remova marcas comerciais e mantenha apenas o nome do fármaco
-                
-                3. Identifique com precisão:
-                   - nome: SOMENTE o princípio ativo em minúsculo (ex: "paracetamol")
-                   - quantidade: número de unidades/caixas prescritas (padrão: 1 se não informado)
-                   - dosagem: concentração por unidade (ex: "500mg", "10mg/ml", "250mg/5ml")
-                
-                4. REGRAS ESPECIAIS PARA BUSCA NO BANCO DE DADOS:
-                   - Para medicamentos combinados, liste os princípios ativos separadamente
-                   - Exemplo: "AAS + Cafeína" -> dois medicamentos separados
-                   - Ignore termos como "comprimido", "drágea", "cápsula", "solução"
-                   - Padronize nomes: "ácido acetilsalicílico" -> "aspirina"
-                
-                5. Se um medicamento não puder ser identificado claramente, NÃO o inclua no resultado
-                
-                6. Se não encontrar NENHUM medicamento, retorne EXATAMENTE: {"medicamentos": []}
-                
-                EXEMPLOS DE RESPOSTA CORRETA:
-                
-                Entrada: "Prescrevo ao paciente Amoxicilina 500mg, tomar 1 comprimido de 8/8h por 7 dias"
-                Saída: {"medicamentos": [{"nome": "amoxicilina", "quantidade": 1, "dosagem": "500mg"}]}
-                
-                Entrada: "Receita: Ibuprofeno 400mg - 20 comprimidos, Dipirona 500mg/ml - 1 frasco"
-                Saída: {"medicamentos": [{"nome": "ibuprofeno", "quantidade": 20, "dosagem": "400mg"}, {"nome": "dipirona", "quantidade": 1, "dosagem": "500mg/ml"}]}
-                
-                Entrada: "Uso contínuo: Losartana 50mg, 30 comprimidos"
-                Saída: {"medicamentos": [{"nome": "losartana", "quantidade": 30, "dosagem": "50mg"}]}
-                
-                FORMATO EXATO DE RESPOSTA (sem formatação adicional):
+                2. Retorne APENAS um JSON válido no formato abaixo:
                 {
                   "medicamentos": [
-                    {"nome": "medicamento1", "quantidade": 1, "dosagem": "500mg"},
-                    {"nome": "medicamento2", "quantidade": 2, "dosagem": "400mg"}
+                    {
+                      "nome": "nome genérico ou princípio ativo",
+                      "quantidade": 1,
+                      "dosagem": "ex: 500mg",
+                      "descricao": "Descrição breve e amigável do uso do medicamento"
+                    }
                   ]
                 }
+                
+                3. REGRAS DE EXTRAÇÃO:
+                   - nome: Extraia o princípio ativo ou nome genérico (ex: "dipirona", "amoxicilina", "floratil").
+                   - quantidade: Se não estiver claro, use 1.
+                   - dosagem: Extraia a concentração (ex: "500mg", "200mg").
+                   - descricao: Crie uma frase curta explicando para que serve (ex: "Analgésico para dor e febre").
+                
+                4. RESILIÊNCIA: Mesmo que o nome esteja levemente errado no OCR (ex: "Dipir0na", "Amoxcilina"), identifique o medicamento correto.
+                
+                5. Se não encontrar NENHUM medicamento, retorne: {"medicamentos": []}
+                
+                NÃO inclua explicações, markdown ou qualquer texto fora do JSON.
                 """, textoReceita);
 
         return groqService.chat(prompt)
@@ -88,7 +76,16 @@ public class GroqProcessadorReceitaService {
                     log.debug("Resposta Groq: {}", respostaGroq);
 
                     try {
-                        String respostaLimpa = respostaGroq
+                        // Limpeza robusta da resposta JSON
+                        String respostaLimpa = respostaGroq.trim();
+                        if (respostaLimpa.contains("{")) {
+                            respostaLimpa = respostaLimpa.substring(respostaLimpa.indexOf("{"));
+                        }
+                        if (respostaLimpa.contains("}")) {
+                            respostaLimpa = respostaLimpa.substring(0, respostaLimpa.lastIndexOf("}") + 1);
+                        }
+
+                        respostaLimpa = respostaLimpa
                                 .replace("```json", "")
                                 .replace("```", "")
                                 .trim();
@@ -126,6 +123,10 @@ public class GroqProcessadorReceitaService {
                                     }
 
                                     item.setDosagem((String) med.getOrDefault("dosagem", ""));
+
+                                    // Adicionar descrição fornecida pela IA
+                                    String descricaoIA = (String) med.getOrDefault("descricao", "");
+                                    item.setDescricaoIA(descricaoIA);
 
                                     // Buscar produto no banco de dados
                                     buscarProdutoNoBanco(item);
@@ -200,19 +201,26 @@ public class GroqProcessadorReceitaService {
                 item.setDescricaoProduto(produtoEncontrado.getDescricao());
                 item.setNomeCompleto(produtoEncontrado.getNome());
                 item.setNome(produtoEncontrado.getNome());
-                log.info("✅ Produto selecionado: {} - R$ {}",
-                        produtoEncontrado.getNome(), produtoEncontrado.getPreco());
+                item.setEstoque(produtoEncontrado.getEstoque());
+                log.info("✅ Produto selecionado: {} - R$ {} - Estoque: {}",
+                        produtoEncontrado.getNome(), produtoEncontrado.getPreco(), produtoEncontrado.getEstoque());
             } else {
                 log.warn("❌ Produto NÃO encontrado no banco: {}", nomeBusca);
-                item.setDescricaoProduto("⚠️ Medicamento identificado na receita, mas não encontrado no nosso catálogo. Consulte nosso atendimento.");
+                // Usar a descrição fornecida pela IA se o produto não foi encontrado
+                String descricaoFinal = item.getDescricaoIA() != null && !item.getDescricaoIA().isEmpty()
+                        ? item.getDescricaoIA()
+                        : "⚠️ Medicamento identificado na receita, mas não encontrado no nosso catálogo. Consulte nosso atendimento.";
+                item.setDescricaoProduto(descricaoFinal);
                 item.setPreco(0.0);
                 item.setNomeCompleto(item.getNome());
+                item.setEstoque(0);
             }
 
         } catch (Exception e) {
             log.error("Erro ao buscar produto: {}", item.getNome(), e);
             item.setDescricaoProduto("Erro ao consultar disponibilidade do medicamento.");
             item.setPreco(0.0);
+            item.setEstoque(0);
         }
     }
 }

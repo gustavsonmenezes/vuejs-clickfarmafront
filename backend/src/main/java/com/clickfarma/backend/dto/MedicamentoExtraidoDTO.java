@@ -46,6 +46,8 @@ public class MedicamentoExtraidoDTO {
         private Double preco;     // Preço do produto (opcional)
         private String descricaoProduto;  // Descrição do produto
         private String nomeCompleto;      // Nome completo do produto no banco
+        private String descricaoIA;       // Descrição fornecida pela IA
+        private Integer estoque;          // Quantidade em estoque
 
         // Construtores
         public MedicamentoItem() {
@@ -58,6 +60,7 @@ public class MedicamentoExtraidoDTO {
             this.quantidade = quantidade != null ? quantidade : 1;
             this.dosagem = dosagem;
             this.preco = 0.0;
+            this.estoque = 0;
         }
 
         // Getters e Setters
@@ -117,6 +120,22 @@ public class MedicamentoExtraidoDTO {
             this.nomeCompleto = nomeCompleto;
         }
 
+        public String getDescricaoIA() {
+            return descricaoIA;
+        }
+
+        public void setDescricaoIA(String descricaoIA) {
+            this.descricaoIA = descricaoIA;
+        }
+
+        public Integer getEstoque() {
+            return estoque;
+        }
+
+        public void setEstoque(Integer estoque) {
+            this.estoque = estoque != null ? estoque : 0;
+        }
+
         @Override
         public String toString() {
             return "MedicamentoItem{" +
@@ -125,6 +144,7 @@ public class MedicamentoExtraidoDTO {
                     ", dosagem='" + dosagem + '\'' +
                     ", preco=" + preco +
                     ", descricaoProduto='" + descricaoProduto + '\'' +
+                    ", estoque=" + estoque +
                     '}';
         }
     }

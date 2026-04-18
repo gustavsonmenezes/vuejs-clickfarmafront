@@ -144,8 +144,8 @@ class PaymentService {
 
   static generatePixCode() {
     return '00020126580014BR.GOV.BCB.PIX0136' +
-           Math.random().toString(36).substr(2, 32) +
-           '5204000053039865802BR5925CLICKFARMA LTDA6009SAO PAULO62070503***6304';
+        Math.random().toString(36).substr(2, 32) +
+        '5204000053039865802BR5925CLICKFARMA LTDA6009SAO PAULO62070503***6304';
   }
 
   static generateQRCode() {
@@ -489,12 +489,12 @@ export default createStore({
       }
     },
     // ⬆️⬆️⬆️ FIM DA CORREÇÃO ⬆️⬆️⬆️
-    
+
     logout({ commit }) {
       commit('CLEAR_AUTH');
       console.log('✅ Logout realizado com sucesso');
     },
-    
+
     async fetchProducts({ commit }) {
       try {
         const mockProducts = [
@@ -505,53 +505,53 @@ export default createStore({
           { id: 5, name: 'Protetor Solar FPS 50', price: 32.90, category: 'Cosméticos', description: 'Protetor solar facial', inStock: false },
           { id: 6, name: 'Fralda P - 30 unidades', price: 28.90, category: 'Maternidade', description: 'Fraldas para bebê', inStock: true }
         ];
-        
+
         commit('SET_PRODUCTS', mockProducts);
       } catch (error) {
         console.error('Erro ao buscar produtos:', error);
       }
     },
-    
+
     addToCart({ commit, state }, product) {
       console.log('🛒 Action addToCart chamada para:', product.name);
-      
+
       const existingItem = state.cart.find(item => item.id === product.id);
-      
+
       if (existingItem) {
         console.log('📦 Produto já existe no carrinho, incrementando quantidade');
-        commit('UPDATE_CART_QUANTITY', { 
-          productId: product.id, 
-          quantity: existingItem.quantity + 1 
+        commit('UPDATE_CART_QUANTITY', {
+          productId: product.id,
+          quantity: existingItem.quantity + 1
         });
       } else {
         console.log('🆕 Novo produto adicionado ao carrinho');
         commit('ADD_TO_CART', { ...product, quantity: 1 });
       }
     },
-    
+
     removeFromCart({ commit }, productId) {
       commit('REMOVE_FROM_CART', productId);
       console.log('🗑️ Produto removido do carrinho:', productId);
     },
-    
+
     updateCartQuantity({ commit }, payload) {
       commit('UPDATE_CART_QUANTITY', payload);
       console.log('📦 Quantidade atualizada:', payload);
     },
-    
+
     clearCart({ commit }) {
       commit('CLEAR_CART');
       console.log('🛒 Carrinho limpo');
     },
-    
+
     async processPayment({ commit, state }, paymentData) {
       try {
         let paymentResult;
         const deliveryCost = paymentData.deliveryType === 'delivery' ? (state.cartTotal >= 100 ? 0 : 10) : 0;
         const amount = state.cartTotal + deliveryCost;
-        
+
         console.log('🔄 Processando pagamento com método:', paymentData.paymentMethod);
-        
+
         switch (paymentData.paymentMethod) {
           case 'credit_card':
           case 'debit_card':
@@ -560,23 +560,23 @@ export default createStore({
               amount: amount
             });
             break;
-            
+
           case 'pix':
             paymentResult = await PaymentService.processPixPayment({
               amount: amount
             });
             break;
-            
+
           case 'boleto':
             paymentResult = await PaymentService.processBoletoPayment({
               amount: amount
             });
             break;
-            
+
           default:
             throw new Error(`Método de pagamento não suportado: ${paymentData.paymentMethod}`);
         }
-        
+
         if (paymentResult.success) {
           const order = {
             id: 'ORD-' + Math.random().toString(36).substr(2, 9).toUpperCase(),
@@ -592,16 +592,16 @@ export default createStore({
             paymentDetails: paymentResult,
             userId: state.user ? state.user.id : null // Adiciona userId se usuário estiver logado
           };
-          
+
           commit('SET_ORDER', order);
           commit('CLEAR_CART');
-          
+
           // SALVAR PEDIDO NO LOCALSTORAGE
           commit('SAVE_ORDER_TO_LOCAL_STORAGE', order);
-          
+
           console.log('✅ Pedido criado com sucesso:', order);
         }
-        
+
         return paymentResult;
       } catch (error) {
         console.error('❌ Erro no processamento do pagamento:', error);
@@ -624,7 +624,7 @@ export default createStore({
     async fetchRealTimeTracking({ commit }, orderId) {
       try {
         console.log('📍 Buscando localização em tempo real para:', orderId);
-        
+
         // Funções auxiliares dentro da ação
         const generateMockCoordinates = () => {
           const baseLat = -8.0476;
@@ -640,7 +640,7 @@ export default createStore({
         const generateRealTimeUpdates = (orderId, currentLocation) => {
           const updates = [];
           const now = new Date();
-          
+
           updates.push({
             status: 'location_update',
             description: `Localização atual: ${currentLocation}`,
@@ -648,7 +648,7 @@ export default createStore({
             location: currentLocation,
             type: 'current'
           });
-          
+
           if (currentLocation.includes('Centro')) {
             updates.unshift({
               status: 'processing',
@@ -658,7 +658,7 @@ export default createStore({
               type: 'history'
             });
           }
-          
+
           if (currentLocation.includes('Paulista') || currentLocation.includes('Zona')) {
             updates.unshift({
               status: 'shipped',
@@ -668,7 +668,7 @@ export default createStore({
               type: 'history'
             });
           }
-          
+
           if (currentLocation.includes('caminho') || currentLocation.includes('região')) {
             updates.unshift({
               status: 'out_for_delivery',
@@ -678,7 +678,7 @@ export default createStore({
               type: 'history'
             });
           }
-          
+
           return updates;
         };
 
@@ -692,14 +692,14 @@ export default createStore({
               'Próximo ao destino - 5km',
               'Na sua região - 1km'
             ];
-            
+
             const statuses = [
               'confirmed', 'processing', 'shipped', 'out_for_delivery', 'delivered'
             ];
-            
+
             const randomIndex = Math.floor(Math.random() * locations.length);
             const currentLocation = locations[randomIndex];
-            
+
             resolve({
               orderId,
               status: statuses[randomIndex],
@@ -718,7 +718,7 @@ export default createStore({
             });
           }, 1500);
         });
-        
+
         commit('SET_TRACKING_INFO', { orderId, trackingInfo });
         return trackingInfo;
       } catch (error) {
@@ -735,7 +735,7 @@ export default createStore({
         throw new Error('Erro ao solicitar redefinição de senha');
       }
     },
-    
+
     async updateUserProfile({ commit }, userData) {
       try {
         await new Promise(resolve => setTimeout(resolve, 1000));
@@ -746,7 +746,7 @@ export default createStore({
         throw new Error('Erro ao atualizar perfil');
       }
     },
-    
+
     async fetchAdminProducts({ commit }) {
       try {
         const mockProducts = [
@@ -760,7 +760,7 @@ export default createStore({
         console.error('Erro ao buscar produtos admin:', error);
       }
     },
-    
+
     async updateProductStock({ commit, state }, { productId, newStock }) {
       try {
         await new Promise(resolve => setTimeout(resolve, 500));
