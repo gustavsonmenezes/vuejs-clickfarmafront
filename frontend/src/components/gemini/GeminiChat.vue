@@ -16,7 +16,18 @@
           <i :class="msg.role === 'user' ? 'fa-solid fa-user' : 'fa-solid fa-robot'"></i>
         </div>
         <div class="message-content">
-          <div class="message-text">{{ msg.content }}</div>
+          <div class="message-text" v-if="msg.content" v-html="renderMarkdown(msg.content)"></div>
+          
+          <div v-if="msg.image" class="message-image-preview">
+            <img :src="msg.image" alt="Receita Analisada" style="max-width: 200px; border-radius: 8px; margin-top: 8px; border: 2px solid var(--cf-green);" />
+          </div>
+
+          <div v-if="msg.suggestedProducts && msg.suggestedProducts.length" class="chat-products-wrapper">
+            <div v-for="prod in msg.suggestedProducts" :key="prod.id" class="chat-product-item">
+              <ProductCard :product="prod" />
+            </div>
+          </div>
+
           <div class="message-time">{{ msg.time }}</div>
         </div>
       </div>
@@ -37,8 +48,15 @@
 
     <div class="chat-input-wrapper">
       <div class="chat-input">
-        <button class="attach-btn" title="Anexar Receita">
-          <i class="fa-solid fa-paperclip"></i>
+        <input 
+          type="file" 
+          ref="receitaInput" 
+          @change="tratarUploadReceita" 
+          accept="image/jpeg,image/png,image/jpg" 
+          style="display: none;" 
+        />
+        <button class="attach-btn" title="Anexar Receita" @click="openPrescriptionUpload">
+          <i class="fa-solid fa-camera"></i>
         </button>
         <textarea
             v-model="userMessage"
@@ -55,7 +73,7 @@
       </div>
     </div>
 
-    <div class="chat-suggestions">
+    <div v-if="messages.length <= 1" class="chat-suggestions">
       <button
           v-for="suggestion in suggestions"
           :key="suggestion"
@@ -73,9 +91,16 @@
 
 <script>
 import api from '@/services/api'
+import { marked } from 'marked'
+import { mapState, mapActions } from 'vuex'
+import ProductCard from '@/components/products/ProductCard.vue'
+import receitaService from '@/services/receitaService'
 
 export default {
   name: 'GeminiChat',
+  components: {
+    ProductCard
+  },
   data() {
     return {
       messages: [
@@ -95,10 +120,40 @@ export default {
       ]
     }
   },
+  computed: {
+    ...mapState(['products'])
+  },
   mounted() {
-    this.scrollToBottom()
+    this.scrollToBottom();
+    // Dispatch fetchProducts se necessário
+    if (!this.products || this.products.length === 0) {
+      if (typeof this.$store.dispatch === 'function') {
+        this.$store.dispatch('fetchProducts');
+      }
+    }
   },
   methods: {
+    ...mapActions(['addToCart']),
+
+    extractSuggestedProducts(text) {
+      if (!text || !this.products || !this.products.length) return [];
+      const lowerText = text.toLowerCase();
+      // Only returns REAL products from the Database
+      const matched = this.products.filter(p => {
+        if (!p.name) return false;
+        const pName = p.name.toLowerCase();
+        if (pName.length < 4) return false;
+        return lowerText.includes(pName);
+      });
+      // Limit to max 4 items to avoid overwhelming the chat
+      return matched.slice(0, 4);
+    },
+
+    renderMarkdown(text) {
+      if (!text) return '';
+      // Retorna safe HTML caso venha apenas texto, e converte ### ou * etc
+      return marked.parse(text);
+    },
     getCurrentTime() {
       return new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
     },
@@ -123,9 +178,13 @@ export default {
           userName: userName
         });
 
+        const botResponse = response.data.response;
+        const suggestions = this.extractSuggestedProducts(botResponse);
+
         this.messages.push({
           role: 'bot',
-          content: response.data.response,
+          content: botResponse,
+          suggestedProducts: suggestions,
           time: this.getCurrentTime()
         });
       } catch (error) {
@@ -156,13 +215,33 @@ export default {
       this.loading = true
 
       try {
+        // Collect history of the chat avoiding huge base64 images or products arrays
+        const history = this.messages
+          .filter(m => m.role === 'user' || m.role === 'bot')
+          .map(m => {
+            // Groq uses 'assistant' for the bot role instead of 'bot'
+            const role = m.role === 'bot' ? 'assistant' : 'user';
+            
+            // if it's an image block that has content, just say an image was sent
+            let content = m.content || "";
+            if (m.image) {
+              content += " [Imagem anexada]";
+            }
+            return { role: role, content: content };
+          });
+
         const response = await api.post('/gemini/chat', {
-          message: message
+          message: message, // keeping for backwards compatibility
+          messages: history
         })
+
+        const botResponse = response.data.response;
+        const suggestions = this.extractSuggestedProducts(botResponse);
 
         this.messages.push({
           role: 'bot',
-          content: response.data.response,
+          content: botResponse,
+          suggestedProducts: suggestions,
           time: this.getCurrentTime()
         })
       } catch (error) {
@@ -202,6 +281,79 @@ export default {
     sendSuggestion(suggestion) {
       this.userMessage = suggestion
       this.sendMessage()
+    },
+
+    openPrescriptionUpload() {
+      if (this.$refs.receitaInput) {
+        this.$refs.receitaInput.click();
+      }
+    },
+
+    tratarUploadReceita(event) {
+      const arquivo = event.target.files[0];
+      if (!arquivo) return;
+
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        const fullDataUrl = e.target.result;
+        const imagemBase64 = fullDataUrl.split(',')[1];
+        
+        this.messages.push({
+          role: 'user',
+          content: '📸 Enviei uma receita médica. Pode analisar?',
+          image: fullDataUrl,
+          time: this.getCurrentTime()
+        });
+        
+        this.loading = true;
+        this.scrollToBottom();
+
+        try {
+          const response = await receitaService.processarReceita(imagemBase64, arquivo.name);
+          if (response.sucesso && response.medicamentos && response.medicamentos.length > 0) {
+            
+            // Map the API results to our ProductCard acceptable shape safely
+            const mappedProducts = response.medicamentos.map(m => ({
+                id: m.produtoId || Math.floor(Math.random() * 100000).toString(),
+                name: m.nomeCompleto || m.nome,
+                price: m.preco || 0,
+                inStock: (m.estoque !== undefined && m.estoque > 0) ? true : false,
+                category: 'Medicamentos',
+                description: m.descricaoProduto || ''
+            }));
+
+            this.messages.push({
+              role: 'bot',
+              content: 'Prontinho! Li a receita. Consegui identificar os seguintes medicamentos:',
+              suggestedProducts: mappedProducts,
+              time: this.getCurrentTime()
+            });
+
+          } else {
+             this.messages.push({
+               role: 'bot',
+               content: 'Desculpe, não consegui identificar medicamentos na imagem. Tente uma foto mais nítida.',
+               time: this.getCurrentTime()
+             });
+          }
+        } catch (error) {
+          this.messages.push({
+            role: 'bot',
+            content: '⚠️ Ocorreu um erro ao processar a receita. O serviço de leitura inteligente pode estar indisponível.',
+            time: this.getCurrentTime()
+          });
+          console.error(error);
+        } finally {
+          this.loading = false;
+          this.scrollToBottom();
+          // Reset file input
+          if (this.$refs.receitaInput) {
+            this.$refs.receitaInput.value = '';
+          }
+        }
+      };
+      
+      reader.readAsDataURL(arquivo);
     }
   }
 }
@@ -224,8 +376,9 @@ export default {
   align-items: center;
   gap: 12px;
   padding: 1.1rem 1.4rem;
-  background: var(--cf-green);
-  color: white;
+  background: var(--cf-white);
+  border-bottom: 2px solid var(--cf-green-xlight);
+  color: var(--cf-green);
 }
 
 .chat-header i { font-size: 1.2rem; opacity: 0.9; }
@@ -235,13 +388,13 @@ export default {
   font-family: var(--cf-sans);
   font-size: 1.25rem;
   font-weight: 600;
-  letter-spacing: 0.02em;
+  color: var(--cf-text-dark);
 }
 
 .close-btn {
-  background: rgba(255,255,255,0.1);
-  border: none;
-  color: white;
+  background: var(--cf-ivory);
+  border: 1px solid var(--cf-border-mid);
+  color: var(--cf-text-muted);
   width: 28px; height: 28px;
   border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
@@ -282,8 +435,8 @@ export default {
   flex-shrink: 0;
   font-size: 0.9rem;
 }
-.message.bot .message-avatar { background: var(--cf-green); color: white; }
-.message.user .message-avatar { background: var(--cf-gold); color: white; }
+.message.bot .message-avatar { background: var(--cf-green-light); color: var(--cf-green); border: 1px solid var(--cf-green-mid); }
+.message.user .message-avatar { background: var(--cf-ivory); color: var(--cf-text-mid); border: 1px solid var(--cf-border-mid); }
 
 .message-text {
   padding: 0.8rem 1rem;
@@ -291,11 +444,104 @@ export default {
   font-size: 0.9rem;
   line-height: 1.5;
   box-shadow: var(--cf-shadow-xs);
+  word-wrap: break-word;
 }
-.message.bot .message-text { background: var(--cf-white); color: var(--cf-text-dark); border: 1px solid var(--cf-border); }
-.message.user .message-text { background: var(--cf-green); color: white; }
+
+:deep(.message-text p) {
+  margin-bottom: 0.5rem;
+}
+:deep(.message-text p:last-child) {
+  margin-bottom: 0;
+}
+:deep(.message-text ul), :deep(.message-text ol) {
+  margin-bottom: 0.5rem;
+  padding-left: 1.5rem;
+}
+:deep(.message-text ul li), :deep(.message-text ol li) {
+  margin-bottom: 0.2rem;
+}
+:deep(.message-text h1), :deep(.message-text h2), :deep(.message-text h3) {
+  font-size: 1.05rem;
+  font-weight: 600;
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
+  color: inherit;
+}
+
+.message.bot .message-text { 
+  background: var(--cf-white); 
+  border: 1px solid var(--cf-border); 
+}
+:deep(.message.bot .message-text), :deep(.message.bot .message-text *) {
+  color: var(--cf-text-dark); 
+}
+
+.message.user .message-text { 
+  background: var(--cf-green); 
+}
+:deep(.message.user .message-text), :deep(.message.user .message-text *) {
+  color: #ffffff !important; 
+}
+
 
 .message-time { font-size: 0.65rem; color: var(--cf-text-faint); margin-top: 4px; padding: 0 4px; }
+
+/* CHAT PRODUCT EMBED */
+.chat-products-wrapper {
+  margin-top: 10px;
+  display: flex;
+  gap: 10px;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  padding-bottom: 5px;
+}
+.chat-product-item {
+  min-width: 160px;
+  max-width: 200px;
+  flex-shrink: 0;
+  /* Transform origin allows scale if we wanted, but simple width constraint is better */
+}
+/* Forçar mini-cartão por estar dentro do chat */
+:deep(.chat-product-item .cf-product-card) {
+  border-radius: 8px;
+}
+:deep(.chat-product-item .cf-card-body) {
+  padding: 8px;
+  gap: 4px;
+}
+:deep(.chat-product-item .cf-category-label),
+:deep(.chat-product-item .cf-wishlist),
+:deep(.chat-product-item .cf-product-desc) {
+  display: none !important;
+}
+:deep(.chat-product-item .cf-product-name) {
+  font-size: 0.8rem;
+  margin: 0 0 2px 0;
+  line-height: 1.2;
+  white-space: normal;
+}
+:deep(.chat-product-item .cf-product-icon) {
+  font-size: 2.2rem;
+}
+:deep(.chat-product-item .cf-price) {
+  font-size: 0.9rem;
+}
+:deep(.chat-product-item .cf-installment) {
+  font-size: 0.6rem;
+}
+:deep(.chat-product-item .cf-card-foot) {
+  padding-top: 4px;
+  margin-top: 2px;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+:deep(.chat-product-item .cf-add-btn) {
+  width: 100%;
+  padding: 4px 6px;
+  font-size: 0.65rem;
+  justify-content: center;
+}
 
 /* INDICATOR */
 .typing-indicator {

@@ -1,4 +1,5 @@
 const path = require('path');
+const webpack = require('webpack');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const { VueLoaderPlugin } = require('vue-loader');
 const CopyWebpackPlugin = require('copy-webpack-plugin');
@@ -59,9 +60,15 @@ module.exports = {
     }),
     new HtmlWebpackPlugin({
       template: './public/index.html',
+      scriptLoading: 'blocking',
       templateParameters: {
         BASE_URL: '/'
       }
+    }),
+    new webpack.DefinePlugin({
+      __VUE_OPTIONS_API__: true,
+      __VUE_PROD_DEVTOOLS__: false,
+      'process.env': JSON.stringify(process.env)
     })
   ],
   resolve: {

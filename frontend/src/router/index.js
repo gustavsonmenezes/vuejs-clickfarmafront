@@ -222,7 +222,16 @@ const router = createRouter({
 
 router.beforeEach((to, from, next) => {
   const isAuthenticated = localStorage.getItem('authToken')
-  const user = JSON.parse(localStorage.getItem('user') || '{}')
+  let user = {}
+  try {
+    const rawUser = localStorage.getItem('user')
+    if (rawUser && rawUser !== 'undefined') {
+      user = JSON.parse(rawUser)
+    }
+  } catch (e) {
+    console.error('Erro ao processar dados do usuário:', e)
+    localStorage.removeItem('user')
+  }
   const isAdmin = user.role === 'admin'
 
   if (to.meta.requiresAuth && !isAuthenticated) {

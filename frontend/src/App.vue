@@ -5,11 +5,11 @@
       <router-view />
     </main>
     <!-- Botão flutuante -->
-    <div class="gemini-floating-btn" @click="toggleChat">
+    <div v-show="!isChatOpen" class="gemini-floating-btn" @click="toggleChat">
       <i class="fa-solid fa-robot"></i>
     </div>
     <!-- Chat -->
-    <div v-if="isChatOpen" class="gemini-modal">
+    <div v-show="isChatOpen" class="gemini-modal">
       <GeminiChat @close="toggleChat" />
     </div>
     
@@ -69,8 +69,8 @@ body {
 
 .gemini-floating-btn {
   position: fixed;
-  bottom: 80px;
-  right: 20px;
+  bottom: 25px;
+  right: 25px;
   width: 58px;
   height: 58px;
   background: var(--cf-green);
@@ -95,8 +95,8 @@ body {
 
 .gemini-modal {
   position: fixed;
-  bottom: 150px;
-  right: 20px;
+  bottom: 25px;
+  right: 25px;
   width: 380px;
   height: min(600px, 80vh);
   z-index: 10000;

@@ -311,7 +311,7 @@ export default {
 }
 
 .receita-header {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: var(--cf-green);
   color: white;
   padding: 30px;
   text-align: center;
@@ -338,8 +338,8 @@ export default {
 }
 
 .upload-area:hover {
-  border-color: #667eea;
-  background: #f8f9ff;
+  border-color: var(--cf-green);
+  background: var(--cf-green-xlight);
 }
 
 .file-input {
@@ -382,7 +382,7 @@ export default {
 }
 
 .btn-clear {
-  background: rgba(220, 53, 69, 0.9);
+  background: var(--cf-danger);
   color: white;
   border: none;
   padding: 8px 15px;
@@ -392,7 +392,7 @@ export default {
 }
 
 .btn-clear:hover {
-  background: rgba(220, 53, 69, 1);
+  background: #c82333;
 }
 
 .actions {
@@ -401,7 +401,7 @@ export default {
 }
 
 .btn-processar {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: var(--cf-gold);
   color: white;
   border: none;
   padding: 14px 30px;
@@ -414,7 +414,7 @@ export default {
 
 .btn-processar:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+  box-shadow: 0 4px 15px rgba(220, 169, 64, 0.4);
 }
 
 .loading-area {
@@ -425,8 +425,8 @@ export default {
 .spinner {
   width: 50px;
   height: 50px;
-  border: 4px solid #f3f3f3;
-  border-top: 4px solid #667eea;
+  border: 4px solid var(--cf-ivory);
+  border-top: 4px solid var(--cf-green);
   border-radius: 50%;
   animation: spin 1s linear infinite;
   margin: 0 auto 20px;
@@ -465,7 +465,7 @@ export default {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border-left: 4px solid #28a745;
+  border-left: 4px solid var(--cf-green);
   gap: 15px;
 }
 
@@ -513,12 +513,12 @@ export default {
 
 .preco-label {
   font-size: 12px;
-  color: #28a745;
+  color: var(--cf-green);
 }
 
 .preco-valor {
   font-size: 18px;
-  color: #28a745;
+  color: var(--cf-green);
 }
 
 .medicamento-descricao {
@@ -565,7 +565,7 @@ export default {
   border: none;
   padding: 6px 8px;
   cursor: pointer;
-  color: #667eea;
+  color: var(--cf-gold);
   font-size: 14px;
 }
 
@@ -586,7 +586,7 @@ export default {
 }
 
 .btn-adicionar {
-  background: #28a745;
+  background: var(--cf-green);
   color: white;
   border: none;
   padding: 8px 16px;
@@ -598,7 +598,7 @@ export default {
 }
 
 .btn-adicionar:hover:not(:disabled) {
-  background: #218838;
+  background: var(--cf-green-dark);
 }
 
 .btn-adicionar:disabled {
@@ -617,7 +617,7 @@ export default {
 
 .btn-adicionar-todos {
   flex: 1;
-  background: #007bff;
+  background: var(--cf-green);
   color: white;
   border: none;
   padding: 12px 24px;
@@ -627,14 +627,14 @@ export default {
 }
 
 .btn-adicionar-todos:hover {
-  background: #0056b3;
+  background: var(--cf-green-dark);
 }
 
 .btn-nova-receita {
   flex: 1;
-  background: #6c757d;
-  color: white;
-  border: none;
+  background: var(--cf-ivory);
+  color: var(--cf-text-dark);
+  border: 1px solid var(--cf-border);
   padding: 12px 24px;
   border-radius: 8px;
   cursor: pointer;
@@ -642,7 +642,7 @@ export default {
 }
 
 .btn-nova-receita:hover {
-  background: #5a6268;
+  background: var(--cf-border-mid);
 }
 
 .alerta-sem-medicamentos,
@@ -660,13 +660,13 @@ export default {
 
 .erro-area i {
   font-size: 48px;
-  color: #dc3545;
+  color: var(--cf-danger);
   margin-bottom: 15px;
   display: block;
 }
 
 .btn-tentar-novamente {
-  background: #6c757d;
+  background: var(--cf-gold);
   color: white;
   border: none;
   padding: 10px 20px;
@@ -676,7 +676,7 @@ export default {
 }
 
 .btn-tentar-novamente:hover {
-  background: #5a6268;
+  opacity: 0.9;
 }
 
 @media (max-width: 768px) {

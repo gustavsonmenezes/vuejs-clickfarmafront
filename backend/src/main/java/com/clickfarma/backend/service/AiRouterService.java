@@ -29,6 +29,17 @@ public class AiRouterService {
         }
     }
 
+    public Mono<String> chatWithHistory(List<Map<String, String>> conversacao) {
+        if ("gemini".equalsIgnoreCase(aiProvider) && geminiService != null) {
+            // Gemini is not updated yet, fallback to single message
+            return geminiService.chat(conversacao.get(conversacao.size() - 1).get("content"));
+        } else if (groqService != null) {
+            return groqService.chatWithHistory(conversacao);
+        } else {
+            return Mono.just("Nenhum servico de IA disponivel");
+        }
+    }
+
     public Mono<String> analyzeCart(List<Map<String, Object>> cartItems, Double totalPrice) {
         if ("gemini".equalsIgnoreCase(aiProvider) && geminiService != null) {
             return geminiService.analyzeCart(cartItems, totalPrice);

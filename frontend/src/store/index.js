@@ -442,7 +442,15 @@ export default createStore({
         console.log('🔐 Verificando status de autenticação...');
         const token = localStorage.getItem('authToken');
         if (token) {
-          const user = JSON.parse(localStorage.getItem('user') || 'null');
+          let user = null;
+          const rawUser = localStorage.getItem('user');
+          if (rawUser && rawUser !== 'undefined') {
+            try {
+              user = JSON.parse(rawUser);
+            } catch (e) {
+              console.error('Erro ao parsear usuário no store:', e);
+            }
+          }
           commit('SET_USER', user);
           console.log('✅ Usuário autenticado:', user);
         } else {
@@ -511,84 +519,24 @@ export default createStore({
     
     async fetchProducts({ commit }) {
       try {
-        const mockProducts = [
-          { 
-            id: 1, 
-            name: 'Elixir Botanics - Tônico Restaurador', 
-            price: 89.90, 
-            category: 'Medicamentos', 
-            description: 'Tônico à base de ervas para restauração da vitalidade cutânea.',
-            longDescription: 'O Elixir Botanics é formulado com extratos botânicos de alta pureza, desenhado para restaurar o equilíbrio natural da pele. Sua fórmula hipoalergênica garante absorção rápida e resultados visíveis em poucos dias de uso contínuo.',
-            inStock: true,
-            estoque: 15,
-            images: ['https://images.unsplash.com/photo-1556228578-0d85b1a4d571?q=80&w=800'],
-            specifications: { 'Volume': '50ml', 'Origem': 'França', 'Tipo': 'Tônico' }
-          },
-          { 
-            id: 2, 
-            name: 'Serene Botanics - Creme Radiance Repair', 
-            price: 145.50, 
-            category: 'Cosméticos', 
-            description: 'Creme hidratante de luxo com extratos calmantes e reparadores.',
-            longDescription: 'O Radiance Repair da Serene Botanics combina a ciência moderna com a sabedoria ancestral das ervas. Com textura aveludada, este creme nutre profundamente, combatendo os sinais de fadiga e estresse ambiental.',
-            inStock: true,
-            estoque: 8,
-            images: ['https://images.unsplash.com/photo-1598440467795-464a92119435?q=80&w=800'],
-            specifications: { 'Peso': '50g', 'Textura': 'Aveludada', 'Hipoalergênico': 'Sim' }
-          },
-          { 
-            id: 3, 
-            name: 'Shampoo Anti-Caspa Scalp Relief', 
-            price: 24.90, 
-            category: 'Higiene', 
-            description: 'Shampoo para controle de caspa e alívio de coceira no couro cabeludo.',
-            longDescription: 'Desenvolvido por dermatologistas, o Scalp Relief atua diretamente na raiz do problema, controlando a descamação enquanto mantém o brilho natural dos fios. Aroma suave de menta e lavanda.',
-            inStock: true,
-            estoque: 45,
-            images: ['https://images.unsplash.com/photo-1556228578-0d85b1a4d571?q=80&w=800'],
-            specifications: { 'Volume': '250ml', 'Fragrância': 'Menta', 'PH': 'Neutro' }
-          },
-          { 
-            id: 4, 
-            name: 'Vitamina C 1000mg Lipossomal', 
-            price: 65.00, 
-            category: 'Vitaminas', 
-            description: 'Suplemento de vitamina C com tecnologia de absorção superior.',
-            longDescription: 'A vitamina C lipossomal garante que os nutrientes cheguem intactos às células, proporcionando um suporte imunológico muito mais eficiente que as fórmulas tradicionais. Antioxidante potente.',
-            inStock: true,
-            estoque: 12,
-            images: ['https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?q=80&w=800'],
-            specifications: { 'Doses': '60 caps', 'Pureza': '99%', 'Livre de Glúten': 'Sim' }
-          },
-          { 
-            id: 5, 
-            name: 'Protetor Solar FPS 50 Aqua Fluid', 
-            price: 32.90, 
-            category: 'Cosméticos', 
-            description: 'Protetor solar facial toque seco com ácido hialurônico.',
-            longDescription: 'Proteção máxima contra raios UVA/UVB combinada com a hidratação intensiva do ácido hialurônico. Ideal para todos os tipos de pele, especialmente as oleosas devido ao seu toque ultra-seco.',
-            inStock: false,
-            estoque: 0,
-            images: ['https://images.unsplash.com/photo-1598440467795-464a92119435?q=80&w=800'],
-            specifications: { 'FPS': '50', 'Filtro': 'Físico/Químico', 'Toque': 'Seco' }
-          },
-          { 
-            id: 6, 
-            name: 'Fralda P Comfort Baby - 30 und', 
-            price: 48.90, 
-            category: 'Maternidade', 
-            description: 'Fraldas ultra absorventes para o máximo conforto do seu bebê.',
-            longDescription: 'Com camadas de proteção extra e elásticos ultra macios, a Comfort Baby garante noites de sono tranquilas e derme sempre sequinha. Recomendada por pediatras.',
-            inStock: true,
-            estoque: 20,
-            images: ['https://images.unsplash.com/photo-1622325067200-a6198f3b259d?q=80&w=800'],
-            specifications: { 'Tamanho': 'P', 'Quantidade': '30', 'Absorção': '12h' }
-          }
-        ];
+        console.log('📡 Buscando produtos da API backend...');
+        const api = require('../services/api').default;
+        const response = await api.get('/produtos');
         
-        commit('SET_PRODUCTS', mockProducts);
+        const mappedProducts = response.data.map(p => ({
+          id: p.id,
+          name: p.nome,
+          price: p.preco,
+          category: p.categoriaNome || 'Geral',
+          description: p.descricao,
+          inStock: p.estoque !== null ? p.estoque > 0 : true,
+          estoque: p.estoque !== null ? p.estoque : 10,
+          images: [p.imagemUrl || 'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?q=80&w=800']
+        }));
+        
+        commit('SET_PRODUCTS', mappedProducts);
       } catch (error) {
-        console.error('Erro ao buscar produtos:', error);
+        console.error('❌ Erro ao buscar produtos reais do backend:', error);
       }
     },
     

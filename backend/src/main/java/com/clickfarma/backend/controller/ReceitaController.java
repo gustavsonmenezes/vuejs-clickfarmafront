@@ -31,9 +31,11 @@ public class ReceitaController {
      * Processa uma receita médica extraindo medicamentos via IA
      * Tenta OCR Space primeiro (mais preciso), depois Tesseract como fallback
      */
+
+
     @PostMapping("/processar")
     public Mono<ResponseEntity<Map<String, Object>>> processarReceita(@RequestBody ReceitaRequestDTO request) {
-        log.info("Recebida requisição para processar receita: {}", request.getNomeArquivo());
+        log.info("Recebida requisição para processar receita no OCRSpace...");
 
         if (request.getImagemBase64() == null || request.getImagemBase64().isEmpty()) {
             Map<String, Object> errorResponse = new HashMap<>();
@@ -42,44 +44,40 @@ public class ReceitaController {
             return Mono.just(ResponseEntity.badRequest().body(errorResponse));
         }
 
-        // Tentar OCR Space primeiro (mais preciso para letras manuscritas)
-        log.info("Tentando OCR Space API...");
         return ocrService.extrairTextoDeImagem(request.getImagemBase64())
-                .flatMap(textoExtraido -> {
-                    // Se OCR Space falhar, tentar Tesseract
-                    if (textoExtraido.startsWith("Erro") || textoExtraido.equals("Nenhum texto encontrado na imagem")) {
-                        log.warn("OCR Space falhou, tentando Tesseract...");
+                .flatMap(textoLido -> {
+                    if (textoLido.startsWith("Erro")) {
+                        log.warn("OCR Space falhou. Tentando Tesseract local...");
                         String textoTesseract = tesseractOCRService.extrairTexto(request.getImagemBase64());
-                        
-                        if (textoTesseract.startsWith("Erro") || textoTesseract.equals("Nenhum texto encontrado na imagem")) {
-                            log.error("Ambos OCR Space e Tesseract falharam");
+                        if (textoTesseract.startsWith("Erro")) {
                             Map<String, Object> errorResponse = new HashMap<>();
                             errorResponse.put("sucesso", false);
-                            errorResponse.put("erro", "Não foi possível extrair texto da imagem. Tente com uma imagem de melhor qualidade.");
-                            return Mono.just(ResponseEntity.ok(errorResponse));
+                            errorResponse.put("erro", "Falha nos dois OCRs: " + textoLido + " | " + textoTesseract);
+                            return Mono.just(ResponseEntity.badRequest().body(errorResponse));
                         }
-                        
-                        return processarTextoComGroq(textoTesseract);
+                        return groqProcessadorReceitaService.processarReceita(textoTesseract)
+                            .map(medicamentos -> {
+                                Map<String, Object> response = new HashMap<>();
+                                response.put("sucesso", true);
+                                response.put("medicamentos", medicamentos.getMedicamentos());
+                                return ResponseEntity.ok(response);
+                            });
                     }
-                    
-                    log.info("✅ OCR Space bem-sucedido");
-                    return processarTextoComGroq(textoExtraido);
+                    log.info("✅ Texto lido pelo OCR: {}", textoLido);
+                    return groqProcessadorReceitaService.processarReceita(textoLido)
+                        .map(medicamentos -> {
+                            Map<String, Object> response = new HashMap<>();
+                            response.put("sucesso", true);
+                            response.put("medicamentos", medicamentos.getMedicamentos());
+                            return ResponseEntity.ok(response);
+                        });
                 })
                 .onErrorResume(erro -> {
-                    log.error("Erro geral no processamento da receita", erro);
-                    
-                    // Fallback para Tesseract se OCR Space falhar completamente
-                    log.info("Tentando Tesseract como último recurso...");
-                    String textoTesseract = tesseractOCRService.extrairTexto(request.getImagemBase64());
-                    
-                    if (textoTesseract.startsWith("Erro")) {
-                        Map<String, Object> errorResponse = new HashMap<>();
-                        errorResponse.put("sucesso", false);
-                        errorResponse.put("erro", "Erro ao processar imagem: " + erro.getMessage());
-                        return Mono.just(ResponseEntity.internalServerError().body(errorResponse));
-                    }
-                    
-                    return processarTextoComGroq(textoTesseract);
+                    log.error("Erro geral no processamento", erro);
+                    Map<String, Object> errorResponse = new HashMap<>();
+                    errorResponse.put("sucesso", false);
+                    errorResponse.put("erro", "Erro ao processar imagem visualmente: " + erro.getMessage());
+                    return Mono.just(ResponseEntity.internalServerError().body(errorResponse));
                 });
     }
 

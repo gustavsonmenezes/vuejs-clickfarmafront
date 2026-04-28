@@ -49,25 +49,30 @@
             <li class="nav-item">
               <router-link to="/track-order" class="nav-link cf-nav-link">Rastrear</router-link>
             </li>
-            <li class="nav-item">
-              <router-link to="/prescriptions/upload" class="nav-link cf-nav-link">
-                📸 Ler Receita
-              </router-link>
-            </li>
-            <li class="nav-item">
-              <router-link to="/about" class="nav-link cf-nav-link">Sobre</router-link>
-            </li>
+          <!-- Links removidos: Ler Receita e Sobre -->
           </ul>
 
           <!-- Ações -->
           <div class="navbar-actions d-flex align-items-center gap-2">
 
             <!-- Busca -->
-            <button class="cf-icon-btn" aria-label="Buscar">
-              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                <circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/>
-              </svg>
-            </button>
+            <div class="search-container position-relative">
+              <input 
+                type="text" 
+                class="form-control cf-search-input" 
+                placeholder="Buscar produtos..." 
+                v-model="searchQuery"
+                @keyup.enter="handleSearch"
+                :class="{ 'expanded': isSearchOpen }"
+                @focus="isSearchOpen = true"
+                @blur="closeSearchDelay"
+              >
+              <button class="cf-icon-btn search-submit-btn" @click="handleSearch" aria-label="Buscar">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/>
+                </svg>
+              </button>
+            </div>
 
             <!-- Carrinho -->
             <router-link :to="{ name: 'Checkout', params: { cart: JSON.stringify(cart) } }" class="cf-icon-btn cf-cart position-relative" aria-label="Carrinho">
@@ -121,6 +126,12 @@
 import { mapGetters, mapActions } from 'vuex'
 export default {
   name: 'Header',
+  data() {
+    return {
+      searchQuery: '',
+      isSearchOpen: false
+    }
+  },
   computed: {
     ...mapGetters(['isAuthenticated', 'cartItemsCount', 'user', 'cart']),
     userInitials() {
@@ -130,7 +141,21 @@ export default {
   },
   methods: {
     ...mapActions(['logout']),
-    async handleLogout() { await this.logout(); this.$router.push('/') }
+    async handleLogout() { await this.logout(); this.$router.push('/') },
+    handleSearch() {
+      if (this.searchQuery.trim()) {
+        this.$router.push({ path: '/products', query: { q: this.searchQuery.trim() } })
+        this.searchQuery = ''
+        this.isSearchOpen = false
+      } else {
+        this.isSearchOpen = !this.isSearchOpen
+      }
+    },
+    closeSearchDelay() {
+      setTimeout(() => {
+        this.isSearchOpen = false
+      }, 200)
+    }
   }
 }
 </script>
@@ -212,8 +237,47 @@ header {
   line-height: 1.2;
 }
 
-/* ---- ÍCONES ---- */
+/* ---- SEARCH ---- */
+.search-container {
+  display: flex;
+  align-items: center;
+}
+
+.cf-search-input {
+  width: 0;
+  padding: 0;
+  border: none;
+  opacity: 0;
+  transition: all 300ms var(--cf-ease);
+  background: var(--cf-ivory);
+  border-radius: var(--cf-r-md);
+  font-size: 0.85rem;
+}
+
+.cf-search-input.expanded {
+  width: 200px;
+  padding: 0.4rem 2.2rem 0.4rem 1rem;
+  opacity: 1;
+  border: 1px solid var(--cf-border);
+}
+
+.cf-search-input:focus {
+  border-color: var(--cf-green);
+  box-shadow: 0 0 0 2px rgba(42,92,69,0.1);
+  outline: none;
+}
+
+.search-submit-btn {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  z-index: 2;
+}
+
 .cf-icon-btn {
+
   width: 38px;
   height: 38px;
   display: flex;

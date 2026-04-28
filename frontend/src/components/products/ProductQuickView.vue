@@ -14,10 +14,10 @@
           <div class="col-lg-6 cf-modal-gallery">
             <div class="cf-gallery-main">
               <div class="cf-visual-placeholder">
-                  <span class="cf-large-icon">{{ getCategoryIcon(product.category) }}</span>
+                  <span class="cf-large-icon">{{ getCategoryIcon(product?.category) }}</span>
               </div>
             </div>
-            <div v-if="product.images && product.images.length > 1" class="cf-gallery-thumbs">
+            <div v-if="product?.images && product.images.length > 1" class="cf-gallery-thumbs">
               <div 
                 v-for="(img, idx) in product.images" 
                 :key="idx"

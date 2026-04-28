@@ -38,24 +38,29 @@ public class OCRService {
     public Mono<String> extrairTextoDeImagem(String imagemBase64) {
         log.info("Iniciando OCR na imagem");
 
-        // Remove qualquer prefixo data:image que possa ter vindo junto
-        String imagemLimpa = imagemBase64;
-        if (imagemBase64.contains(",")) {
-            imagemLimpa = imagemBase64.substring(imagemBase64.indexOf(",") + 1);
+        String activeApiKey = (apiKey != null && !apiKey.isEmpty() && !apiKey.equals("your_ocr_api_key_here")) ? apiKey : "helloworld";
+
+        // Assegura prefixo data:image para o OCR Space
+        String dataUrl = imagemBase64;
+        if (!dataUrl.startsWith("data:image")) {
+            dataUrl = "data:image/jpeg;base64," + imagemBase64;
         }
 
-        // Prepara o corpo da requisição
-        String requestBody = String.format(
-                "apikey=%s&base64Image=%s&language=%s&isOverlayRequired=false&detectOrientation=true&scale=true",
-                apiKey, imagemLimpa, language
-        );
+        try {
+            // Encode the dataUrl to prevent invalid URI characters
+            String encodedDataUrl = java.net.URLEncoder.encode(dataUrl, "UTF-8");
+            
+            String requestBody = String.format(
+                    "apikey=%s&base64Image=%s&language=%s&isOverlayRequired=false&detectOrientation=true&scale=true",
+                    activeApiKey, encodedDataUrl, language
+            );
 
-        return webClient.post()
-                .uri(apiUrl)
-                .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-                .header("Accept", "application/json")
-                .bodyValue(requestBody)
-                .retrieve()
+            return webClient.post()
+                    .uri(apiUrl)
+                    .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                    .header("Accept", "application/json")
+                    .bodyValue(requestBody)
+                    .retrieve()
                 .bodyToMono(String.class)
                 .map(response -> {
                     try {
@@ -92,5 +97,9 @@ public class OCRService {
                     log.error("Erro na chamada OCR API", e);
                     return Mono.just("Erro na comunicação com o serviço OCR: " + e.getMessage());
                 });
+        } catch (Exception e) {
+            log.error("Erro ao codificar URL", e);
+            return Mono.just("Erro ao processar a imagem localmente: " + e.getMessage());
+        }
     }
 }
