@@ -9,12 +9,16 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.web.reactive.function.BodyInserters;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Mono;
 
+import java.awt.image.BufferedImage;
+
 @Service
-@Slf4j
 public class OCRService {
+
+    private static final Logger log = LoggerFactory.getLogger(OCRService.class);
 
     @Value("${ocr.space.api.key}")
     private String apiKey;
@@ -24,6 +28,13 @@ public class OCRService {
 
     @Value("${ocr.space.language:por}")
     private String language;
+
+    /** Texto solto / manuscrito costuma sair melhor sem forçar layout de tabela. */
+    @Value("${ocr.space.isTable:false}")
+    private boolean isTable;
+
+    @Value("${ocr.space.preprocess:true}")
+    private boolean preprocessImage;
 
     private final WebClient webClient;
     private final ObjectMapper objectMapper;
@@ -47,17 +58,32 @@ public class OCRService {
             imagemLimpa = imagemBase64.substring(imagemBase64.indexOf(",") + 1);
         }
 
-        // CORREÇÃO: Usar MultiValueMap para garantir que o WebClient faça o URL Encoding correto da imagem Base64
-        // Sem isso, caracteres como '+' e '/' são corrompidos na transmissão
+        String payloadBase64 = imagemLimpa;
+        String imageDataUriPrefix = "data:image/jpeg;base64,";
+        if (preprocessImage) {
+            try {
+                BufferedImage decoded = OcrImageEnhancer.decodeBase64(imagemBase64);
+                if (decoded != null) {
+                    BufferedImage enhanced = OcrImageEnhancer.enhanceForHandwritingOcr(decoded);
+                    payloadBase64 = OcrImageEnhancer.encodePngBase64(enhanced);
+                    imageDataUriPrefix = "data:image/png;base64,";
+                    log.debug("Imagem pré-processada para OCR.space (PNG, contraste/upscale)");
+                }
+            } catch (Exception e) {
+                log.warn("Pré-processamento da imagem para OCR.space falhou; usando original: {}", e.getMessage());
+            }
+        }
+
+        // MultiValueMap garante URL encoding correto (ex.: '+' na base64)
         MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
         formData.add("apikey", apiKey);
-        formData.add("base64Image", "data:image/jpeg;base64," + imagemLimpa); // Adiciona prefixo esperado pela API
+        formData.add("base64Image", imageDataUriPrefix + payloadBase64);
         formData.add("language", language);
         formData.add("isOverlayRequired", "false");
         formData.add("detectOrientation", "true");
         formData.add("scale", "true");
-        formData.add("isTable", "true"); // Ajuda a manter a estrutura de linhas em receitas médicas
-        formData.add("OCREngine", "2"); // Engine 2 é melhor para textos complexos e manuscritos
+        formData.add("isTable", String.valueOf(isTable));
+        formData.add("OCREngine", "2");
 
         return webClient.post()
                 .uri(apiUrl)

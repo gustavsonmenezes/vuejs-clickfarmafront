@@ -50,45 +50,112 @@
         <small>Isso pode levar alguns segundos</small>
       </div>
 
-      <div v-if="resultado" class="resultados">
-        <div v-if="resultado.sucesso && resultado.medicamentos?.length > 0">
+	        <div v-if="resultado" class="resultados">
+	          <div v-if="resultado.sucesso && resultado.medicamentos?.length > 0">
+	          <div v-if="resultado.mensagemOrientacao" class="orientacao-clickfarma">
+	            <i class="fas fa-info-circle"></i>
+	            <p>{{ resultado.mensagemOrientacao }}</p>
+	          </div>
+
           <h3>
             <i class="fas fa-pills"></i>
-            Medicamentos Identificados ({{ resultado.medicamentos.length }})
+            Itens lidos na receita ({{ resultado.medicamentos.length }})
           </h3>
 
           <div class="medicamentos-lista">
-            <div v-for="(med, index) in resultado.medicamentos" :key="index" class="medicamento-card">
-              <div class="medicamento-info">
-                <div class="medicamento-header">
-                  <div class="medicamento-nome">
-                    <strong>{{ med.nomeCompleto || med.nome }}</strong>
-                    <span v-if="med.dosagem" class="dosagem">{{ med.dosagem }}</span>
-                  </div>
-                  <div v-if="med.preco > 0" class="medicamento-preco">
-                    <span class="preco-label">R$</span>
-                    <span class="preco-valor">{{ formatarPreco(med.preco) }}</span>
-                  </div>
-                </div>
+	            <div v-for="(med, index) in resultado.medicamentos" :key="index" class="medicamento-card">
+	              <div class="medicamento-info">
+	                <div class="medicamento-header">
+	                  <div class="medicamento-nome">
+	                    <strong>{{ med.nome }}</strong>
+	                    <span v-if="med.dosagem" class="dosagem">{{ med.dosagem }}</span>
+	                    <span v-if="med.descricaoIA && med.descricaoIA.includes('OCR com baixa qualidade')"
+	                          class="badge-ocr-ruim"
+	                          title="A leitura automática teve baixa qualidade. Verifique o nome na receita original.">
+	                      <i class="fas fa-exclamation-triangle"></i> Revisar
+	                    </span>
+	                  </div>
+	                  <div v-if="med.preco > 0" class="medicamento-preco">
+	                    <span class="preco-label">R$</span>
+	                    <span class="preco-valor">{{ formatarPreco(med.preco) }}</span>
+	                  </div>
+	                </div>
 
-                <div v-if="med.descricaoProduto" class="medicamento-descricao">
-                  {{ med.descricaoProduto }}
-                </div>
+	                <div v-if="med.descricaoProduto" class="medicamento-descricao">
+	                  {{ med.descricaoProduto }}
+	                </div>
 
-                <div class="medicamento-detalhes">
-                  <div class="detalhe">
-                    <i class="fas fa-cubes"></i>
-                    <span>Quantidade prescrita: {{ med.quantidade }}</span>
-                  </div>
-                  <div v-if="med.estoque !== undefined" class="detalhe" :class="{ 'sem-estoque': med.estoque === 0 }">
-                    <i class="fas fa-warehouse"></i>
-                    <span v-if="med.estoque > 0">{{ med.estoque }} em estoque</span>
-                    <span v-else>Fora de estoque</span>
-                  </div>
-                </div>
-              </div>
+	                <div class="medicamento-detalhes">
+	                  <div class="detalhe">
+	                    <i class="fas fa-cubes"></i>
+	                    <span>Quantidade prescrita: {{ med.quantidade }}</span>
+	                  </div>
+	                  <div
+	                      v-if="med.produtoId"
+	                      class="detalhe"
+	                      :class="{ 'sem-estoque': med.estoque === 0 }"
+	                  >
+	                    <i class="fas fa-warehouse"></i>
+	                    <span v-if="med.estoque > 0">{{ med.estoque }} em estoque</span>
+	                    <span v-else>Esgotado no catálogo</span>
+	                  </div>
+	                  <div v-else class="detalhe aviso-catalogo">
+	                    <i class="fas fa-link"></i>
+	                    <span>Não vinculamos automaticamente a um produto do catálogo. Veja abaixo se há alternativa no ClickFarma ou adicione pelo nome da receita.</span>
+	                  </div>
+	                </div>
 
-              <div class="medicamento-acoes">
+		                <details
+		                    v-if="med.descricaoIA && med.descricaoIA.includes('OCR com baixa qualidade')"
+		                    class="edicao-manual-area"
+		                >
+	                  <summary class="edicao-manual-summary">
+	                    <i class="fas fa-exclamation-triangle"></i>
+	                    Revisar nome do medicamento
+	                  </summary>
+	                  <label>Confirmar nome do medicamento:</label>
+	                  <div class="edicao-manual-input-group">
+	                    <input v-model="med.nomeEditado" :placeholder="med.nome" class="input-edicao-nome" />
+	                    <button @click="buscarProdutoPorNome(med, index)" class="btn-buscar-edicao" :disabled="carregandoBusca">
+	                      <i class="fas fa-search"></i> Buscar no catálogo
+	                    </button>
+	                  </div>
+	                </details>
+
+		                <details
+		                    v-if="med.alternativasSugeridas?.length"
+		                    class="alternativas-box"
+		                >
+	                  <summary class="alternativas-titulo">
+	                    <i class="fas fa-exchange-alt"></i>
+	                    No ClickFarma: opções similares ou com efeito próximo (confirme com médico/farmacêutico)
+	                  </summary>
+	                  <div
+	                      v-for="(alt, aidx) in med.alternativasSugeridas"
+	                      :key="'alt-' + index + '-' + aidx"
+	                      class="alternativa-linha"
+	                  >
+                    <div class="alternativa-info">
+                      <strong>{{ alt.nome }}</strong>
+                      <span v-if="alt.motivoIndicacao" class="alternativa-motivo">{{ alt.motivoIndicacao }}</span>
+                      <span class="alternativa-meta">
+                        R$ {{ formatarPreco(alt.preco) }}
+                        · {{ alt.estoque }} em estoque
+                      </span>
+                    </div>
+                    <button
+                        type="button"
+                        class="btn-alt-add"
+                        :disabled="!alt.produtoId || alt.estoque === 0"
+                        @click="adicionarAlternativaAoCarrinho(alt)"
+                    >
+	                      <i class="fas fa-cart-plus"></i> Adicionar
+	                    </button>
+	                  </div>
+	                </details>
+	              </div>
+
+	              <div v-if="!somenteLeitura" class="medicamento-acoes">
                 <div class="quantidade-selector">
                   <button @click="diminuirQuantidade(index)" class="btn-qty">
                     <i class="fas fa-minus"></i>
@@ -106,7 +173,7 @@
                 <button
                     @click="adicionarAoCarrinho(med, index)"
                     class="btn-adicionar"
-                    :disabled="med.estoque === 0"
+                    :disabled="!med.produtoId || med.estoque === 0"
                 >
                   <i class="fas fa-cart-plus"></i> Adicionar
                 </button>
@@ -114,7 +181,7 @@
             </div>
           </div>
 
-          <div class="acoes-bulk">
+	          <div v-if="!somenteLeitura" class="acoes-bulk">
             <button @click="adicionarTodosAoCarrinho" class="btn-adicionar-todos">
               <i class="fas fa-shopping-cart"></i>
               Adicionar Todos ({{ resultado.medicamentos.length }})
@@ -135,15 +202,20 @@
           </button>
         </div>
 
-        <div v-else class="erro-area">
-          <i class="fas fa-exclamation-triangle"></i>
-          <h4>Erro ao processar</h4>
-          <p>{{ resultado.erro }}</p>
-          <button @click="limparImagem" class="btn-tentar-novamente">
-            Tentar novamente
-          </button>
-        </div>
-      </div>
+	        <div v-else class="erro-area">
+	          <i class="fas fa-exclamation-triangle"></i>
+	          <h4>Erro ao processar</h4>
+	          <p>{{ resultado.erro }}</p>
+	          <button @click="limparImagem" class="btn-tentar-novamente">
+	            Tentar novamente
+	          </button>
+	        </div>
+
+	        <details v-if="debugOcr && resultado.textoOriginal" class="ocr-debug">
+	          <summary>Texto lido (OCR)</summary>
+	          <pre>{{ resultado.textoOriginal }}</pre>
+	        </details>
+	      </div>
     </div>
 
     <!-- Sistema simples de notificação -->
@@ -167,8 +239,11 @@ export default {
       imagemPreview: null,
       nomeArquivo: null,
       carregando: false,
+      carregandoBusca: false,
       resultado: null,
       quantidades: {},
+      debugOcr: false,
+      somenteLeitura: true,
       notificacao: {
         visivel: false,
         mensagem: '',
@@ -176,6 +251,17 @@ export default {
         icone: ''
       }
     };
+  },
+  created() {
+    try {
+      this.debugOcr = localStorage.getItem('debug_ocr') === '1';
+      // Por padrão, permitimos adicionar ao carrinho quando o item estiver no catálogo (produtoId).
+      // Para forçar modo somente leitura, use localStorage.receita_readonly = '1'.
+      this.somenteLeitura = localStorage.getItem('receita_readonly') === '1';
+    } catch (e) {
+      this.debugOcr = false;
+      this.somenteLeitura = false;
+    }
   },
   methods: {
     selecionarArquivo(event) {
@@ -241,6 +327,38 @@ export default {
       }
     },
 
+    async buscarProdutoPorNome(medicamento, index) {
+      if (!medicamento.nomeEditado && !medicamento.nome) return;
+
+      const nomeBusca = medicamento.nomeEditado || medicamento.nome;
+      this.carregandoBusca = true;
+
+      try {
+        const produtos = await receitaService.buscarProdutos(nomeBusca);
+        if (produtos && produtos.length > 0) {
+          const produto = produtos[0];
+          medicamento.produtoId = produto.id;
+          medicamento.nomeCompleto = produto.nome;
+          medicamento.preco = produto.preco;
+          medicamento.estoque = produto.estoque;
+          medicamento.situacaoCatalogo = produto.estoque > 0 ? 'DISPONIVEL' : 'SEM_ESTOQUE';
+          medicamento.descricaoProduto = produto.descricao;
+          this.mostrarNotificacao(`Produto encontrado: ${produto.nome}`, 'sucesso');
+
+          if (this.$set) {
+            this.$set(this.resultado.medicamentos, index, medicamento);
+          }
+        } else {
+          this.mostrarNotificacao(`Nenhum produto encontrado para "${nomeBusca}"`, 'warning');
+        }
+      } catch (error) {
+        console.error('Erro ao buscar produto:', error);
+        this.mostrarNotificacao('Erro ao buscar produto', 'erro');
+      } finally {
+        this.carregandoBusca = false;
+      }
+    },
+
     aumentarQuantidade(index) {
       if (!this.quantidades[index]) {
         this.quantidades[index] = 1;
@@ -254,11 +372,38 @@ export default {
       }
     },
 
+    adicionarAlternativaAoCarrinho(alt) {
+      if (!alt || !alt.produtoId) return;
+      const item = {
+        id: alt.produtoId,
+        name: alt.nome,
+        price: alt.preco || 0,
+        quantity: 1,
+        description: alt.motivoIndicacao || '',
+        dosagem: '',
+        origem: 'receita-alternativa',
+        dataAdicao: new Date().toISOString()
+      };
+      if (this.$store && this.$store.dispatch) {
+        this.$store.dispatch('addToCart', item);
+        this.mostrarNotificacao(`${alt.nome} adicionado ao carrinho!`, 'sucesso');
+      } else {
+        const carrinho = JSON.parse(localStorage.getItem('carrinho') || '[]');
+        carrinho.push(item);
+        localStorage.setItem('carrinho', JSON.stringify(carrinho));
+        this.mostrarNotificacao(`${alt.nome} adicionado (local)!`, 'sucesso');
+      }
+    },
+
     adicionarAoCarrinho(medicamento, index) {
+      if (!medicamento || !medicamento.produtoId) {
+        this.mostrarNotificacao('Este item não está vinculado ao catálogo. Use a busca para encontrar o produto.', 'warning');
+        return;
+      }
       const quantidade = this.quantidades[index] || medicamento.quantidade || 1;
 
       const item = {
-        id: medicamento.produtoId || `receita-${Date.now()}-${index}`,
+        id: medicamento.produtoId,
         name: medicamento.nomeCompleto || medicamento.nome,
         price: medicamento.preco || 0,
         quantity: quantidade,
@@ -285,7 +430,9 @@ export default {
       if (!this.resultado?.medicamentos) return;
 
       this.resultado.medicamentos.forEach((med, index) => {
-        this.adicionarAoCarrinho(med, index);
+        if (med && med.produtoId && !(med.estoque === 0)) {
+          this.adicionarAoCarrinho(med, index);
+        }
       });
 
       this.mostrarNotificacao(`${this.resultado.medicamentos.length} medicamentos adicionados ao carrinho!`, 'sucesso');
@@ -497,6 +644,30 @@ export default {
   gap: 10px;
 }
 
+.ocr-debug {
+  margin-top: 16px;
+  padding: 12px;
+  border-radius: 10px;
+  background: #f1f3f5;
+  border: 1px solid #e9ecef;
+}
+
+.ocr-debug summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: #495057;
+}
+
+.ocr-debug pre {
+  margin: 10px 0 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 260px;
+  overflow: auto;
+  font-size: 12px;
+  color: #343a40;
+}
+
 .medicamentos-lista {
   display: flex;
   flex-direction: column;
@@ -528,11 +699,14 @@ export default {
   justify-content: space-between;
   align-items: flex-start;
   margin-bottom: 8px;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .medicamento-nome {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 8px;
 }
 
@@ -548,6 +722,18 @@ export default {
   border-radius: 12px;
   font-size: 11px;
   color: #666;
+}
+
+.badge-ocr-ruim {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #ffc107;
+  color: #856404;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 12px;
 }
 
 .medicamento-preco {
@@ -579,6 +765,7 @@ export default {
   gap: 15px;
   font-size: 12px;
   color: #666;
+  flex-wrap: wrap;
 }
 
 .detalhe {
@@ -590,6 +777,197 @@ export default {
 .detalhe.sem-estoque {
   color: #dc3545;
   font-weight: 600;
+}
+
+.detalhe.aviso-catalogo {
+  color: #856404;
+  background: #fff8e1;
+  padding: 6px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+.edicao-manual-area {
+  margin-top: 12px;
+  padding: 12px;
+  background: #fff8e1;
+  border-radius: 8px;
+  border-left: 3px solid #ffc107;
+}
+
+.edicao-manual-summary {
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 700;
+  color: #856404;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  list-style: none;
+}
+
+.edicao-manual-summary::-webkit-details-marker {
+  display: none;
+}
+
+.edicao-manual-area label {
+  font-size: 12px;
+  color: #856404;
+  margin-bottom: 6px;
+  display: block;
+  font-weight: 500;
+  margin-top: 10px;
+}
+
+.edicao-manual-input-group {
+  display: flex;
+  gap: 8px;
+}
+
+.input-edicao-nome {
+  flex: 1;
+  padding: 8px 12px;
+  border: 1px solid #ffc107;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+.input-edicao-nome:focus {
+  outline: none;
+  border-color: #e0a800;
+  box-shadow: 0 0 0 2px rgba(255, 193, 7, 0.2);
+}
+
+.btn-buscar-edicao {
+  background: #28a745;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  transition: background 0.2s;
+}
+
+.btn-buscar-edicao:hover:not(:disabled) {
+  background: #218838;
+}
+
+.btn-buscar-edicao:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.orientacao-clickfarma {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  background: linear-gradient(135deg, #e8f4fc 0%, #f0e8fc 100%);
+  border: 1px solid #c5d9f0;
+  border-radius: 12px;
+  padding: 16px 18px;
+  margin-bottom: 20px;
+  font-size: 14px;
+  line-height: 1.55;
+  color: #2c3e50;
+}
+
+.orientacao-clickfarma i {
+  color: #667eea;
+  font-size: 20px;
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+
+.orientacao-clickfarma p {
+  margin: 0;
+}
+
+.alternativas-box {
+  margin-top: 12px;
+  padding: 12px;
+  background: #f8f9ff;
+  border-radius: 10px;
+  border: 1px dashed #a8b4f5;
+}
+
+.alternativas-titulo {
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  color: #4a5568;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  list-style: none;
+}
+
+.alternativas-titulo::-webkit-details-marker {
+  display: none;
+}
+
+.alternativa-linha {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 10px 0;
+  border-top: 1px solid #e2e8f0;
+}
+
+.alternativa-linha:first-of-type {
+  border-top: none;
+  padding-top: 0;
+}
+
+.alternativa-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.alternativa-info strong {
+  display: block;
+  color: #2d3748;
+  margin-bottom: 4px;
+}
+
+.alternativa-motivo {
+  display: block;
+  font-size: 12px;
+  color: #5a6778;
+  margin-bottom: 4px;
+  line-height: 1.35;
+}
+
+.alternativa-meta {
+  font-size: 12px;
+  color: #718096;
+}
+
+.btn-alt-add {
+  flex-shrink: 0;
+  padding: 8px 14px;
+  font-size: 13px;
+  border: none;
+  border-radius: 8px;
+  background: #667eea;
+  color: white;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btn-alt-add:hover:not(:disabled) {
+  background: #5a6fd6;
+}
+
+.btn-alt-add:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .medicamento-acoes {
@@ -822,6 +1200,14 @@ export default {
     left: 20px;
     right: 20px;
     top: 10px;
+  }
+
+  .edicao-manual-input-group {
+    flex-direction: column;
+  }
+
+  .btn-buscar-edicao {
+    width: 100%;
   }
 }
 </style>

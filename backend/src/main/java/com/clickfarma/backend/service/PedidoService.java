@@ -1,14 +1,29 @@
 package com.clickfarma.backend.service;
 
-import com.clickfarma.backend.dto.*;
-import com.clickfarma.backend.model.*;
-import com.clickfarma.backend.repository.*;
+import com.clickfarma.backend.dto.MedicamentoExtraidoDTO;
+import com.clickfarma.backend.dto.PedidoRequestDTO;
+import com.clickfarma.backend.dto.PedidoResponseDTO;
+import com.clickfarma.backend.dto.ItemPedidoRequestDTO;
+import com.clickfarma.backend.dto.RastreioResponseDTO;
+import com.clickfarma.backend.model.AgendamentoRecompra;
+import com.clickfarma.backend.model.ItemPedido;
+import com.clickfarma.backend.model.Pedido;
+import com.clickfarma.backend.model.Produto;
+import com.clickfarma.backend.model.Rastreio;
+import com.clickfarma.backend.model.Usuario;
+import com.clickfarma.backend.repository.AgendamentoRecompraRepository;
+import com.clickfarma.backend.repository.ItemPedidoRepository;
+import com.clickfarma.backend.repository.PedidoRepository;
+import com.clickfarma.backend.repository.ProdutoRepository;
+import com.clickfarma.backend.repository.RastreioRepository;
+import com.clickfarma.backend.repository.UsuarioRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.Locale;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -35,6 +50,17 @@ public class PedidoService {
     @Autowired
     private PagamentoService pagamentoService;
 
+    @Autowired
+    private AgendamentoRecompraRepository agendamentoRecompraRepository;
+
+    @Autowired
+    private EmailNotificationService emailNotificationService;
+
+    /**
+     * Cria o pedido normal (sem considerar agendamento de recompra).
+     * Se quiser já criar os agendamentos, use o método
+     * criarPedidoComAgendamentos abaixo.
+     */
     @Transactional
     public PedidoResponseDTO criarPedido(PedidoRequestDTO pedidoDTO) {
         Usuario usuario = usuarioRepository.findById(pedidoDTO.getUsuarioId())
@@ -74,13 +100,106 @@ public class PedidoService {
         pedidoSalvo.setValorTotal(valorTotal);
         pedidoSalvo = pedidoRepository.save(pedidoSalvo);
 
-        // Gera o link de pagamento AQUI, após o sucesso da criação do pedido
-        String linkPagamento = pagamentoService.criarLinkPagamento(valorTotal.doubleValue(), pedidoSalvo.getId());
+        String metodo = pedidoDTO.getMetodoPagamento() != null
+                ? pedidoDTO.getMetodoPagamento().trim().toUpperCase(Locale.ROOT)
+                : "";
+
+        String linkPagamento = null;
+        if ("MERCADO_PAGO".equals(metodo)) {
+            // Fluxo real: cria link e redireciona.
+            linkPagamento = pagamentoService.criarLinkPagamento(valorTotal.doubleValue(), pedidoSalvo.getId());
+        } else {
+            // Fluxo demo: finaliza o pedido sem redirecionar e já cria rastreio para apresentação/teste.
+            finalizarPedidoSimulado(pedidoSalvo);
+        }
 
         PedidoResponseDTO responseDTO = new PedidoResponseDTO(pedidoSalvo);
         responseDTO.setLinkPagamento(linkPagamento);
 
+        emailNotificationService.enviarConfirmacaoPedido(usuario, pedidoSalvo, linkPagamento);
+
         return responseDTO;
+    }
+
+    private void finalizarPedidoSimulado(Pedido pedido) {
+        if (pedido == null) return;
+
+        pedido.setStatus(Pedido.StatusPedido.PAGO);
+        pedido.setDataAtualizacao(LocalDateTime.now());
+        pedidoRepository.save(pedido);
+
+        // Cria um rastreio simples para permitir consulta imediata via numero/codigo do pedido.
+        if (pedido.getRastreio() == null) {
+            Rastreio rastreio = new Rastreio(pedido);
+            rastreio.setTransportadora("ClickFarma Express (Demo)");
+            rastreio.setDataEnvio(LocalDateTime.now());
+            rastreio.setDataPrevisaoEntrega(LocalDateTime.now().plusDays(5));
+            rastreio.setStatus("EM_TRANSITO");
+            rastreio.setUltimaLocalizacao("Centro de Distribuição");
+            rastreio.setUltimaAtualizacao(LocalDateTime.now());
+            rastreio = rastreioRepository.save(rastreio);
+            // Garante o vínculo bidirecional para consultas via p.rastreio (JOIN FETCH).
+            pedido.setRastreio(rastreio);
+
+            pedido.setStatus(Pedido.StatusPedido.ENVIADO);
+            pedido.setDataAtualizacao(LocalDateTime.now());
+            pedidoRepository.save(pedido);
+        }
+    }
+
+    /**
+     * Versão de criação de pedido que já recebe os medicamentos extraídos
+     * da receita e cria automaticamente os agendamentos de recompra.
+     */
+    @Transactional
+    public PedidoResponseDTO criarPedidoComAgendamentos(
+            PedidoRequestDTO pedidoDTO,
+            List<MedicamentoExtraidoDTO.MedicamentoItem> itensExtraidos
+    ) {
+        // Reaproveita toda a lógica de criação do pedido normal
+        PedidoResponseDTO responseDTO = criarPedido(pedidoDTO);
+
+        // Busca o pedido recém-criado (já vem no DTO, mas pegamos do banco para garantir consistência)
+        Pedido pedido = pedidoRepository.findById(responseDTO.getId())
+                .orElseThrow(() -> new RuntimeException("Pedido não encontrado após criação"));
+
+        // Cria os agendamentos de recompra com base nos itens extraídos
+        finalizarPedido(pedido, itensExtraidos);
+
+        return responseDTO;
+    }
+
+    /**
+     * Lógica para salvar automaticamente os agendamentos de recompra
+     * no momento da compra.
+     */
+    @Transactional
+    public void finalizarPedido(Pedido pedido, List<MedicamentoExtraidoDTO.MedicamentoItem> itensExtraidos) {
+        if (itensExtraidos == null || itensExtraidos.isEmpty()) {
+            return;
+        }
+
+        for (MedicamentoExtraidoDTO.MedicamentoItem item : itensExtraidos) {
+            if (item.getDiasDuracao() != null && item.getProdutoId() != null) {
+                AgendamentoRecompra agendamento = new AgendamentoRecompra();
+                agendamento.setUsuario(pedido.getUsuario());
+                agendamento.setProduto(
+                        produtoRepository.findById(item.getProdutoId())
+                                .orElseThrow(() -> new RuntimeException("Produto não encontrado: " + item.getProdutoId()))
+                );
+                agendamento.setPedido(pedido);
+                agendamento.setPosologiaTexto(item.getPosologia());
+                agendamento.setDiasDuracao(item.getDiasDuracao());
+                agendamento.setStatus("PENDENTE");
+
+                // Calcula a data: Hoje + Dias de Duração - 3 dias de antecedência
+                agendamento.setDataProximaNotificacao(
+                        LocalDateTime.now().plusDays(item.getDiasDuracao()).minusDays(3)
+                );
+
+                agendamentoRecompraRepository.save(agendamento);
+            }
+        }
     }
 
     public List<PedidoResponseDTO> listarTodos() {
@@ -139,6 +258,7 @@ public class PedidoService {
         }
 
         Pedido pedidoAtualizado = pedidoRepository.save(pedido);
+        emailNotificationService.enviarAtualizacaoStatusPedido(pedidoAtualizado.getUsuario(), pedidoAtualizado);
         return new PedidoResponseDTO(pedidoAtualizado);
     }
 

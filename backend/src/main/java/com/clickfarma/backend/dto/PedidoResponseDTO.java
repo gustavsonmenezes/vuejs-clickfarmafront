@@ -8,6 +8,7 @@ import java.util.stream.Collectors;
 public class PedidoResponseDTO {
 
     private Long id;
+    private String codigoPedido;
     private Long usuarioId;
     private String usuarioNome;
     private List<ItemPedidoResponseDTO> itens;
@@ -27,6 +28,7 @@ public class PedidoResponseDTO {
     // Construtor que aceita a entidade Pedido
     public PedidoResponseDTO(Pedido pedido) {
         this.id = pedido.getId();
+        this.codigoPedido = pedido.getCodigoPedido();
         this.usuarioId = pedido.getUsuario().getId();
         this.usuarioNome = pedido.getUsuario().getNome();
         this.status = pedido.getStatus().name();
@@ -46,6 +48,9 @@ public class PedidoResponseDTO {
     // Getters e Setters
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
+
+    public String getCodigoPedido() { return codigoPedido; }
+    public void setCodigoPedido(String codigoPedido) { this.codigoPedido = codigoPedido; }
 
     public Long getUsuarioId() { return usuarioId; }
     public void setUsuarioId(Long usuarioId) { this.usuarioId = usuarioId; }

@@ -11,6 +11,7 @@ import Addresses from '../views/Addresses.vue'
 import ResetPassword from '../views/ResetPassword.vue'
 import Prescriptions from '../views/Prescriptions.vue'
 import OrderConfirmation from '../views/OrderConfirmation.vue'
+import BackendOrderTracking from '../views/BackendOrderTracking.vue'
 
 import AdminLogin from '../views/admin/AdminLogin.vue'
 import AdminDashboard from '../views/admin/AdminDashboard.vue'
@@ -137,6 +138,13 @@ const routes = [
     path: '/tracking/:orderId',
     name: 'OrderTracking',
     component: () => import('../views/OrderTracking.vue'),
+    props: true,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/tracking-backend/:codigoPedido?',
+    name: 'BackendOrderTracking',
+    component: BackendOrderTracking,
     props: true,
     meta: { requiresAuth: true }
   },

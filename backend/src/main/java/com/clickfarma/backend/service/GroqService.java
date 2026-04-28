@@ -13,7 +13,7 @@ import java.util.HashMap;
 @Service
 public class GroqService {
 
-    @Value("${groq.api.key:}")
+    @Value("${GROQ_API_KEY:${groq.api.key:}}")
     private String apiKey;
 
     private final WebClient webClient;
@@ -27,14 +27,22 @@ public class GroqService {
     }
 
     public Mono<String> chat(String mensagem) {
+        return chat(mensagem, 0.7);
+    }
+
+    public boolean isConfigured() {
+        return apiKey != null && !apiKey.isBlank();
+    }
+
+    public Mono<String> chat(String mensagem, double temperature) {
         if (apiKey == null || apiKey.isEmpty()) {
-            return Mono.just("Chave da API Groq nao configurada");
+            return Mono.error(new IllegalStateException("GROQ_API_KEY (ou groq.api.key) não configurada"));
         }
 
         Map<String, Object> requestBody = new HashMap<>();
         requestBody.put("model", "llama-3.3-70b-versatile");
         requestBody.put("messages", List.of(Map.of("role", "user", "content", mensagem)));
-        requestBody.put("temperature", 0.7);
+        requestBody.put("temperature", temperature);
 
         return webClient.post()
                 .uri("/chat/completions")

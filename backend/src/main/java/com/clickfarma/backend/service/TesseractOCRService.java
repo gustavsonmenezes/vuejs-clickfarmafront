@@ -2,86 +2,54 @@ package com.clickfarma.backend.service;
 
 import net.sourceforge.tess4j.Tesseract;
 import net.sourceforge.tess4j.TesseractException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import lombok.extern.slf4j.Slf4j;
+
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
-import java.awt.Graphics2D;
-import java.awt.Color;
-import java.awt.Image;
 import java.io.ByteArrayInputStream;
 import java.util.Base64;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
 @Service
-@Slf4j
 public class TesseractOCRService {
 
-    private final Tesseract tesseract;
-
-    public TesseractOCRService() {
-        this.tesseract = new Tesseract();
-        // Configurar idioma português
-        this.tesseract.setLanguage("por");
-        // Caminho do Tesseract
-        this.tesseract.setDatapath("/usr/share/tesseract-ocr/5/tessdata/");
-        // Configurações para melhor leitura de letra médica
-        this.tesseract.setPageSegMode(6); // Assume um único bloco de texto
-        this.tesseract.setOcrEngineMode(1); // Modo LSTM mais preciso
-
-        // Configurar variáveis do Tesseract para melhorar leitura
-        this.tesseract.setTessVariable("tessedit_char_whitelist",
-                "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789mg/,:;.() -");
-        this.tesseract.setTessVariable("classify_bln_numeric_mode", "0");
-    }
+    private static final Logger log = LoggerFactory.getLogger(TesseractOCRService.class);
 
     /**
-     * Pré-processa a imagem para melhorar a precisão do OCR
-     * Especialmente útil para letras de médico e imagens com baixa qualidade
+     * PSM: bloco uniforme, texto esparso (manuscrito), OSD+esparso, página automática.
      */
-    private BufferedImage preprocessImage(BufferedImage original) {
-        try {
-            log.debug("Pré-processando imagem: {}x{}", original.getWidth(), original.getHeight());
+    private static final List<Integer> PAGE_SEG_MODES = List.of(6, 11, 12, 3);
 
-            // 1. Converter para escala de cinza
-            BufferedImage gray = new BufferedImage(original.getWidth(), original.getHeight(), BufferedImage.TYPE_BYTE_GRAY);
-            Graphics2D g = gray.createGraphics();
-            g.drawImage(original, 0, 0, null);
-            g.dispose();
+    @Value("${receita.ocr.cropBottomFraction:0.78}")
+    private float cropBottomFraction;
 
-            // 2. Aumentar contraste e binarizar (preto e branco)
-            BufferedImage binary = new BufferedImage(gray.getWidth(), gray.getHeight(), BufferedImage.TYPE_BYTE_BINARY);
-            Graphics2D g2d = binary.createGraphics();
-            g2d.drawImage(gray, 0, 0, null);
-            g2d.dispose();
+    /**
+     * Lista de palavras para o Tesseract reconhecer melhor (sem "pós-correção" no output).
+     * Pode ser desligado setando `receita.tesseract.useUserWords=false`.
+     */
+    @Value("${receita.tesseract.useUserWords:true}")
+    private boolean useUserWords;
 
-            // 3. Redimensionar para 2x (ajuda com letras pequenas e ilegíveis)
-            int newWidth = binary.getWidth() * 2;
-            int newHeight = binary.getHeight() * 2;
-            BufferedImage resized = new BufferedImage(newWidth, newHeight, BufferedImage.TYPE_BYTE_BINARY);
-            Graphics2D g3d = resized.createGraphics();
-            g3d.drawImage(binary.getScaledInstance(newWidth, newHeight, Image.SCALE_SMOOTH), 0, 0, null);
-            g3d.dispose();
-
-            log.debug("✅ Imagem pré-processada: {}x{} -> {}x{}", original.getWidth(), original.getHeight(), newWidth, newHeight);
-            return resized;
-
-        } catch (Exception e) {
-            log.warn("Erro no pré-processamento da imagem: {}", e.getMessage());
-            return original; // Retorna a imagem original se o pré-processamento falhar
-        }
-    }
+    private static volatile Path userWordsTempFile;
 
     public String extrairTexto(String imagemBase64) {
         log.info("Iniciando Tesseract OCR");
 
         try {
-            // Limpar o Base64
             String imagemLimpa = imagemBase64;
             if (imagemBase64.contains(",")) {
                 imagemLimpa = imagemBase64.substring(imagemBase64.indexOf(",") + 1);
             }
 
-            // Converter Base64 para imagem
             byte[] imageBytes = Base64.getDecoder().decode(imagemLimpa);
             ByteArrayInputStream bis = new ByteArrayInputStream(imageBytes);
             BufferedImage image = ImageIO.read(bis);
@@ -91,67 +59,190 @@ public class TesseractOCRService {
                 return "Erro: Não foi possível ler a imagem";
             }
 
-            // APLICAR PRÉ-PROCESSAMENTO NA IMAGEM
-            BufferedImage processedImage = preprocessImage(image);
-
-            // Tentativa 1: OCR com imagem pré-processada
-            log.info("Executando OCR na imagem pré-processada...");
-            String texto = tesseract.doOCR(processedImage);
-
-            // Se não encontrou texto ou texto muito curto, tenta com imagem original
-            if (texto == null || texto.trim().isEmpty() || texto.length() < 10) {
-                log.warn("Pouco texto encontrado na imagem pré-processada, tentando com imagem original...");
-                texto = tesseract.doOCR(image);
-            }
-
-            // Se ainda não encontrou texto, tenta com configurações diferentes
-            if (texto == null || texto.trim().isEmpty() || texto.length() < 10) {
-                log.warn("Tentando OCR com configurações alternativas...");
-                this.tesseract.setPageSegMode(3); // Modo automático
-                texto = tesseract.doOCR(processedImage);
-                this.tesseract.setPageSegMode(6); // Voltar ao modo original
-            }
-
-            if (texto == null || texto.trim().isEmpty()) {
+            String texto = extractBestText(image);
+            if (texto == null || texto.isBlank()) {
                 log.warn("Nenhum texto encontrado na imagem");
                 return "Nenhum texto encontrado na imagem";
             }
 
-            // Limpar o texto extraído (remover caracteres estranhos)
-            texto = limparTextoExtraido(texto);
-
             log.info("Texto extraído com sucesso: {} caracteres", texto.length());
             log.debug("Conteúdo extraído: {}", texto);
-
             return texto;
 
         } catch (TesseractException e) {
-            log.error("Erro Tesseract: {}", e.getMessage());
+            log.error("Erro Tesseract", e);
             return "Erro ao processar OCR: " + e.getMessage();
         } catch (Exception e) {
-            log.error("Erro geral: {}", e.getMessage());
+            log.error("Erro geral ao processar imagem", e);
             return "Erro ao processar imagem: " + e.getMessage();
         }
     }
 
-    /**
-     * Limpa o texto extraído, removendo caracteres que podem atrapalhar a IA
-     */
+    private String extractBestText(BufferedImage image) throws TesseractException {
+        Map<String, BufferedImage> variants = preprocessVariants(image);
+        String bestText = "";
+        int bestScore = Integer.MIN_VALUE;
+        String bestAttempt = "none";
+
+        for (Map.Entry<String, BufferedImage> entry : variants.entrySet()) {
+            for (Integer pageSegMode : PAGE_SEG_MODES) {
+                String attemptName = entry.getKey() + "-psm" + pageSegMode;
+                String rawText = createTesseract(pageSegMode).doOCR(entry.getValue());
+                String cleanedText = limparTextoExtraido(rawText);
+                int score = scoreText(cleanedText);
+
+                log.debug("Tentativa OCR {}: score={}, chars={}", attemptName, score, cleanedText.length());
+
+                if (score > bestScore) {
+                    bestScore = score;
+                    bestText = cleanedText;
+                    bestAttempt = attemptName;
+                }
+            }
+        }
+
+        log.info("Melhor leitura do Tesseract: {} (score={}, chars={})", bestAttempt, bestScore, bestText.length());
+        return bestText;
+    }
+
+    private Tesseract createTesseract(int pageSegMode) {
+        Tesseract tesseract = new Tesseract();
+        tesseract.setLanguage("por");
+        tesseract.setDatapath("/usr/share/tesseract-ocr/5/tessdata/");
+        tesseract.setPageSegMode(pageSegMode);
+        tesseract.setOcrEngineMode(1);
+        tesseract.setTessVariable("classify_bln_numeric_mode", "0");
+        tesseract.setTessVariable("preserve_interword_spaces", "1");
+        if (useUserWords) {
+            Path words = resolveUserWordsFile();
+            if (words != null) {
+                // Tesseract expects a filesystem path.
+                tesseract.setTessVariable("user_words_file", words.toAbsolutePath().toString());
+            }
+        }
+        return tesseract;
+    }
+
+    private Path resolveUserWordsFile() {
+        if (userWordsTempFile != null) {
+            return userWordsTempFile;
+        }
+        synchronized (TesseractOCRService.class) {
+            if (userWordsTempFile != null) {
+                return userWordsTempFile;
+            }
+            try (InputStream in = TesseractOCRService.class.getClassLoader()
+                    .getResourceAsStream("tesseract/user_words_receita.txt")) {
+                if (in == null) {
+                    return null;
+                }
+                Path tmp = Files.createTempFile("clickfarma-user-words-", ".txt");
+                Files.copy(in, tmp, StandardCopyOption.REPLACE_EXISTING);
+                tmp.toFile().deleteOnExit();
+                userWordsTempFile = tmp;
+                return tmp;
+            } catch (Exception e) {
+                log.warn("Falha ao carregar user_words do Tesseract: {}", e.getMessage());
+                return null;
+            }
+        }
+    }
+
+    private Map<String, BufferedImage> preprocessVariants(BufferedImage original) {
+        Map<String, BufferedImage> variants = new LinkedHashMap<>();
+
+        try {
+            BufferedImage normalized = OcrImageEnhancer.normalizeToRgbWhiteBackground(original);
+            BufferedImage cropped = OcrImageEnhancer.cropForPrescription(normalized, cropBottomFraction);
+            if (cropped == null) {
+                cropped = normalized;
+            }
+            BufferedImage enhanced = OcrImageEnhancer.enhanceForHandwritingOcr(cropped);
+            BufferedImage gray = OcrImageEnhancer.toGrayscale(cropped);
+            BufferedImage adaptive = OcrImageEnhancer.adaptiveMeanBinary(gray, 43, 11);
+            BufferedImage adaptive2 = OcrImageEnhancer.adaptiveMeanBinary(gray, 31, 9);
+
+            variants.put("original", OcrImageEnhancer.upscaleByFactor(cropped, 2));
+            variants.put("handwriting", OcrImageEnhancer.upscaleByFactor(enhanced != null ? enhanced : cropped, 3));
+            variants.put("grayscale", OcrImageEnhancer.upscaleByFactor(gray, 3));
+            variants.put("high-contrast", OcrImageEnhancer.upscaleByFactor(OcrImageEnhancer.applyContrast(gray, 1.55f, -18f), 3));
+            variants.put("binary", OcrImageEnhancer.upscaleByFactor(OcrImageEnhancer.toBinary(gray), 3));
+            variants.put("adaptive", OcrImageEnhancer.upscaleByFactor(adaptive, 2));
+            variants.put("adaptive2", OcrImageEnhancer.upscaleByFactor(adaptive2, 2));
+        } catch (Exception e) {
+            log.warn("Erro ao gerar variantes da imagem para OCR: {}", e.getMessage());
+            variants.clear();
+            variants.put("original", original);
+        }
+
+        return variants;
+    }
+
+    private int scoreText(String text) {
+        if (text == null || text.isBlank()) {
+            return Integer.MIN_VALUE / 4;
+        }
+
+        int score = 0;
+        int letters = 0;
+        int digits = 0;
+        int strangeChars = 0;
+        int lines = 0;
+
+        for (char ch : text.toCharArray()) {
+            if (Character.isLetter(ch)) {
+                letters++;
+            } else if (Character.isDigit(ch)) {
+                digits++;
+            } else if (ch == '\n') {
+                lines++;
+            } else if (!Character.isWhitespace(ch) && "/,:;.()%-+×x".indexOf(ch) < 0) {
+                strangeChars++;
+            }
+        }
+
+        score += Math.min(text.length(), 240);
+        score += Math.min(letters, 160);
+        score += Math.min(digits * 2, 60);
+        score += Math.min(lines * 6, 48);
+        score -= strangeChars * 4;
+
+        String normalized = text.toLowerCase();
+        if (normalized.contains("mg")) score += 20;
+        if (normalized.contains("ml")) score += 16;
+        if (normalized.contains("comprim")) score += 18;
+        if (normalized.contains("capsul")) score += 18;
+        if (normalized.contains("tomar")) score += 12;
+        if (normalized.contains("8/8")) score += 16;
+        if (normalized.contains("12/12")) score += 16;
+        if (normalized.contains("1x")) score += 8;
+        if (normalized.contains("ao dia")) score += 8;
+        if (normalized.contains("receitu") || normalized.contains("uso ")) score += 10;
+
+        return score;
+    }
+
     private String limparTextoExtraido(String texto) {
-        if (texto == null) return "";
+        if (texto == null) {
+            return "";
+        }
 
-        // Remover múltiplos espaços
-        String limpo = texto.replaceAll("\\s+", " ");
+        String normalized = texto
+                .replace("\r\n", "\n")
+                .replace('\r', '\n')
+                .replace('\t', ' ');
 
-        // Remover caracteres muito estranhos (mantém letras, números, pontuação básica)
-        limpo = limpo.replaceAll("[^\\p{L}\\p{N}\\s\\.,;:()/-]", "");
-
-        // Remover linhas muito curtas (possíveis erros)
-        String[] linhas = limpo.split("\n");
+        String[] linhas = normalized.split("\n");
         StringBuilder resultado = new StringBuilder();
+
         for (String linha : linhas) {
-            if (linha.trim().length() > 3) { // Mantém apenas linhas com mais de 3 caracteres
-                resultado.append(linha).append("\n");
+            String limpa = linha
+                    .replaceAll("\\s+", " ")
+                    .replaceAll("[^\\p{L}\\p{N}\\s\\.,;:()/%+\\-×x°º]", "")
+                    .trim();
+
+            if (limpa.length() >= 2) {
+                resultado.append(limpa).append('\n');
             }
         }
 

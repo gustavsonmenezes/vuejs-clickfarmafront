@@ -13,4 +13,8 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
 
     // Método para verificar se email já existe
     boolean existsByEmail(String email);
+
+    Optional<Usuario> findByTelegramLinkToken(String telegramLinkToken);
+
+    Optional<Usuario> findByTelegramId(String telegramId);
 }
