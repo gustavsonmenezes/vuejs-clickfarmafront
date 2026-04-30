@@ -3,8 +3,10 @@ package com.clickfarma.backend.service;
 import com.clickfarma.backend.dto.ProdutoRequestDTO;
 import com.clickfarma.backend.dto.ProdutoResponseDTO;
 import com.clickfarma.backend.model.Categoria;
+import com.clickfarma.backend.model.Farmacia;
 import com.clickfarma.backend.model.Produto;
 import com.clickfarma.backend.repository.CategoriaRepository;
+import com.clickfarma.backend.repository.FarmaciaRepository;
 import com.clickfarma.backend.repository.ProdutoRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -23,22 +25,43 @@ public class ProdutoService {
     @Autowired
     private CategoriaRepository categoriaRepository;
 
+    @Autowired
+    private FarmaciaRepository farmaciaRepository;
+
     // Criar produto
     public ProdutoResponseDTO criarProduto(ProdutoRequestDTO produtoDTO) {
         Produto produto = new Produto();
-        produto.setNome(produtoDTO.getNome());
-        produto.setDescricao(produtoDTO.getDescricao());
-        produto.setPreco(produtoDTO.getPreco());
-        produto.setEstoque(produtoDTO.getEstoque());
-
-        if (produtoDTO.getCategoriaId() != null) {
-            Categoria categoria = categoriaRepository.findById(produtoDTO.getCategoriaId())
-                    .orElseThrow(() -> new RuntimeException("Categoria não encontrada com ID: " + produtoDTO.getCategoriaId()));
-            produto.setCategoria(categoria);
-        }
-
+        aplicarCampos(produto, produtoDTO);
         Produto produtoSalvo = produtoRepository.save(produto);
         return new ProdutoResponseDTO(produtoSalvo);
+    }
+
+    // Atualizar produto
+    public ProdutoResponseDTO atualizarProduto(Long id, ProdutoRequestDTO produtoDTO) {
+        Produto produto = produtoRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Produto não encontrado com ID: " + id));
+        aplicarCampos(produto, produtoDTO);
+        produto.setDataAtualizacao(LocalDateTime.now());
+        return new ProdutoResponseDTO(produtoRepository.save(produto));
+    }
+
+    private void aplicarCampos(Produto produto, ProdutoRequestDTO dto) {
+        if (dto.getNome() != null) produto.setNome(dto.getNome());
+        if (dto.getDescricaoBreve() != null) produto.setDescricaoBreve(dto.getDescricaoBreve());
+        if (dto.getDescricao() != null) produto.setDescricao(dto.getDescricao());
+        if (dto.getPreco() != null) produto.setPreco(dto.getPreco());
+        if (dto.getEstoque() != null) produto.setEstoque(dto.getEstoque());
+        if (dto.getImageUrl() != null) produto.setImageUrl(dto.getImageUrl());
+        if (dto.getPrincipioAtivo() != null) produto.setPrincipioAtivo(dto.getPrincipioAtivo());
+        if (dto.getDosagem() != null) produto.setDosagem(dto.getDosagem());
+        if (dto.getLaboratorio() != null) produto.setLaboratorio(dto.getLaboratorio());
+        if (dto.getNecessitaReceita() != null) produto.setNecessitaReceita(dto.getNecessitaReceita());
+        if (dto.getCategoriaId() != null) {
+            categoriaRepository.findById(dto.getCategoriaId()).ifPresent(produto::setCategoria);
+        }
+        if (dto.getFarmaciaId() != null) {
+            farmaciaRepository.findById(dto.getFarmaciaId()).ifPresent(produto::setFarmacia);
+        }
     }
 
     // Listar todos
@@ -93,28 +116,6 @@ public class ProdutoService {
                 .stream()
                 .map(ProdutoResponseDTO::new)
                 .collect(Collectors.toList());
-    }
-
-    // Atualizar produto
-    public ProdutoResponseDTO atualizarProduto(Long id, ProdutoRequestDTO produtoDTO) {
-        Produto produto = produtoRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Produto não encontrado com ID: " + id));
-
-        produto.setNome(produtoDTO.getNome());
-        produto.setDescricao(produtoDTO.getDescricao());
-        produto.setPreco(produtoDTO.getPreco());
-        produto.setEstoque(produtoDTO.getEstoque());
-
-        if (produtoDTO.getCategoriaId() != null) {
-            Categoria categoria = categoriaRepository.findById(produtoDTO.getCategoriaId())
-                    .orElseThrow(() -> new RuntimeException("Categoria não encontrada"));
-            produto.setCategoria(categoria);
-        }
-
-        produto.setDataAtualizacao(LocalDateTime.now());
-
-        Produto produtoAtualizado = produtoRepository.save(produto);
-        return new ProdutoResponseDTO(produtoAtualizado);
     }
 
     // Atualizar estoque

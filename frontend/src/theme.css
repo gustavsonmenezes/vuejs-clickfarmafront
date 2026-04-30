@@ -120,7 +120,13 @@
    BASE
    =========================== */
 *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
-html { scroll-behavior: smooth; }
+html, body {
+    overflow-x: hidden !important;
+    position: relative;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+}
 
 body {
     font-family: var(--cf-sans);
@@ -130,6 +136,25 @@ body {
     font-weight: 300;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+}
+
+/* Utils Mobile */
+.cf-mobile-only { display: none !important; }
+@media (max-width: 768px) {
+    .cf-mobile-only { display: block !important; }
+    .cf-desktop-only { display: none !important; }
+}
+
+.cf-container {
+    width: 100%;
+    max-width: 1400px;
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+}
+@media (max-width: 576px) {
+    .cf-container { padding-left: 1rem; padding-right: 1rem; }
 }
 
 /* ===========================
@@ -433,3 +458,17 @@ a:hover { color: var(--cf-green-dark); }
 ::-webkit-scrollbar-track { background: var(--cf-ivory); }
 ::-webkit-scrollbar-thumb { background: var(--cf-green-light); border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: rgba(42,92,69,0.3); }
+
+/* Utility to hide scrollbar */
+.cf-hide-scrollbar {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+.cf-hide-scrollbar::-webkit-scrollbar {
+    display: none;
+}
+
+/* Typography fix for monospace */
+code, pre, .font-monospace {
+    font-family: 'DM Mono', monospace !important;
+}

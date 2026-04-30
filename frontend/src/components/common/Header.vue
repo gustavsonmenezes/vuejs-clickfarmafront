@@ -167,12 +167,13 @@ header {
   top: 0;
   z-index: 1001;
   width: 100%;
+  background: var(--cf-white);
 }
 
 /* ---- TOP STRIP ---- */
 .top-strip {
-  background: var(--cf-green-xlight);
-  border-bottom: 1px solid var(--cf-green-light);
+  background: var(--cf-white);
+  border-bottom: 1px solid var(--cf-border);
   color: var(--cf-green);
   font-size: 0.68rem;
   font-weight: 400;
@@ -183,7 +184,7 @@ header {
 /* ---- NAVBAR ---- */
 .navbar-main {
   background: var(--cf-white);
-  border-bottom: 1px solid var(--cf-border);
+  border-bottom: none;
   padding: 0;
   min-height: 66px;
 }
@@ -475,15 +476,43 @@ header {
   .navbar-collapse {
     background: var(--cf-white);
     border-top: 1px solid var(--cf-border);
-    padding: 0.75rem 0 1rem;
+    padding: 1rem 0;
     margin-top: 0.5rem;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    width: 100%;
+    z-index: 1000;
+    box-shadow: var(--cf-shadow-md);
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
   }
   .navbar-actions {
-    padding-top: 0.75rem;
+    padding-top: 1rem;
     border-top: 1px solid var(--cf-border);
-    margin-top: 0.5rem;
-    flex-wrap: wrap;
-    gap: 8px !important;
+    margin-top: 1rem;
+    flex-direction: column;
+    align-items: stretch !important;
+    gap: 12px !important;
   }
+  .cf-search-input.expanded {
+    width: 100%;
+  }
+  .search-container {
+    width: 100%;
+  }
+  .cf-btn-ghost, .cf-btn-solid {
+    width: 100%;
+    text-align: center;
+  }
+  .cf-user-btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 576px) {
+  .top-strip { font-size: 0.6rem; }
+  .brand-img { max-height: 44px; }
 }
 </style>

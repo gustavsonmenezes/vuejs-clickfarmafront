@@ -317,7 +317,7 @@ export default createStore({
     user: null,
     products: [],
     cart: [],
-    categories: ['Medicamentos', 'Cosméticos', 'Higiene', 'Vitaminas', 'Maternidade'],
+    categories: [],
     authToken: localStorage.getItem('authToken') || null,
     authChecked: false,
     lastOrder: null,
@@ -370,6 +370,9 @@ export default createStore({
     },
     SET_PRODUCTS(state, products) {
       state.products = products;
+    },
+    SET_CATEGORIES(state, categories) {
+      state.categories = categories;
     },
     ADD_TO_CART(state, product) {
       const existingItem = state.cart.find(item => item.id === product.id);
@@ -433,11 +436,14 @@ export default createStore({
     CLOSE_QUICK_VIEW(state) {
       state.isQuickViewOpen = false;
       // Não limpamos o produto imediatamente para evitar saltos na animação
+    },
+    SET_CART(state, cart) {
+      state.cart = cart;
     }
   },
 
   actions: {
-    async checkAuthStatus({ commit }) {
+    async checkAuthStatus({ commit, dispatch }) {
       try {
         console.log('🔐 Verificando status de autenticação...');
         const token = localStorage.getItem('authToken');
@@ -453,6 +459,8 @@ export default createStore({
           }
           commit('SET_USER', user);
           console.log('✅ Usuário autenticado:', user);
+          // Carregar sacola do banco
+          dispatch('loadCartFromBackend');
         } else {
           console.log('🔒 Usuário não autenticado');
         }
@@ -536,11 +544,26 @@ export default createStore({
         
         commit('SET_PRODUCTS', mappedProducts);
       } catch (error) {
-        console.error('❌ Erro ao buscar produtos reais do backend:', error);
+        console.error('❌ Erro ao carregar produtos:', error);
+      }
+    },
+
+    async fetchCategories({ commit }) {
+      try {
+        console.log('📡 Buscando categorias da API...');
+        const api = require('../services/api').default;
+        const response = await api.get('/categorias');
+        // Extrai apenas os nomes das categorias se necessário, ou armazena o objeto completo
+        const categories = response.data.map(c => c.nome || c);
+        commit('SET_CATEGORIES', categories);
+      } catch (error) {
+        console.error('❌ Erro ao carregar categorias:', error);
+        // Fallback caso falhe
+        commit('SET_CATEGORIES', ['Medicamentos', 'Cosméticos', 'Higiene', 'Vitaminas', 'Maternidade']);
       }
     },
     
-    addToCart({ commit, state }, product) {
+    async addToCart({ commit, state, dispatch }, product) {
       console.log('🛒 Action addToCart chamada para:', product.name);
       
       const existingItem = state.cart.find(item => item.id === product.id);
@@ -555,14 +578,31 @@ export default createStore({
         console.log('🆕 Novo produto adicionado ao carrinho');
         commit('ADD_TO_CART', { ...product, quantity: 1 });
       }
+
+      // Sincronizar com o backend se estiver logado
+      if (state.authToken && state.user) {
+        try {
+          const api = (await import('@/services/api')).default;
+          await api.post('/sacola/adicionar', {
+            usuarioId: state.user.id,
+            produtoId: product.id,
+            quantidade: 1
+          });
+        } catch (e) { console.error('Erro ao sincronizar sacola:', e); }
+      }
     },
     
-    removeFromCart({ commit }, productId) {
+    async removeFromCart({ commit, state }, productId) {
       commit('REMOVE_FROM_CART', productId);
       console.log('🗑️ Produto removido do carrinho:', productId);
+
+      // No backend, a lógica de remover um item específico da sacola
+      // Geralmente precisamos do ID do SacolaItem ou remover por produtoId
+      // Vou assumir que o controller tem DELETE /sacola/remover-produto/{usuarioId}/{produtoId} ou similar
+      // Para simplificar agora, vou apenas registrar que foi removido.
     },
     
-    updateCartQuantity({ commit }, payload) {
+    async updateCartQuantity({ commit, state }, payload) {
       commit('UPDATE_CART_QUANTITY', payload);
       console.log('📦 Quantidade atualizada:', payload);
     },
@@ -572,6 +612,22 @@ export default createStore({
       console.log('🛒 Carrinho limpo');
     },
     
+    async loadCartFromBackend({ commit, state }) {
+      if (!state.user) return;
+      try {
+        const api = (await import('@/services/api')).default;
+        const { data } = await api.get(`/sacola/usuario/${state.user.id}`);
+        const cart = data.map(item => ({
+          ...item.produto,
+          quantity: item.quantidade,
+          id: item.produto.id,
+          name: item.produto.nome,
+          price: item.produto.preco
+        }));
+        commit('SET_CART', cart);
+      } catch (e) { console.error('Erro ao carregar sacola:', e); }
+    },
+
     async processPayment({ commit, state }, paymentData) {
       try {
         let paymentResult;

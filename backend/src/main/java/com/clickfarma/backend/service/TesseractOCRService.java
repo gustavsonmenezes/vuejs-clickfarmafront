@@ -3,7 +3,8 @@ package com.clickfarma.backend.service;
 import net.sourceforge.tess4j.Tesseract;
 import net.sourceforge.tess4j.TesseractException;
 import org.springframework.stereotype.Service;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.awt.Graphics2D;
@@ -13,8 +14,8 @@ import java.io.ByteArrayInputStream;
 import java.util.Base64;
 
 @Service
-@Slf4j
 public class TesseractOCRService {
+    private static final Logger log = LoggerFactory.getLogger(TesseractOCRService.class);
 
     private final Tesseract tesseract;
 

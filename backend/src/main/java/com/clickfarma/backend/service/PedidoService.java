@@ -103,6 +103,13 @@ public class PedidoService {
                 .collect(Collectors.toList());
     }
 
+    public List<PedidoResponseDTO> buscarPorFarmacia(Long farmaciaId) {
+        return pedidoRepository.findByFarmaciaId(farmaciaId)
+                .stream()
+                .map(PedidoResponseDTO::new)
+                .collect(Collectors.toList());
+    }
+
     public List<Pedido> findPedidosComItensParaWellness(Long usuarioId) {
         return pedidoRepository.findPedidosComItensByUsuario(usuarioId);
     }

@@ -21,6 +21,14 @@ public class Pedido {
     @JoinColumn(name = "usuario_id", nullable = false)
     private Usuario usuario;
 
+    @ManyToOne
+    @JoinColumn(name = "farmacia_id")
+    private Farmacia farmacia;
+
+    @ManyToOne
+    @JoinColumn(name = "motoboy_id")
+    private Motoboy motoboy;
+
     @OneToMany(mappedBy = "pedido", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ItemPedido> itens = new ArrayList<>();
 
@@ -83,6 +91,12 @@ public class Pedido {
 
     public Usuario getUsuario() { return usuario; }
     public void setUsuario(Usuario usuario) { this.usuario = usuario; }
+
+    public Farmacia getFarmacia() { return farmacia; }
+    public void setFarmacia(Farmacia farmacia) { this.farmacia = farmacia; }
+
+    public Motoboy getMotoboy() { return motoboy; }
+    public void setMotoboy(Motoboy motoboy) { this.motoboy = motoboy; }
 
     public List<ItemPedido> getItens() { return itens; }
     public void setItens(List<ItemPedido> itens) { this.itens = itens; }

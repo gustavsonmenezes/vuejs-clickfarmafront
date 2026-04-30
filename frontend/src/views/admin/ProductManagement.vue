@@ -1,125 +1,171 @@
 <template>
-  <div class="product-management container-fluid">
-    <h2 class="mb-4">Gerenciar Produtos</h2>
-    
-    <!-- Notificação de Sucesso/Erro -->
-    <div v-if="notification.show" :class="['alert', notification.type === 'success' ? 'alert-success' : 'alert-danger', 'alert-dismissible']" role="alert">
-      {{ notification.message }}
-      <button type="button" class="btn-close" @click="hideNotification" aria-label="Close"></button>
-    </div>
-
-    <!-- Formulário de Adição/Edição de Produtos -->
-    <form @submit.prevent="submitProduct" class="mb-4">
-      <div class="row">
-        <div class="col-md-3">
-          <input 
-            v-model="productForm.name" 
-            class="form-control" 
-            :class="{ 'is-invalid': errors.name }"
-            placeholder="Nome do Medicamento" 
-            required 
-          />
-          <div v-if="errors.name" class="invalid-feedback">{{ errors.name }}</div>
-        </div>
-        <div class="col-md-2">
-          <input 
-            v-model="productForm.price" 
-            type="number" 
-            step="0.01" 
-            min="0.01"
-            class="form-control" 
-            :class="{ 'is-invalid': errors.price }"
-            placeholder="Preço (R$)" 
-            required 
-          />
-          <div v-if="errors.price" class="invalid-feedback">{{ errors.price }}</div>
-        </div>
-        <div class="col-md-3">
-          <input 
-            v-model="productForm.description" 
-            class="form-control" 
-            :class="{ 'is-invalid': errors.description }"
-            placeholder="Descrição/Princípio Ativo" 
-            maxlength="255"
-          />
-          <div v-if="errors.description" class="invalid-feedback">{{ errors.description }}</div>
-        </div>
-        <div class="col-md-2">
-          <select v-model="productForm.requiresPrescription" class="form-control">
-            <option value="false">Sem Receita</option>
-            <option value="true">Com Receita</option>
-          </select>
-        </div>
-        <div class="col-md-2">
-          <button type="submit" class="btn w-100" :class="isEditing ? 'btn-warning' : 'btn-success'">
-            {{ isEditing ? 'Atualizar' : 'Adicionar' }}
-          </button>
-          <button v-if="isEditing" type="button" @click="cancelEdit" class="btn btn-secondary w-100 mt-1">
-            Cancelar
-          </button>
-        </div>
-      </div>
-    </form>
-
-    <!-- Paginação -->
-    <div class="d-flex justify-content-between align-items-center mb-3">
-      <div>
-        <span>Mostrando {{ startIndex + 1 }} - {{ endIndex }} de {{ totalProducts }} produtos</span>
-      </div>
-      <div>
-        <button 
-          @click="previousPage" 
-          :disabled="currentPage === 1" 
-          class="btn btn-outline-primary me-2"
-        >
-          Anterior
-        </button>
-        <span class="me-2">Página {{ currentPage }} de {{ totalPages }}</span>
-        <button 
-          @click="nextPage" 
-          :disabled="currentPage === totalPages" 
-          class="btn btn-outline-primary"
-        >
-          Próxima
+  <div class="product-management fade-in-up">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <h3 class="mb-0 fw-bold"><i class="fas fa-pills me-2 text-warning"></i>Gestão Global de Produtos</h3>
+      <div class="d-flex gap-2">
+        <button class="btn btn-outline-secondary btn-sm" @click="fetchProducts">
+          <i class="fas fa-sync-alt me-1"></i> Atualizar
         </button>
       </div>
     </div>
 
-    <!-- Lista de Produtos -->
-    <div class="row">
-      <div v-for="product in paginatedProducts" :key="product.id" class="col-md-4 mb-3">
-        <div class="card">
-          <div class="card-body">
-            <h5 class="card-title">{{ product.name }}</h5>
-            <p class="card-text">Preço: R$ {{ product.price.toFixed(2) }}</p>
-            <p class="card-text">{{ product.description }}</p>
-            <p class="card-text">Receita: {{ product.requiresPrescription ? 'Sim' : 'Não' }}</p>
-            <p class="card-text">Estoque: {{ product.stock }} unidades</p>
-            <div class="d-flex gap-2">
-              <button @click="editProduct(product)" class="btn btn-warning btn-sm">Editar</button>
-              <button @click="showDeleteModal(product)" class="btn btn-danger btn-sm">Excluir</button>
+    <!-- Filtros -->
+    <div class="row g-3 mb-4">
+      <div class="col-md-5">
+        <div class="input-group">
+          <span class="input-group-text bg-white border-end-0"><i class="fas fa-search text-muted"></i></span>
+          <input v-model="busca" type="text" class="form-control border-start-0" placeholder="Buscar por nome, princípio ou laboratório...">
+        </div>
+      </div>
+      <div class="col-md-4">
+        <select v-model="filtroFarmacia" class="form-select">
+          <option value="todas">Todas as Farmácias</option>
+          <option v-for="f in farmacias" :key="f.id" :value="f.id">{{ f.nome }}</option>
+        </select>
+      </div>
+      <div class="col-md-3">
+        <select v-model="filtroReceita" class="form-select">
+          <option value="todos">Prescrição: Todos</option>
+          <option :value="true">Apenas com Receita</option>
+          <option :value="false">Sem Receita</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Tabela Global -->
+    <div class="card shadow-sm border-0 cf-card-premium overflow-hidden">
+      <div class="card-body p-0">
+        <div v-if="isLoading" class="text-center p-5">
+          <div class="spinner-border text-warning" role="status"></div>
+          <p class="mt-2 text-muted">Carregando catálogo completo...</p>
+        </div>
+        <div v-else class="table-responsive">
+          <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+              <tr>
+                <th>Produto / Origem</th>
+                <th>Estoque</th>
+                <th>Preço</th>
+                <th>Status</th>
+                <th class="text-center">Ações</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="produto in produtosFiltrados" :key="produto.id">
+                <td>
+                  <div class="d-flex align-items-center">
+                    <img :src="produto.imageUrl || 'https://cdn-icons-png.flaticon.com/512/883/883360.png'" 
+                         class="rounded border me-3" width="40" height="40" style="object-fit: cover;">
+                    <div>
+                      <h6 class="mb-0 fw-bold">{{ produto.nome }}</h6>
+                      <small class="text-primary d-block">
+                        <i class="fas fa-store me-1"></i>{{ produto.farmaciaNome || 'Desconhecida' }}
+                      </small>
+                    </div>
+                  </div>
+                </td>
+                <td>
+                  <span class="badge" :class="produto.estoque > 0 ? 'bg-success-subtle text-success border border-success-subtle' : 'bg-danger-subtle text-danger border border-danger-subtle'">
+                    {{ produto.estoque }} un
+                  </span>
+                </td>
+                <td class="fw-bold">R$ {{ produto.preco.toFixed(2) }}</td>
+                <td>
+                  <span v-if="produto.necessitaReceita" class="badge bg-danger text-white">Receita</span>
+                  <span v-else class="badge bg-light text-dark border">Livre</span>
+                </td>
+                <td class="text-center">
+                  <div class="btn-group btn-group-sm">
+                    <button class="btn btn-outline-primary" @click="abrirModalEdicao(produto)" title="Editar">
+                      <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="btn btn-outline-danger" @click="deletarProduto(produto.id)" title="Excluir">
+                      <i class="fas fa-trash"></i>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+              <tr v-if="produtosFiltrados.length === 0">
+                <td colspan="5" class="text-center p-5 text-muted">Nenhum produto encontrado.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal Edição (Admin também pode editar qualquer produto) -->
+    <div v-if="showModal" class="cf-modal-overlay" @click.self="showModal = false">
+      <div class="cf-modal-box animate__animated animate__zoomIn">
+        <div class="cf-modal-header">
+          <div class="d-flex align-items-center gap-3">
+            <div class="modal-icon-wrap bg-dark">
+              <i class="fas fa-edit text-white"></i>
+            </div>
+            <div>
+              <h5 class="mb-0 fw-bold">Editar Produto (Admin)</h5>
+              <p class="mb-0 text-muted small">Gerenciamento global de catálogo</p>
             </div>
           </div>
+          <button class="btn-close-custom" @click="showModal = false"><i class="fas fa-times"></i></button>
         </div>
-      </div>
-    </div>
+        
+        <div class="cf-modal-body p-4">
+           <form id="adminProductForm" @submit.prevent="atualizarProduto">
+            <div class="row g-4">
+              <div class="col-md-7">
+                <div class="mb-3">
+                  <label class="cf-label-premium">Nome do Produto</label>
+                  <input type="text" class="cf-input-premium" v-model="form.nome" required>
+                </div>
+                <div class="row g-3">
+                  <div class="col-md-6">
+                    <label class="cf-label-premium">Princípio Ativo</label>
+                    <input type="text" class="cf-input-premium" v-model="form.principioAtivo">
+                  </div>
+                  <div class="col-md-6">
+                    <label class="cf-label-premium">Dosagem</label>
+                    <input type="text" class="cf-input-premium" v-model="form.dosagem">
+                  </div>
+                </div>
+                <div class="mt-3">
+                  <label class="cf-label-premium">Laboratório</label>
+                  <input type="text" class="cf-input-premium" v-model="form.laboratorio">
+                </div>
+              </div>
+              <div class="col-md-5">
+                <label class="cf-label-premium">Imagem do Produto (URL)</label>
+                <div class="image-upload-preview">
+                  <img :src="form.imageUrl || 'https://cdn-icons-png.flaticon.com/512/883/883360.png'" alt="Preview">
+                  <input type="text" class="cf-input-premium mt-2" v-model="form.imageUrl">
+                </div>
+              </div>
+              
+              <div class="col-md-4">
+                <label class="cf-label-premium">Estoque Global</label>
+                <input type="number" class="cf-input-premium" v-model.number="form.estoque" required>
+              </div>
+              <div class="col-md-4">
+                <label class="cf-label-premium">Preço Unitário (R$)</label>
+                <input type="number" step="0.01" class="cf-input-premium" v-model.number="form.preco" required>
+              </div>
+              <div class="col-md-4">
+                <label class="cf-label-premium">Exige Receita?</label>
+                <select class="cf-input-premium" v-model="form.necessitaReceita">
+                  <option :value="true">Sim, obrigatória</option>
+                  <option :value="false">Não, venda livre</option>
+                </select>
+              </div>
+            </div>
+           </form>
+        </div>
 
-    
-    <div v-if="showDeleteConfirm" class="modal d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
-      <div class="modal-dialog">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title">Confirmar Exclusão</h5>
-            <button type="button" class="btn-close" @click="hideDeleteModal"></button>
-          </div>
-          <div class="modal-body">
-            <p>Tem certeza que deseja excluir o produto <strong>{{ productToDelete?.name }}</strong>?</p>
-            <p class="text-muted">Esta ação não pode ser desfeita.</p>
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" @click="hideDeleteModal">Cancelar</button>
-            <button type="button" class="btn btn-danger" @click="confirmDelete">Excluir</button>
-          </div>
+        <div class="cf-modal-footer">
+          <button type="button" class="btn btn-light fw-bold px-4" @click="showModal = false">Cancelar</button>
+          <button type="submit" form="adminProductForm" class="btn btn-dark fw-bold px-4" :disabled="isSaving">
+            <span v-if="isSaving" class="spinner-border spinner-border-sm me-2"></span>
+            Salvar Alterações
+          </button>
         </div>
       </div>
     </div>
@@ -127,197 +173,97 @@
 </template>
 
 <script>
+import api from '@/services/api';
+
 export default {
   name: 'ProductManagement',
   data() {
     return {
-      products: [],
-      productForm: { 
-        id: null,
-        name: '', 
-        price: 0, 
-        description: '', 
-        requiresPrescription: false 
-      },
-      errors: {},
-      notification: {
-        show: false,
-        message: '',
-        type: 'success'
-      },
-      isEditing: false,
-      showDeleteConfirm: false,
-      productToDelete: null,
-      currentPage: 1,
-      itemsPerPage: 6
+      produtos: [],
+      farmacias: [],
+      isLoading: true,
+      isSaving: false,
+      showModal: false,
+      busca: '',
+      filtroFarmacia: 'todas',
+      filtroReceita: 'todos',
+      form: {},
+      editandoId: null
     }
   },
   computed: {
-    totalProducts() {
-      return this.products.length
-    },
-    totalPages() {
-      return Math.ceil(this.totalProducts / this.itemsPerPage)
-    },
-    startIndex() {
-      return (this.currentPage - 1) * this.itemsPerPage
-    },
-    endIndex() {
-      return Math.min(this.startIndex + this.itemsPerPage, this.totalProducts)
-    },
-    paginatedProducts() {
-      return this.products.slice(this.startIndex, this.endIndex)
+    produtosFiltrados() {
+      let lista = this.produtos;
+      if (this.busca) {
+        const t = this.busca.toLowerCase();
+        lista = lista.filter(p => p.nome?.toLowerCase().includes(t) || p.principioAtivo?.toLowerCase().includes(t));
+      }
+      if (this.filtroFarmacia !== 'todas') {
+        lista = lista.filter(p => p.farmaciaId === parseInt(this.filtroFarmacia));
+      }
+      if (this.filtroReceita !== 'todos') {
+        lista = lista.filter(p => p.necessitaReceita === this.filtroReceita);
+      }
+      return lista;
     }
   },
-  mounted() {
-    this.fetchProducts()
+  async mounted() {
+    await this.fetchFarmacias();
+    await this.fetchProducts();
   },
   methods: {
+    async fetchFarmacias() {
+      try {
+        const res = await api.get('/farmacias');
+        this.farmacias = res.data;
+      } catch (err) { console.error(err); }
+    },
     async fetchProducts() {
-      
-      this.products = [
-        { id: 1, name: 'Paracetamol 500mg', price: 10.50, description: 'Analgésico comum', requiresPrescription: false, stock: 50 },
-        { id: 2, name: 'Amoxicilina 500mg', price: 25.00, description: 'Antibiótico para infecções', requiresPrescription: true, stock: 30 },
-        { id: 3, name: 'Dipirona 500mg', price: 8.75, description: 'Analgésico e antitérmico', requiresPrescription: false, stock: 45 },
-        { id: 4, name: 'Omeprazol 20mg', price: 15.30, description: 'Protetor gástrico', requiresPrescription: false, stock: 60 },
-        { id: 5, name: 'Losartana 50mg', price: 12.90, description: 'Anti-hipertensivo', requiresPrescription: true, stock: 25 },
-        { id: 6, name: 'Metformina 850mg', price: 18.50, description: 'Antidiabético', requiresPrescription: true, stock: 35 },
-        { id: 7, name: 'Ibuprofeno 600mg', price: 14.20, description: 'Anti-inflamatório', requiresPrescription: false, stock: 40 }
-      ]
-      this.showNotification('Produtos carregados com sucesso!', 'success')
+      this.isLoading = true;
+      try {
+        const res = await api.get('/produtos');
+        this.produtos = res.data;
+      } catch (err) { console.error(err); }
+      finally { this.isLoading = false; }
     },
-
-    validateForm() {
-      this.errors = {}
-      
-      if (!this.productForm.name.trim()) {
-        this.errors.name = 'Nome é obrigatório'
-      } else if (this.productForm.name.length < 3) {
-        this.errors.name = 'Nome deve ter pelo menos 3 caracteres'
-      }
-      
-      if (!this.productForm.price || this.productForm.price <= 0) {
-        this.errors.price = 'Preço deve ser maior que zero'
-      }
-      
-      if (this.productForm.description && this.productForm.description.length > 255) {
-        this.errors.description = 'Descrição deve ter no máximo 255 caracteres'
-      }
-      
-      return Object.keys(this.errors).length === 0
+    abrirModalEdicao(produto) {
+      this.editandoId = produto.id;
+      const catId = produto.categoriaId || produto.categoria?.id;
+      this.form = {
+        nome: produto.nome || '',
+        principioAtivo: produto.principioAtivo || '',
+        dosagem: produto.dosagem || '',
+        laboratorio: produto.laboratorio || '',
+        imageUrl: produto.imageUrl || '',
+        descricaoBreve: produto.descricaoBreve || '',
+        descricao: produto.descricao || '',
+        preco: produto.preco || 0,
+        estoque: produto.estoque || 0,
+        categoriaId: catId,
+        farmaciaId: produto.farmaciaId,
+        necessitaReceita: produto.necessitaReceita || false
+      };
+      this.showModal = true;
     },
-
-    async submitProduct() {
-      if (!this.validateForm()) {
-        return
-      }
-
-      if (this.isEditing) {
-        await this.updateProduct()
-      } else {
-        await this.addProduct()
+    async atualizarProduto() {
+      this.isSaving = true;
+      try {
+        await api.put(`/produtos/${this.editandoId}`, this.form);
+        this.showModal = false;
+        await this.fetchProducts();
+      } catch (err) {
+        console.error('Erro Admin Update:', err);
+        alert('Erro ao atualizar produto. Verifique os dados enviadas.');
+      } finally {
+        this.isSaving = false;
       }
     },
-
-    async addProduct() {
-      
-      const newProduct = {
-        ...this.productForm,
-        id: Date.now(), 
-        price: parseFloat(this.productForm.price),
-        requiresPrescription: this.productForm.requiresPrescription === 'true',
-        stock: 0 
-      }
-      
-      this.products.push(newProduct)
-      this.resetForm()
-      this.showNotification('Produto adicionado com sucesso!', 'success')
-    },
-
-    async updateProduct() {
-      
-      const index = this.products.findIndex(p => p.id === this.productForm.id)
-      if (index !== -1) {
-        this.products[index] = {
-          ...this.productForm,
-          price: parseFloat(this.productForm.price),
-          requiresPrescription: this.productForm.requiresPrescription === 'true'
-        }
-      }
-      this.resetForm()
-      this.showNotification('Produto atualizado com sucesso!', 'success')
-    },
-
-    editProduct(product) {
-      this.productForm = { ...product }
-      this.isEditing = true
-      this.errors = {}
-    },
-
-    cancelEdit() {
-      this.resetForm()
-    },
-
-    resetForm() {
-      this.productForm = { 
-        id: null,
-        name: '', 
-        price: 0, 
-        description: '', 
-        requiresPrescription: false 
-      }
-      this.isEditing = false
-      this.errors = {}
-    },
-
-    showDeleteModal(product) {
-      this.productToDelete = product
-      this.showDeleteConfirm = true
-    },
-
-    hideDeleteModal() {
-      this.productToDelete = null
-      this.showDeleteConfirm = false
-    },
-
-    async confirmDelete() {
-      if (!this.productToDelete) return
-
-      // Remove produto mockado
-      this.products = this.products.filter(p => p.id !== this.productToDelete.id)
-      this.showNotification('Produto excluído com sucesso!', 'success')
-      this.hideDeleteModal()
-      
-      // Ajusta páginação se necessário
-      if (this.paginatedProducts.length === 0 && this.currentPage > 1) {
-        this.currentPage--
-      }
-    },
-
-    showNotification(message, type = 'success') {
-      this.notification = {
-        show: true,
-        message,
-        type
-      }
-      setTimeout(() => {
-        this.hideNotification()
-      }, 5000)
-    },
-
-    hideNotification() {
-      this.notification.show = false
-    },
-
-    previousPage() {
-      if (this.currentPage > 1) {
-        this.currentPage--
-      }
-    },
-
-    nextPage() {
-      if (this.currentPage < this.totalPages) {
-        this.currentPage++
+    async deletarProduto(id) {
+      if (confirm('Deseja excluir este produto globalmente?')) {
+        try {
+          await api.delete(`/produtos/${id}`);
+          await this.fetchProducts();
+        } catch (err) { alert('Erro ao deletar'); }
       }
     }
   }
@@ -325,49 +271,73 @@ export default {
 </script>
 
 <style scoped>
-.card { 
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1); 
-  transition: transform 0.2s ease-in-out;
+.product-management { padding-bottom: 2rem; }
+.cf-card-premium { border-radius: 16px; border: 1px solid rgba(0,0,0,0.05); background: white; box-shadow: var(--cf-shadow-sm); }
+
+/* ─── Modal Premium ClickFarma ─── */
+.cf-modal-overlay {
+  position: fixed; inset: 0; background: rgba(15, 23, 42, 0.7); 
+  z-index: 2000; display: flex; align-items: center; justify-content: center;
+  backdrop-filter: blur(6px); padding: 20px;
+}
+.cf-modal-box {
+  background: white; border-radius: 24px; width: 900px; max-width: 100%;
+  max-height: calc(100vh - 60px);
+  box-shadow: 0 25px 50px -12px rgba(0,0,0,0.4); 
+  display: flex; flex-direction: column;
+  overflow: hidden; border: 1px solid rgba(255,255,255,0.1);
+}
+.cf-modal-header { 
+  padding: 1.25rem 1.5rem; border-bottom: 1px solid #f1f5f9;
+  display: flex; justify-content: space-between; align-items: center;
+  flex-shrink: 0;
+}
+.modal-icon-wrap {
+  width: 44px; height: 44px; border-radius: 14px;
+  display: flex; align-items: center; justify-content: center; font-size: 1.2rem;
+}
+.cf-modal-body { 
+  flex: 1; overflow-y: auto; background: #fafafa;
+  scrollbar-width: thin; scrollbar-color: var(--cf-green-light) transparent;
+}
+.cf-modal-body::-webkit-scrollbar { width: 6px; }
+.cf-modal-body::-webkit-scrollbar-thumb { background: var(--cf-green-light); border-radius: 10px; }
+
+.cf-modal-footer {
+  padding: 1.25rem 1.5rem; border-top: 1px solid #f1f5f9;
+  display: flex; justify-content: flex-end; gap: 1rem;
+  background: #fff; flex-shrink: 0;
 }
 
-.card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+@media (max-width: 768px) {
+  .cf-modal-overlay { padding: 0; }
+  .cf-modal-box { border-radius: 0; height: 100vh; max-height: 100vh; }
+  .cf-modal-footer { padding: 1rem; flex-direction: column; align-items: stretch; }
+  .cf-modal-footer .btn { width: 100%; }
+  .modal-icon-wrap { display: none; }
 }
 
-.modal {
-  z-index: 1050;
+/* Form Elements */
+.cf-label-premium { font-size: 0.72rem; font-weight: 600; color: var(--cf-text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.45rem; display: block; }
+.cf-input-premium {
+  width: 100%; padding: 0.7rem 1rem; border-radius: 10px;
+  border: 1px solid var(--cf-border-mid); background: #fff;
+  font-size: 0.92rem; transition: all 0.2s; outline: none;
 }
+.cf-input-premium:focus { border-color: var(--cf-green); box-shadow: 0 0 0 4px rgba(42,92,69,0.06); }
 
-.alert {
-  position: relative;
-  animation: slideDown 0.3s ease-out;
+.btn-close-custom {
+  background: var(--cf-ivory); border: none; width: 34px; height: 34px;
+  border-radius: 50%; color: var(--cf-text-muted); cursor: pointer;
+  display: flex; align-items: center; justify-content: center; transition: all 0.2s;
 }
+.btn-close-custom:hover { background: var(--cf-cream); color: var(--cf-text-dark); transform: rotate(90deg); }
 
-@keyframes slideDown {
-  from {
-    opacity: 0;
-    transform: translateY(-20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+.image-upload-preview {
+  background: #fff; border: 2px dashed var(--cf-border-mid); border-radius: 16px;
+  padding: 1.5rem; text-align: center;
 }
+.image-upload-preview img { max-width: 100%; max-height: 120px; border-radius: 8px; object-fit: contain; }
 
-.btn {
-  transition: all 0.2s ease-in-out;
-}
-
-.btn:hover {
-  transform: translateY(-1px);
-}
-
-.is-invalid {
-  border-color: var(--cf-danger);
-}
-
-.invalid-feedback {
-  display: block;
-}
+.table th { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--cf-text-muted); font-weight: 600; }
 </style>

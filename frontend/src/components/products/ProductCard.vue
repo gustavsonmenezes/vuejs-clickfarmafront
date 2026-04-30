@@ -4,9 +4,13 @@
     <!-- Área visual do produto -->
     <div class="cf-card-image" @click="showQuickView" style="cursor: pointer;">
 
-      <!-- Fundo sage com ícone de categoria -->
+      <!-- Imagem ou ícone de categoria -->
       <div class="cf-product-visual">
-        <span class="cf-product-icon">{{ getCategoryIcon(product.category) }}</span>
+        <img v-if="product.image || product.imageUrl" 
+             :src="product.image || product.imageUrl" 
+             :alt="product.name" 
+             class="cf-product-img" />
+        <span v-else class="cf-product-icon">{{ getCategoryIcon(product.category) }}</span>
       </div>
 
       <!-- Badge de estoque -->
@@ -159,6 +163,17 @@ export default {
   font-size: 3.8rem;
   filter: drop-shadow(0 4px 10px rgba(42,92,69,0.12));
   user-select: none;
+}
+
+.cf-product-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  padding: 1rem;
+  transition: transform 350ms var(--cf-ease);
+}
+.cf-product-card:hover .cf-product-img {
+  transform: scale(1.08);
 }
 
 /* ---- BADGES ---- */

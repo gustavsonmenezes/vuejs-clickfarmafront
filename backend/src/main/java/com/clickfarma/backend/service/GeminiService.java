@@ -140,6 +140,40 @@ public class GeminiService {
                 .onErrorResume(e -> Mono.just("Desculpe, ocorreu um erro de conexão com a IA ou a chave de API está ausente/inválida."));
     }
 
+    /**
+     * Gera recomendações de produtos ordenadas por relevância via IA
+     */
+    public Mono<List<Long>> getRecommendations(Long usuarioId, List<Long> historicoVistos, List<Long> historicoComprados, List<com.clickfarma.backend.model.Produto> todosProdutos) {
+        if (apiKey == null || apiKey.isEmpty()) return Mono.just(List.of());
+
+        StringBuilder prompt = new StringBuilder();
+        prompt.append("Você é o motor de recomendações da ClickFarma. ");
+        prompt.append("Dada a lista de produtos disponíveis, o histórico de visualizações e o histórico de compras do usuário, ");
+        prompt.append("ordene os IDs dos produtos por relevância para este usuário.\n\n");
+
+        prompt.append("Histórico de IDs visualizados: ").append(historicoVistos).append("\n");
+        prompt.append("Histórico de IDs comprados: ").append(historicoComprados).append("\n\n");
+        prompt.append("Produtos Disponíveis (ID: Nome - Categoria):\n");
+        for (com.clickfarma.backend.model.Produto p : todosProdutos) {
+            prompt.append(String.format("- %d: %s - %s\n", p.getId(), p.getNome(), p.getCategoria() != null ? p.getCategoria().getNome() : "Geral"));
+        }
+
+        prompt.append("\nResponda APENAS com uma lista de IDs separados por vírgula (ex: 1,5,3,10), do mais relevante para o menos relevante. ");
+        prompt.append("Não inclua nenhuma outra palavra.");
+
+        return this.chat(prompt.toString())
+                .map(resposta -> {
+                    try {
+                        return java.util.Arrays.stream(resposta.replaceAll("[^0-9,]", "").split(","))
+                                .filter(s -> !s.isEmpty())
+                                .map(Long::parseLong)
+                                .collect(java.util.stream.Collectors.toList());
+                    } catch (Exception e) {
+                        return List.of();
+                    }
+                });
+    }
+
     public Mono<String> extractTextFromImage(String base64Image) {
         if (apiKey == null || apiKey.isEmpty()) {
             return Mono.just("Erro: Chave da API Gemini não configurada");

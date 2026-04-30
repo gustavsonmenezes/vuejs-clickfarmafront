@@ -14,7 +14,6 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/pedidos")
-@CrossOrigin(origins = "http://localhost:8082")
 public class PedidoController {
 
     @Autowired
@@ -60,6 +59,12 @@ public class PedidoController {
     @GetMapping("/usuario/{usuarioId}")
     public ResponseEntity<List<PedidoResponseDTO>> buscarPorUsuario(@PathVariable Long usuarioId) {
         return ResponseEntity.ok(pedidoService.buscarPorUsuario(usuarioId));
+    }
+
+    // GET - Buscar pedidos por farmácia
+    @GetMapping("/farmacia/{farmaciaId}")
+    public ResponseEntity<List<PedidoResponseDTO>> buscarPorFarmacia(@PathVariable Long farmaciaId) {
+        return ResponseEntity.ok(pedidoService.buscarPorFarmacia(farmaciaId));
     }
 
     // GET - Buscar pedido por código

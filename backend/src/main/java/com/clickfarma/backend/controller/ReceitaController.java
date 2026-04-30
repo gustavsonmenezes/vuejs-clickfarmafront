@@ -4,7 +4,8 @@ import com.clickfarma.backend.dto.ReceitaRequestDTO;
 import com.clickfarma.backend.service.TesseractOCRService;
 import com.clickfarma.backend.service.OCRService;
 import com.clickfarma.backend.service.GroqProcessadorReceitaService;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -15,8 +16,8 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/receita")
 @CrossOrigin(origins = {"http://localhost", "http://localhost:8080", "http://localhost:8081", "http://localhost:8082"})
-@Slf4j
 public class ReceitaController {
+    private static final Logger log = LoggerFactory.getLogger(ReceitaController.class);
 
     @Autowired
     private TesseractOCRService tesseractOCRService;

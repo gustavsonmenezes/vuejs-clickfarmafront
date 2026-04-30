@@ -41,4 +41,6 @@ public interface ProdutoRepository extends JpaRepository<Produto, Long> {
     List<Produto> buscarPorNomeOuDescricao(@Param("termo") String termo);
 
     Optional<Produto> findByNomeIgnoreCase(String nome);
+
+    List<Produto> findByFarmaciaId(Long farmaciaId);
 }

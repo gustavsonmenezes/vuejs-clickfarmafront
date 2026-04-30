@@ -54,4 +54,10 @@ public class GeminiController {
         return aiRouterService.analyzeCart(itemsList, request.getTotalPrice())
                 .map(resposta -> Map.of("analysis", resposta));
     }
+
+    @GetMapping("/recomendacoes")
+    public Mono<Map<String, Object>> recomendacoes(@RequestParam(required = false) Long usuarioId) {
+        return aiRouterService.getRecommendations(usuarioId)
+                .map(resposta -> Map.of("recomendacoes", resposta));
+    }
 }

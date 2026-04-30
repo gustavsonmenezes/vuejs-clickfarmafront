@@ -1,39 +1,39 @@
 <template>
-  <div class="container py-5">
-    <div class="row justify-content-center">
+  <div class="auth-page-container py-5">
+    <div class="row justify-content-center w-100 m-0">
       <div class="col-md-7 col-lg-6">
         <div class="card fade-in-up">
-          <div class="card-header">
-            <h3 class="text-center mb-0">Criar sua Conta</h3>
+          <div class="card-header py-4">
+            <h3 class="text-center mb-0 fw-bold">Criar sua Conta</h3>
           </div>
-          <div class="card-body">
+          <div class="card-body p-4 p-md-5">
             
             <!-- Mensagem de Boas-Vindas -->
-            <div v-if="showWelcome" class="alert alert-success">
-              <h5>🎉 Bem-vindo(a) à família ClickFarma!</h5>
+            <div v-if="showWelcome" class="alert alert-success animate__animated animate__fadeIn">
+              <h5 class="fw-bold">🎉 Bem-vindo(a) à família ClickFarma!</h5>
               <p class="mb-0">Que bom ter você conosco! Agora você pode explorar farmácias perto de você e fazer suas compras com toda a praticidade.</p>
             </div>
 
             <!-- Sugestão quando email já existe -->
-            <div v-if="showRecoveryOption" class="alert alert-info">
+            <div v-if="showRecoveryOption" class="alert alert-info animate__animated animate__fadeIn">
               <p class="mb-2">Parece que você já é da família! Que tal fazer login?</p>
-              <p class="mb-0">
-                <router-link to="/login" class="btn btn-sm btn-primary me-2">
+              <div class="d-flex gap-2">
+                <router-link to="/login" class="btn btn-sm btn-primary">
                   Fazer Login
                 </router-link>
                 <router-link to="/forgot-password" class="btn btn-sm btn-outline-primary">
                   Recuperar Senha
                 </router-link>
-              </p>
+              </div>
             </div>
 
             <form @submit.prevent="handleRegister" ref="registerForm">
-              <div class="mb-3">
+              <div class="mb-4">
                 <label class="form-label">Nome completo:</label>
                 <input 
                   ref="nameInput"
                   type="text" 
-                  class="form-control" 
+                  class="form-control form-control-lg" 
                   v-model="userData.name"
                   required
                   placeholder="Seu nome completo"
@@ -45,12 +45,12 @@
                 </div>
               </div>
               
-              <div class="mb-3">
+              <div class="mb-4">
                 <label class="form-label">Email:</label>
                 <input 
                   ref="emailInput"
                   type="email" 
-                  class="form-control" 
+                  class="form-control form-control-lg" 
                   v-model="userData.email"
                   required
                   placeholder="seu@email.com"
@@ -62,12 +62,12 @@
                 </div>
               </div>
               
-              <div class="mb-3">
+              <div class="mb-4">
                 <label class="form-label">Senha:</label>
                 <input 
                   ref="passwordInput"
                   type="password" 
-                  class="form-control" 
+                  class="form-control form-control-lg" 
                   v-model="userData.password"
                   required
                   placeholder="Mínimo 6 caracteres"
@@ -80,11 +80,12 @@
                 <div v-if="fieldErrors.password" class="invalid-feedback">
                   {{ fieldErrors.password }}
                 </div>
-                <div v-if="userData.password" class="password-strength mt-1">
-                  <small>Força da senha: 
-                    <span :class="passwordStrength.class">{{ passwordStrength.text }}</span>
-                  </small>
-                  <div class="progress mt-1" style="height: 3px;">
+                <div v-if="userData.password" class="password-strength mt-2">
+                  <div class="d-flex justify-content-between align-items-center mb-1">
+                    <small class="text-muted">Força da senha:</small>
+                    <small :class="passwordStrength.class" class="fw-bold">{{ passwordStrength.text }}</small>
+                  </div>
+                  <div class="progress" style="height: 4px;">
                     <div 
                       class="progress-bar" 
                       :class="passwordStrength.class.replace('text-', 'bg-')"
@@ -94,12 +95,12 @@
                 </div>
               </div>
               
-              <div class="mb-3">
+              <div class="mb-5">
                 <label class="form-label">Confirmar senha:</label>
                 <input 
                   ref="confirmPasswordInput"
                   type="password" 
-                  class="form-control" 
+                  class="form-control form-control-lg" 
                   v-model="userData.confirmPassword"
                   required
                   placeholder="Digite novamente sua senha"
@@ -114,7 +115,7 @@
               <button 
                 ref="submitButton"
                 type="submit" 
-                class="btn btn-primary w-100"
+                class="btn btn-primary btn-lg w-100 py-3"
                 :disabled="loading"
               >
                 <span v-if="loading" class="spinner-border spinner-border-sm me-2"></span>
@@ -122,8 +123,8 @@
               </button>
             </form>
             
-            <div class="text-center mt-3">
-              <p>Já tem conta? <router-link to="/login">Faça login aqui</router-link></p>
+            <div class="text-center mt-4">
+              <p class="text-muted">Já tem conta? <router-link to="/login" class="text-primary fw-bold">Faça login aqui</router-link></p>
             </div>
           </div>
         </div>
@@ -158,7 +159,6 @@ export default {
     }
   },
   mounted() {
-    console.log('👤 Componente Register montado - configurando refs...');
     this.focusNameField();
   },
   methods: {
@@ -266,7 +266,6 @@ export default {
       }
     },
     
-    // ⬇️⬇️⬇️ MÉTODO CORRIGIDO ⬇️⬇️⬇️
     async handleRegister() {
       if (!this.validateForm()) {
         this.shakeForm();
@@ -277,20 +276,15 @@ export default {
       this.showWelcome = false;
 
       try {
-        // Converter os campos para o formato que o backend espera
         const userDataToSend = {
-          nome: this.userData.name,        // name → nome
+          nome: this.userData.name,
           email: this.userData.email,
-          senha: this.userData.password     // password → senha
+          senha: this.userData.password
         };
 
-        console.log('📤 Enviando dados convertidos:', userDataToSend);
         await this.register(userDataToSend);
-
-        // Sucesso - mostrar mensagem de boas-vindas
         this.showWelcome = true;
 
-        // Redirecionar após breve delay para usuário ver a mensagem
         setTimeout(() => {
           this.$router.push('/');
         }, 3000);
@@ -298,7 +292,6 @@ export default {
       } catch (error) {
         console.error('❌ Erro no registro:', error);
 
-        // Tratamento específico para email já cadastrado
         if (error.message?.includes('email') || error.message?.includes('já existe') || error.message?.includes('already')) {
           this.fieldErrors.email = 'Parece que você já é da família!';
           this.showRecoveryOption = true;
@@ -315,7 +308,6 @@ export default {
         this.loading = false;
       }
     },
-    // ⬆️⬆️⬆️ FIM DA CORREÇÃO ⬆️⬆️⬆️
     
     shakeForm() {
       if (this.$refs.registerForm) {
@@ -330,112 +322,38 @@ export default {
 </script>
 
 <style scoped>
-.container {
-  min-height: calc(100vh - 200px);
+.auth-page-container {
+  min-height: 80vh;
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 2rem 1rem;
 }
-
-.shake {
-  animation: shake 0.5s ease-in-out;
-}
-
-@keyframes shake {
-  0%, 100% { transform: translateX(0); }
-  25% { transform: translateX(-5px); }
-  75% { transform: translateX(5px); }
-}
-
-.password-strength {
-  font-size: 0.75rem;
-  margin-top: 0.5rem;
-}
-
-.progress {
-  background-color: var(--cf-cream);
-  border-radius: 100px;
-}
-
-.invalid-feedback {
-  display: block;
-  font-size: 0.75rem;
-  color: var(--cf-danger);
-}
-
-.alert {
-  border: 1px solid transparent;
-  border-radius: var(--cf-r-md);
-  font-size: 0.85rem;
-}
-.alert-success { background: var(--cf-green-xlight); border-color: var(--cf-green-light); color: var(--cf-green); }
-.alert-info { background: var(--cf-gold-light); border-color: rgba(184,149,80,0.1); color: var(--cf-gold); }
 
 .card {
+  width: 100%;
+  max-width: 580px;
   border: 1px solid var(--cf-border);
   border-radius: var(--cf-r-xl);
   box-shadow: var(--cf-shadow-lg);
   overflow: hidden;
+  background: white;
 }
 
-.card-header {
-  background: var(--cf-white) !important;
-  border-bottom: 1px solid var(--cf-border) !important;
-  padding: 1.5rem;
+@media (max-width: 576px) {
+  .card-header h3 { font-size: 1.4rem; }
+  .card-body { padding: 1.5rem; }
+  .auth-page-container { min-height: 70vh; padding: 1rem; }
 }
 
-.card-header h3 {
-  font-family: var(--cf-sans);
-  font-size: 1.6rem;
-  font-weight: 600;
-  color: var(--cf-text-dark);
+.shake {
+  animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
 }
 
-.card-body {
-  padding: 2rem;
-  background: var(--cf-white);
-}
-
-.form-label {
-  font-size: 0.68rem;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  color: var(--cf-text-muted);
-  font-weight: 500;
-}
-
-.form-control {
-  border-radius: var(--cf-r-md);
-  padding: 0.75rem 1rem;
-  border: 1px solid var(--cf-border-mid);
-  transition: all 0.2s var(--cf-ease);
-}
-
-.form-control:focus {
-  border-color: var(--cf-green);
-  box-shadow: 0 0 0 4px rgba(42,92,69,0.08);
-}
-
-.btn-primary {
-  background: var(--cf-green);
-  border: none;
-  border-radius: var(--cf-r-md);
-  padding: 0.8rem;
-  font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  font-size: 0.8rem;
-  transition: all 0.2s var(--cf-ease);
-}
-
-.btn-primary:hover:not(:disabled) {
-  background: var(--cf-green-dark);
-  transform: translateY(-1px);
-  box-shadow: var(--cf-shadow-md);
-}
-
-.text-primary, .router-link {
-  color: var(--cf-green);
-  text-decoration: none;
+@keyframes shake {
+  10%, 90% { transform: translate3d(-1px, 0, 0); }
+  20%, 80% { transform: translate3d(2px, 0, 0); }
+  30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+  40%, 60% { transform: translate3d(4px, 0, 0); }
 }
 </style>

@@ -1,19 +1,19 @@
 <template>
-  <div class="container py-5">
-    <div class="row justify-content-center">
+  <div class="auth-page-container py-5">
+    <div class="row justify-content-center w-100 m-0">
       <div class="col-md-6 col-lg-5">
         <div class="card fade-in-up">
-          <div class="card-header">
-            <h3 class="text-center mb-0">Entrar na ClickFarma</h3>
+          <div class="card-header py-4">
+            <h3 class="text-center mb-0 fw-bold">Entrar na ClickFarma</h3>
           </div>
-          <div class="card-body">
+          <div class="card-body p-4 p-md-5">
             <form @submit.prevent="handleLogin" ref="loginForm">
-              <div class="mb-3">
+              <div class="mb-4">
                 <label class="form-label">Email:</label>
                 <input 
                   ref="emailInput"
                   type="email" 
-                  class="form-control" 
+                  class="form-control form-control-lg" 
                   v-model="credentials.email"
                   required
                   placeholder="seu@email.com"
@@ -25,12 +25,12 @@
                 </div>
               </div>
               
-              <div class="mb-3">
+              <div class="mb-4">
                 <label class="form-label">Senha:</label>
                 <input 
                   ref="passwordInput"
                   type="password" 
-                  class="form-control" 
+                  class="form-control form-control-lg" 
                   v-model="credentials.password"
                   required
                   placeholder="Sua senha"
@@ -45,7 +45,7 @@
               <button 
                 ref="submitButton"
                 type="submit" 
-                class="btn btn-primary w-100"
+                class="btn btn-primary btn-lg w-100 py-3"
                 :disabled="loading"
               >
                 <span v-if="loading" class="spinner-border spinner-border-sm me-2"></span>
@@ -53,12 +53,12 @@
               </button>
             </form>
             
-            <div class="text-center mt-4">
-              <p class="mb-2">Ainda não tem conta? 
-                <router-link to="/register" class="fw-bold">Cadastre-se aqui</router-link>
+            <div class="text-center mt-4 pt-2">
+              <p class="mb-2 text-muted">Ainda não tem conta? 
+                <router-link to="/register" class="text-primary fw-bold">Cadastre-se aqui</router-link>
               </p>
               <p class="mb-0">
-                <router-link to="/forgot-password" class="text-primary">
+                <router-link to="/forgot-password" class="text-muted small">
                   <i class="fas fa-question-circle me-1"></i>
                   Não lembro minha senha
                 </router-link>
@@ -188,101 +188,37 @@ export default {
 </script>
 
 <style scoped>
-.container {
-  min-height: calc(100vh - 200px);
+.auth-page-container {
+  min-height: 80vh;
   display: flex;
   align-items: center;
   justify-content: center;
-}
-
-.shake {
-  animation: shake 0.5s ease-in-out;
-}
-
-@keyframes shake {
-  0%, 100% { transform: translateX(0); }
-  25% { transform: translateX(-5px); }
-  75% { transform: translateX(5px); }
-}
-
-.invalid-feedback {
-  display: block;
-  font-size: 0.75rem;
-  color: var(--cf-danger);
+  padding: 2rem 1rem;
 }
 
 .card {
+  width: 100%;
   border: 1px solid var(--cf-border);
   border-radius: var(--cf-r-xl);
   box-shadow: var(--cf-shadow-lg);
   overflow: hidden;
+  background: white;
 }
 
-.card-header {
-  background: var(--cf-white) !important;
-  border-bottom: 1px solid var(--cf-border) !important;
-  padding: 1.5rem;
+@media (max-width: 576px) {
+  .card-header h3 { font-size: 1.4rem; }
+  .card-body { padding: 1.5rem; }
+  .auth-page-container { min-height: 70vh; padding: 1rem; }
 }
 
-.card-header h3 {
-  font-family: var(--cf-sans);
-  font-size: 1.6rem;
-  font-weight: 600;
-  color: var(--cf-text-dark);
+.shake {
+  animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
 }
 
-.card-body {
-  padding: 2rem;
-  background: var(--cf-white);
-}
-
-.form-label {
-  font-size: 0.68rem;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  color: var(--cf-text-muted);
-  font-weight: 500;
-}
-
-.form-control {
-  border-radius: var(--cf-r-md);
-  padding: 0.75rem 1rem;
-  border: 1px solid var(--cf-border-mid);
-  transition: all 0.2s var(--cf-ease);
-}
-
-.form-control:focus {
-  border-color: var(--cf-green);
-  box-shadow: 0 0 0 4px rgba(42,92,69,0.08);
-}
-
-.btn-primary {
-  background: var(--cf-green);
-  border: none;
-  border-radius: var(--cf-r-md);
-  padding: 0.8rem;
-  font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  font-size: 0.8rem;
-  transition: all 0.2s var(--cf-ease);
-}
-
-.btn-primary:hover:not(:disabled) {
-  background: var(--cf-green-dark);
-  transform: translateY(-1px);
-  box-shadow: var(--cf-shadow-md);
-}
-
-.text-primary {
-  color: var(--cf-green) !important;
-  text-decoration: none;
-}
-.text-primary:hover {
-  text-decoration: underline;
-}
-
-.fw-bold {
-  color: var(--cf-green);
+@keyframes shake {
+  10%, 90% { transform: translate3d(-1px, 0, 0); }
+  20%, 80% { transform: translate3d(2px, 0, 0); }
+  30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+  40%, 60% { transform: translate3d(4px, 0, 0); }
 }
 </style>

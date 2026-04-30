@@ -96,22 +96,22 @@
                      </tr>
                    </thead>
                    <tbody>
-                     <tr v-for="order in recentOrders" :key="order.id">
+                      <tr v-for="order in recentOrders" :key="order.id">
                         <td class="order-id">#{{ order.id }}</td>
-                        <td class="order-date">{{ formatDate(order.date) }}</td>
+                        <td class="order-date">{{ formatDate(order.dataPedido) }}</td>
                         <td>
-                           <span :class="order.status" class="cf-badge-dot">
-                             {{ getStatusText(order.status) }}
-                           </span>
+                          <span :class="order.status" class="cf-badge-dot">
+                            {{ getStatusText(order.status) }}
+                          </span>
                         </td>
-                        <td class="text-end fw-bold text-dark">R$ {{ order.total.toFixed(2).replace('.', ',') }}</td>
+                        <td class="text-end fw-bold text-dark">R$ {{ (order.valorTotal || 0).toFixed(2).replace('.', ',') }}</td>
                         <td class="text-end">
-                           <router-link :to="`/tracking/${order.id}`" class="icon-action">
-                             <i class="fa-solid fa-chevron-right"></i>
-                           </router-link>
+                          <router-link :to="`/orders/${order.id}`" class="icon-action">
+                            <i class="fa-solid fa-chevron-right"></i>
+                          </router-link>
                         </td>
-                     </tr>
-                   </tbody>
+                      </tr>
+                    </tbody>
                  </table>
                </div>
             </div>
@@ -159,6 +159,8 @@
 </template>
 
 <script>
+import pedidoService from '@/services/pedidoService';
+
 export default {
   name: 'UserDashboard',
   data() {
@@ -170,13 +172,13 @@ export default {
   },
   computed: {
     userName() {
-      const user = this.$store.state.user;
-      return user ? user.name : 'Visitante';
+      const user = this.$store.state.user || JSON.parse(localStorage.getItem('user') || '{}');
+      return user ? (user.nome || user.name) : 'Visitante';
     },
     ordersCount() { return this.recentOrders.length; },
     pendingOrders() {
       return this.recentOrders.filter(order => 
-        ['processing', 'confirmed', 'shipped', 'out_for_delivery'].includes(order.status)
+        ['AGUARDANDO_PAGAMENTO', 'PAGO', 'EM_PREPARACAO', 'EM_TRANSITO'].includes(order.status)
       ).length;
     }
   },
@@ -187,39 +189,46 @@ export default {
     async loadDashboardData() {
       this.loading = true;
       try {
-        await this.loadRecentOrders();
-        await this.loadActiveTracking();
+        const user = this.$store.state.user || JSON.parse(localStorage.getItem('user') || '{}');
+        if (user && user.id) {
+          const res = await pedidoService.listarPorUsuario(user.id);
+          this.recentOrders = res.data.slice(0, 5); // Apenas os 5 mais recentes
+          this.loadActiveTracking();
+        }
       } catch (error) {
-        console.error(error);
+        console.error('Erro ao carregar dashboard:', error);
       } finally {
         this.loading = false;
       }
     },
-    async loadRecentOrders() {
-      // Mock data aligned with ClickFarma
-      this.recentOrders = [
-        { id: 'ORD-CF8291', date: new Date().toISOString(), total: 156.90, status: 'out_for_delivery' },
-        { id: 'ORD-CF7721', date: new Date(Date.now() - 86400000).toISOString(), total: 89.50, status: 'delivered' },
-        { id: 'ORD-CF6540', date: new Date(Date.now() - 172800000).toISOString(), total: 234.75, status: 'processing' }
-      ];
-    },
-    async loadActiveTracking() {
-      const active = this.recentOrders.find(o => o.status === 'out_for_delivery');
+    loadActiveTracking() {
+      // Busca o pedido mais recente que está em trânsito
+      const active = this.recentOrders.find(o => o.status === 'EM_TRANSITO');
       if (active) {
         this.activeTracking = {
           orderId: active.id,
-          status: 'out_for_delivery',
-          currentLocation: 'Centro de Distribuição Regional - Recife/PE',
-          estimatedDelivery: new Date(Date.now() + 3600000).toISOString()
+          status: 'EM_TRANSITO',
+          currentLocation: 'Pedido saiu para entrega',
+          estimatedDelivery: active.dataAtualizacao
         };
       }
     },
     viewFullTracking(orderId) { this.$router.push(`/tracking/${orderId}`); },
     getStatusText(status) {
-      const map = { 'processing': 'Processando', 'confirmed': 'Confirmado', 'shipped': 'Enviado', 'out_for_delivery': 'Em Entrega', 'delivered': 'Entregue', 'cancelled': 'Cancelado' };
+      const map = { 
+        'AGUARDANDO_PAGAMENTO': 'Aguardando Pagto', 
+        'PAGO': 'Pago', 
+        'EM_PREPARACAO': 'Em Preparação', 
+        'EM_TRANSITO': 'Em Trânsito', 
+        'ENTREGUE': 'Entregue', 
+        'CANCELADO': 'Cancelado' 
+      };
       return map[status] || status;
     },
-    formatDate(dateString) { return new Date(dateString).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }); }
+    formatDate(dateString) { 
+      if (!dateString) return '—';
+      return new Date(dateString).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit' }); 
+    }
   }
 }
 </script>

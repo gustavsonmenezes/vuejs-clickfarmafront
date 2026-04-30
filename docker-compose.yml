@@ -4,8 +4,9 @@ services:
     image: mysql:8.0
     container_name: clickfarma-db
     environment:
-      MYSQL_ROOT_PASSWORD: guga1010@
-      MYSQL_DATABASE: clickfarma
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+
     ports:
       - "3307:3306"
     volumes:
@@ -32,12 +33,16 @@ services:
       - .env
     environment:
       - SPRING_PROFILES_ACTIVE=docker
-      - SPRING_DATASOURCE_URL=jdbc:mysql://db:3306/clickfarma?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
-      - SPRING_DATASOURCE_USERNAME=root
-      - SPRING_DATASOURCE_PASSWORD=guga1010@
+      - SPRING_DATASOURCE_URL=${SPRING_DATASOURCE_URL_DOCKER}
+      - SPRING_DATASOURCE_USERNAME=${MYSQL_USER}
+      - SPRING_DATASOURCE_PASSWORD=${MYSQL_PASSWORD}
       - SPRING_JPA_HIBERNATE_DDL_AUTO=update
-      - JWT_SECRET=clickfarmaSecretKey2026VeryLongSecretKeyForJWTGeneration
-      - JWT_EXPIRATION=86400000
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_EXPIRATION=${JWT_EXPIRATION}
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - GROQ_API_KEY=${GROQ_API_KEY}
+      - OCR_SPACE_API_KEY=${OCR_SPACE_API_KEY}
+
     depends_on:
       db:
         condition: service_healthy

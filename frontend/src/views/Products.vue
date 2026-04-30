@@ -1,40 +1,13 @@
 <template>
   <div class="products-page">
     <!-- Header Section — Limpo e Editorial -->
-    <section class="products-header">
-      <div class="container">
-        <div class="row align-items-center">
-          <div class="col-md-8">
-            <h1 class="mb-2">Nossos <em>Produtos</em></h1>
-            <p class="mb-0">Mais que medicamentos, entregamos cuidado e bem-estar para sua família.</p>
-          </div>
-          <div class="col-md-4 text-md-end">
-            <div class="products-count">
-              <span class="count-badge">
-                {{ filteredProducts.length || 0 }} itens selecionados
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
 
-    <div class="container">
-      <!-- Filters & Search Section -->
-      <div class="filters-section mb-4">
+
+    <div class="filters-wrapper">
+      <div class="container">
+        <div class="filters-section">
         <div class="row g-3">
-          <div class="col-lg-5 col-md-6">
-            <div class="search-box">
-              <i class="fas fa-search search-icon"></i>
-              <input
-                  v-model="searchTerm"
-                  type="text"
-                  class="form-control search-input"
-                  placeholder="Busque por nome, marca ou sintoma..."
-              >
-            </div>
-          </div>
-          <div class="col-lg-3 col-md-6">
+          <div class="col-lg-4 col-md-6">
             <div class="filter-group">
               <label class="form-label">📂 Categoria</label>
               <select v-model="filters.category" class="form-select">
@@ -45,43 +18,48 @@
               </select>
             </div>
           </div>
-          <div class="col-lg-2 col-md-6">
+          <div class="col-lg-3 col-md-6">
             <div class="filter-group">
-              <label class="form-label">🔀 Ordenar</label>
+              <label class="form-label">💰 Ordenar por</label>
               <select v-model="filters.sortBy" class="form-select">
-                <option value="name">Nome (A-Z)</option>
-                <option value="price">Menor Preço</option>
-                <option value="price_desc">Maior Preço</option>
+                <optgroup label="Valor">
+                  <option value="price">Menor Preço</option>
+                  <option value="price_desc">Maior Preço</option>
+                </optgroup>
+                <optgroup label="Ordem">
+                  <option value="name">A - Z</option>
+                  <option value="name_desc">Z - A</option>
+                </optgroup>
+                <optgroup label="Prioridade">
+                  <option value="relevance">Relevância</option>
+                </optgroup>
               </select>
             </div>
-          </div>
-          <div class="col-lg-2 col-md-6">
-            <div class="filter-group">
-              <label class="form-label">📦 Estoque</label>
-              <select v-model="filters.stock" class="form-select">
-                <option value="all">Todos</option>
-                <option value="in_stock">Em estoque</option>
-              </select>
-            </div>
-          </div>
-        </div>
-
-        <!-- Active Filters -->
-        <div v-if="hasActiveFilters" class="active-filters">
-          <span class="fw-medium small me-2">Filtrado por:</span>
-          <div class="d-flex flex-wrap gap-2">
-            <span v-if="searchTerm" class="filter-tag">
-              "{{ searchTerm }}"
-              <i class="fas fa-times" @click="searchTerm = ''" style="cursor:pointer"></i>
-            </span>
-            <span v-if="filters.category" class="filter-tag">
-              {{ filters.category }}
-              <i class="fas fa-times" @click="filters.category = ''" style="cursor:pointer"></i>
-            </span>
-            <button @click="clearAllFilters" class="clear-all">Limpar filtros</button>
-          </div>
         </div>
       </div>
+    </div>
+  </div>
+</div>
+
+<div class="container mt-4">
+      <!-- Active Filters -->
+      <div v-if="hasActiveFilters" class="active-filters">
+        <span class="fw-medium small me-2">Filtrado por:</span>
+        <div class="d-flex flex-wrap gap-2">
+          <span v-if="searchTerm" class="filter-tag">
+            "{{ searchTerm }}"
+            <i class="fas fa-times" @click="searchTerm = ''" style="cursor:pointer"></i>
+          </span>
+          <span v-if="filters.category" class="filter-tag">
+            {{ filters.category }}
+            <i class="fas fa-times" @click="filters.category = ''" style="cursor:pointer"></i>
+          </span>
+          <button @click="clearAllFilters" class="clear-all">Limpar filtros</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="container">
 
       <!-- Loading State -->
       <div v-if="loading" class="text-center py-5">
@@ -162,6 +140,20 @@ export default {
       error: null
     }
   },
+  watch: {
+    '$route.query.q': {
+      immediate: true,
+      handler(newVal) {
+        this.searchTerm = newVal || '';
+      }
+    },
+    '$route.query.category': {
+      immediate: true,
+      handler(newVal) {
+        if (newVal) this.filters.category = newVal;
+      }
+    }
+  },
   computed: {
     ...mapState(['products']),
 
@@ -205,8 +197,18 @@ export default {
         case 'price_desc':
           filtered.sort((a, b) => (b.price || 0) - (a.price || 0))
           break
+        case 'relevance':
+          filtered.sort((a, b) => {
+            const stockA = a.estoque || 0;
+            const stockB = b.estoque || 0;
+            if (stockA > 0 && stockB === 0) return -1;
+            if (stockA === 0 && stockB > 0) return 1;
+            return (a.name || '').localeCompare(b.name || '');
+          })
+          break
         default: // 'name'
           filtered.sort((a, b) => (a.name || '').localeCompare(b.name || ''))
+          break
       }
 
       return filtered
@@ -327,12 +329,23 @@ export default {
 }
 
 /* SEARCH & FILTERS */
-.filters-section {
+.filters-wrapper {
   background: var(--cf-white);
-  padding: 1.5rem;
-  border-radius: var(--cf-r-lg);
-  border: 1px solid var(--cf-border);
-  box-shadow: var(--cf-shadow-xs);
+  border-bottom: 1px solid var(--cf-border);
+  z-index: 1000;
+  position: sticky;
+  top: 81px; /* Navbar (66px) + Top Strip (~15px) */
+  transition: all 0.3s ease;
+}
+
+.filters-section {
+  padding: 1rem 0;
+}
+
+@media (max-width: 991px) {
+  .filters-wrapper {
+    top: 60px;
+  }
 }
 
 .search-box { position: relative; }

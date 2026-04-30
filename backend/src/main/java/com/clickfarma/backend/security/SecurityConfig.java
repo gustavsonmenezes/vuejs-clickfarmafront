@@ -25,13 +25,21 @@ public class SecurityConfig {
     @Autowired
     private JwtAuthenticationFilter jwtAuthenticationFilter;
 
+    @Autowired
+    private DebugSecurityFilter debugSecurityFilter;
+
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-                // Desabilita o CSRF de uma forma mais explícita
-                .csrf(csrf -> csrf.ignoringRequestMatchers("/api/**"))
+                // Desabilita o CSRF para todas as APIs (Stateless JWT)
+                .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/api/auth/**", "/api/farmacias/**", "/api/motoboys/**", "/api/dashboard/**").permitAll()
+                        .requestMatchers("/api/produtos/**", "/api/categorias/**", "/api/gemini/**", "/api/receita/**").permitAll()
+                        .requestMatchers("/api/pagamentos/**", "/api/historico/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/pedidos/**").permitAll()
+                        .requestMatchers(HttpMethod.PATCH, "/api/pedidos/**").permitAll()
                         .requestMatchers(
                                 "/swagger-ui/**",
                                 "/swagger-ui.html",
@@ -40,18 +48,14 @@ public class SecurityConfig {
                                 "/swagger-resources/**",
                                 "/webjars/**"
                         ).permitAll()
-                        .requestMatchers("/api/auth/**").permitAll()
-                        .requestMatchers("/api/produtos/**").permitAll()
-                        .requestMatchers("/api/categorias/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/pedidos").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/usuarios").permitAll()
-                        .requestMatchers("/api/gemini/**").permitAll()
-                        .requestMatchers("/api/receita/**").permitAll()  // ← LINHA ADICIONADA
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
+                .addFilterBefore(debugSecurityFilter, UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
@@ -60,9 +64,17 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOriginPatterns(Arrays.asList("*"));
+        configuration.setAllowedOriginPatterns(Arrays.asList(
+                "http://localhost",
+                "http://localhost:80",
+                "http://localhost:8080",
+                "http://localhost:8081",
+                "http://localhost:8082",
+                "http://127.0.0.1*"
+        ));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
-        configuration.setAllowedHeaders(Arrays.asList("*"));
+        configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "X-Requested-With", "Accept", "Origin", "Access-Control-Request-Method", "Access-Control-Request-Headers"));
+        configuration.setExposedHeaders(Arrays.asList("Authorization"));
         configuration.setAllowCredentials(true);
         configuration.setMaxAge(3600L);
 

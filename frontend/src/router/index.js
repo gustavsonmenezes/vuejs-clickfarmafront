@@ -19,9 +19,13 @@ import InventoryManagement from '../views/admin/InventoryManagement.vue'
 import OrderManagement from '../views/admin/OrderManagement.vue'
 import PrescriptionValidation from '../views/admin/PrescriptionValidation.vue'
 import UserManagement from '../views/admin/UserManagement.vue'
+import PharmacyManagement from '../views/admin/PharmacyManagement.vue'
+import CourierManagement from '../views/admin/CourierManagement.vue'
+import CategoryManagement from '../views/admin/CategoryManagement.vue'
 
 // Importe o componente
 import UploadReceita from '@/components/prescriptions/UploadReceita.vue';
+import AdminOverview from '../views/admin/AdminOverview.vue';
 
 const routes = [
   {
@@ -167,6 +171,88 @@ const routes = [
     name: 'Contact',
     component: () => import('../views/Contact.vue')
   },
+  
+  // 🔥 ROTAS FARMÁCIA
+  {
+    path: '/pharmacy/login',
+    name: 'PharmacyLogin',
+    component: () => import('../views/pharmacy/PharmacyLogin.vue')
+  },
+  {
+    path: '/pharmacy/register',
+    name: 'PharmacyRegister',
+    component: () => import('../views/pharmacy/PharmacyRegister.vue')
+  },
+  {
+    path: '/pharmacy',
+    component: () => import('../views/pharmacy/PharmacyLayout.vue'),
+    meta: { requiresAuth: true, requiresPharmacy: true },
+    children: [
+      {
+        path: '',
+        redirect: '/pharmacy/dashboard'
+      },
+      {
+        path: 'dashboard',
+        name: 'PharmacyDashboard',
+        component: () => import('../views/pharmacy/PharmacyDashboard.vue')
+      },
+      {
+        path: 'products',
+        name: 'PharmacyProducts',
+        component: () => import('../views/pharmacy/PharmacyProducts.vue')
+      },
+      {
+        path: 'orders',
+        name: 'PharmacyOrders',
+        component: () => import('../views/pharmacy/PharmacyOrders.vue')
+      },
+      {
+        path: 'financial',
+        name: 'PharmacyFinancial',
+        component: () => import('../views/pharmacy/PharmacyFinancial.vue')
+      },
+      {
+        path: 'settings',
+        name: 'PharmacySettings',
+        component: () => import('../views/pharmacy/PharmacySettings.vue')
+      }
+    ]
+  },
+
+  // 🔥 ROTAS ENTREGADOR
+  {
+    path: '/courier/login',
+    name: 'CourierLogin',
+    component: () => import('../views/courier/CourierLogin.vue')
+  },
+  {
+    path: '/courier',
+    component: () => import('../views/courier/CourierLayout.vue'),
+    meta: { requiresAuth: true, requiresCourier: true },
+    children: [
+      {
+        path: '',
+        redirect: '/courier/dashboard'
+      },
+      {
+        path: 'dashboard',
+        name: 'CourierDashboard',
+        component: () => import('../views/courier/CourierDashboard.vue')
+      },
+      {
+        path: 'deliveries',
+        name: 'CourierDeliveries',
+        component: () => import('../views/courier/CourierDashboard.vue') // Reusando por enquanto
+      },
+      {
+        path: 'financial',
+        name: 'CourierFinancial',
+        component: () => import('../views/courier/CourierFinancial.vue')
+      }
+    ]
+  },
+
   {
     path: '/admin/login',
     name: 'AdminLogin',
@@ -184,7 +270,7 @@ const routes = [
       {
         path: 'dashboard',
         name: 'AdminDashboardOverview',
-        component: { template: '<div>Bem-vindo ao Painel Administrativo!</div>' }
+        component: AdminOverview
       },
       {
         path: 'products',
@@ -210,6 +296,26 @@ const routes = [
         path: 'users',
         name: 'AdminUsers',
         component: UserManagement
+      },
+      {
+        path: 'pharmacies',
+        name: 'AdminPharmacies',
+        component: PharmacyManagement
+      },
+      {
+        path: 'couriers',
+        name: 'AdminCouriers',
+        component: CourierManagement
+      },
+      {
+        path: 'payments',
+        name: 'AdminPayments',
+        component: () => import('../views/admin/PaymentManagement.vue')
+      },
+      {
+        path: 'categories',
+        name: 'AdminCategories',
+        component: CategoryManagement
       }
     ]
   }
@@ -232,15 +338,25 @@ router.beforeEach((to, from, next) => {
     console.error('Erro ao processar dados do usuário:', e)
     localStorage.removeItem('user')
   }
-  const isAdmin = user.role === 'admin'
+  const isAdmin = user.role?.toUpperCase() === 'ADMIN'
+  const isPharmacy = user.role?.toUpperCase() === 'PHARMACY'
+  const isCourier = user.role?.toUpperCase() === 'COURIER'
 
   if (to.meta.requiresAuth && !isAuthenticated) {
     if (to.path.startsWith('/admin')) {
       next('/admin/login')
+    } else if (to.path.startsWith('/pharmacy')) {
+      next('/pharmacy/login')
+    } else if (to.path.startsWith('/courier')) {
+      next('/courier/login')
     } else {
       next('/login')
     }
   } else if (to.meta.requiresAdmin && !isAdmin) {
+    next('/')
+  } else if (to.meta.requiresPharmacy && !isPharmacy) {
+    next('/')
+  } else if (to.meta.requiresCourier && !isCourier) {
     next('/')
   } else {
     next()

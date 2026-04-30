@@ -31,6 +31,12 @@ public class Usuario {
     @Column(name = "data_cadastro")
     private LocalDateTime dataCadastro;
 
+    @Column(length = 50)
+    private String role; // "ADMIN", "PHARMACY", "COURIER", "CUSTOMER"
+
+    @Column(length = 100)
+    private String cidade;
+
     @OneToMany(mappedBy = "usuario", cascade = CascadeType.ALL)
     private List<Pedido> pedidos = new ArrayList<>();
 
@@ -67,6 +73,12 @@ public class Usuario {
 
     public LocalDateTime getDataCadastro() { return dataCadastro; }
     public void setDataCadastro(LocalDateTime dataCadastro) { this.dataCadastro = dataCadastro; }
+
+    public String getRole() { return role; }
+    public void setRole(String role) { this.role = role; }
+
+    public String getCidade() { return cidade; }
+    public void setCidade(String cidade) { this.cidade = cidade; }
 
     public List<Pedido> getPedidos() { return pedidos; }
     public void setPedidos(List<Pedido> pedidos) { this.pedidos = pedidos; }

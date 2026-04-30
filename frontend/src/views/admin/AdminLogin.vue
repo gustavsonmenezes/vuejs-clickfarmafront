@@ -41,8 +41,8 @@
             <div class="mt-3 p-3 bg-light rounded">
               <small class="text-muted">
                 <strong>Credenciais para teste:</strong><br>
-                Email: admin@clickfarma.com<br>
-                Senha: senha123
+                Emails: jdts1@discente.ifpe.edu.br ou gmb6@discente.ifpe.edu.br<br>
+                Senha: admin123click
               </small>
             </div>
           </div>
@@ -52,55 +52,52 @@
   </div>
 </template>
 
-<script>
-export default {
-  name: 'AdminLogin',
-  data() {
-    return {
-      email: '',
-      password: '',
-      error: '',
-      isLoading: false
+<script setup>
+import { ref } from 'vue';
+import { useRouter } from 'vue-router';
+import { useStore } from 'vuex';
+import api from '@/services/api';
+
+const email = ref('');
+const password = ref('');
+const error = ref('');
+const isLoading = ref(false);
+const router = useRouter();
+const store = useStore();
+
+const login = async () => {
+  isLoading.value = true;
+  error.value = '';
+
+  try {
+    const response = await api.post('/auth/login', {
+      email: email.value,
+      senha: password.value
+    });
+
+    const { token, role, nome, id } = response.data;
+
+    if (role !== 'ADMIN') {
+      error.value = 'Acesso restrito apenas para administradores.';
+      return;
     }
-  },
-  methods: {
-    async login() {
-      this.isLoading = true
-      this.error = ''
-      
-      
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      
-      
-      if (this.email === 'admin@clickfarma.com' && this.password === 'senha123') {
-        
-        const mockUser = {
-          id: 1,
-          name: 'Administrador ClickFarma',
-          email: 'admin@clickfarma.com',
-          role: 'admin',
-          avatar: null
-        }
-        
-        const mockToken = 'mock-jwt-token-' + Date.now()
-        
-        
-        localStorage.setItem('authToken', mockToken)
-        localStorage.setItem('user', JSON.stringify(mockUser))
-        
-        
-        this.$router.push('/admin')
-      } else {
-        this.error = 'Credenciais inválidas. Use: admin@clickfarma.com / senha123'
-      }
-      
-      this.isLoading = false
-    }
-  },
-  mounted() {
+
+    const userData = { id, nome, email: email.value, role };
     
-    localStorage.removeItem('authToken')
-    localStorage.removeItem('user')
+    // Salvar no localStorage conforme padrão do projeto
+    localStorage.setItem('authToken', token);
+    localStorage.setItem('user', JSON.stringify(userData));
+    
+    // Atualizar store
+    store.commit('SET_USER', userData);
+    store.commit('SET_AUTH_TOKEN', token);
+
+    router.push('/admin/dashboard');
+  } catch (err) {
+    console.error('Erro no login admin:', err);
+    error.value = err.response?.data?.mensagem || 'Falha na autenticação. Verifique suas credenciais.';
+  } finally {
+    isLoading.value = false;
   }
 }
 </script>

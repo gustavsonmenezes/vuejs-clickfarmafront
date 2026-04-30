@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 public class AiRouterService {
@@ -18,6 +19,15 @@ public class AiRouterService {
 
     @Autowired(required = false)
     private GroqService groqService;
+
+    @Autowired
+    private HistoricoVisualizacaoService historicoService;
+
+    @Autowired
+    private com.clickfarma.backend.repository.ProdutoRepository produtoRepository;
+
+    @Autowired
+    private com.clickfarma.backend.repository.PedidoRepository pedidoRepository;
 
     public Mono<String> chat(String mensagem) {
         if ("gemini".equalsIgnoreCase(aiProvider) && geminiService != null) {
@@ -58,5 +68,27 @@ public class AiRouterService {
         } else {
             return Mono.just("Servico de IA nao disponivel");
         }
+    }
+
+    public Mono<List<Long>> getRecommendations(Long usuarioId) {
+        List<Long> vistos = (usuarioId != null) ? historicoService.getProdutosRecentes(usuarioId) : List.of();
+        
+        // Buscar IDs de produtos comprados recentemente
+        List<Long> comprados = (usuarioId != null) ? 
+            pedidoRepository.findByUsuarioId(usuarioId).stream()
+                .flatMap(p -> p.getItens().stream())
+                .map(item -> item.getProduto().getId())
+                .distinct()
+                .limit(10)
+                .collect(Collectors.toList()) : List.of();
+
+        List<com.clickfarma.backend.model.Produto> produtos = produtoRepository.findAll().stream()
+                .limit(100)
+                .collect(Collectors.toList());
+        
+        if ("gemini".equalsIgnoreCase(aiProvider) && geminiService != null) {
+            return geminiService.getRecommendations(usuarioId, vistos, comprados, produtos);
+        }
+        return Mono.just(List.of()); // Fallback
     }
 }

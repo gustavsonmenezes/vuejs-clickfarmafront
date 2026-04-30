@@ -7,6 +7,7 @@ import com.clickfarma.backend.model.Pedido;
 import com.clickfarma.backend.model.Usuario;
 import com.clickfarma.backend.repository.UsuarioRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
@@ -20,6 +21,9 @@ public class UsuarioService {
     @Autowired
     private UsuarioRepository usuarioRepository;
 
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
     // Criar usuário
     public UsuarioResponseDTO criarUsuario(UsuarioRequestDTO usuarioDTO) {
         if (usuarioRepository.existsByEmail(usuarioDTO.getEmail())) {
@@ -29,7 +33,7 @@ public class UsuarioService {
         Usuario usuario = new Usuario();
         usuario.setNome(usuarioDTO.getNome());
         usuario.setEmail(usuarioDTO.getEmail());
-        usuario.setSenha(usuarioDTO.getSenha());
+        usuario.setSenha(passwordEncoder.encode(usuarioDTO.getSenha()));
         usuario.setTelefone(usuarioDTO.getTelefone());
         usuario.setEndereco(usuarioDTO.getEndereco());
 
@@ -113,8 +117,8 @@ public class UsuarioService {
         Usuario usuario = usuarioRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Usuário não encontrado com ID: " + id));
 
-        // Verificar se a senha atual está correta
-        if (!usuario.getSenha().equals(senhaAtual)) {
+        // Verificar se a senha atual está correta usando BCrypt
+        if (!passwordEncoder.matches(senhaAtual, usuario.getSenha())) {
             throw new RuntimeException("Senha atual incorreta");
         }
 
@@ -123,7 +127,7 @@ public class UsuarioService {
             throw new RuntimeException("Nova senha deve ter no mínimo 6 caracteres");
         }
 
-        usuario.setSenha(senhaNova);
+        usuario.setSenha(passwordEncoder.encode(senhaNova));
         usuarioRepository.save(usuario);
     }
 

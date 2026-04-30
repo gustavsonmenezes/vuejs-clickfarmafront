@@ -7,71 +7,90 @@
     </div>
 
     <div v-else>
-      <!-- Hero Section — Estilo Editorial Premium -->
+      <!-- Hero Section -->
       <section class="hero-section">
         <div class="container h-100">
           <div class="row align-items-center h-100">
-            <div class="col-lg-7">
-              <span class="section-eyebrow mb-2">Bem-vindo à ClickFarma</span>
-              <h1 class="hero-title mb-4">Sua saúde, cuidada com <em>excelência</em></h1>
-              <p class="hero-subtitle mb-5">Encontre medicamentos, dermocosméticos e cuidados essenciais com a curadoria que você merece.</p>
-              
-              <div class="hero-actions">
-                <router-link to="/products" class="btn btn-primary">
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
-                  Explorar Catálogo
-                </router-link>
-                <router-link to="/promotions" class="btn btn-outline-primary">
-                  Ver Ofertas
-                </router-link>
-              </div>
-
-              <div class="hero-stats mt-5 pt-4">
-                <div class="stat-item">
-                  <span class="stat-num">2h</span>
-                  <span class="stat-label">Entrega Expressa</span>
-                </div>
-                <div class="stat-sep"></div>
-                <div class="stat-item">
-                  <span class="stat-num">24h</span>
-                  <span class="stat-label">Apoio Farmacêutico</span>
+            <div class="col-lg-6">
+              <div class="hero-content py-5">
+                <span class="hero-badge animate__animated animate__fadeInDown">
+                  <i class="fas fa-sparkles me-2"></i>Sua saúde, nossa prioridade
+                </span>
+                <h1 class="hero-title mb-4 animate__animated animate__fadeInLeft">Sua saúde, cuidada com <span class="text-gradient">inteligência</span></h1>
+                <p class="hero-subtitle mb-5 animate__animated animate__fadeInLeft" style="animation-delay: 0.1s">
+                  Encontre medicamentos, dermocosméticos e itens de higiene com a agilidade que você precisa e a segurança que você merece.
+                </p>
+                
+                <div class="hero-actions d-flex gap-3 animate__animated animate__fadeInLeft" style="animation-delay: 0.2s">
+                  <router-link to="/products" class="btn btn-primary btn-lg px-5 rounded-pill shadow-lg">
+                    Explorar Agora
+                  </router-link>
+                  <button @click="scrollToProducts" class="btn btn-outline-dark btn-lg px-4 rounded-pill">
+                    Categorias
+                  </button>
                 </div>
               </div>
             </div>
-
-            <div class="col-lg-5 d-none d-lg-block">
-              <div class="hero-visual-wrapper">
-                <div class="floating-icons">
-                  <div class="float-icon icon-1">💊</div>
-                  <div class="float-icon icon-2">🧴</div>
-                  <div class="float-icon icon-3">🌿</div>
-                </div>
-                <div class="hero-circle-bg"></div>
+            <div class="col-lg-6 d-none d-lg-block animate__animated animate__fadeInRight">
+              <div class="hero-visual">
+                <img src="/images/medica-header.webp" alt="Dra. ClickFarma" class="hero-img">
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      <!-- Categorias Section -->
-      <section class="categories-section py-5">
-        <div class="container py-lg-4">
-          <div class="row justify-content-center text-center mb-5">
-            <div class="col-lg-7">
-              <h2 class="section-title">Navegue por Categoria</h2>
-              <p class="section-desc">Especialidades selecionadas para facilitar sua busca pelo cuidado ideal.</p>
+      <!-- AI Recommendations (Conditional) -->
+      <section v-if="userRecommendations.length > 0" class="recommendations-section py-5">
+        <div class="container">
+          <div class="ai-banner mb-5 p-4 rounded-4 shadow-sm border-0 d-flex align-items-center justify-content-between">
+            <div class="d-flex align-items-center gap-3">
+              <div class="ai-icon-pulse"><i class="fas fa-robot"></i></div>
+              <div>
+                <h4 class="mb-0 fw-bold">Recomendados para Você</h4>
+                <p class="mb-0 text-muted small">Nossa IA analisou seu histórico para sugerir estes produtos.</p>
+              </div>
+            </div>
+            <div class="d-none d-md-block">
+              <span class="badge bg-white text-primary border border-primary-subtle px-3 py-2 rounded-pill">
+                Powered by Gemini 1.5 Pro
+              </span>
             </div>
           </div>
-          
-          <div class="categories-grid">
-            <router-link v-for="(cat, i) in categories" :key="cat" to="/products" class="category-item-link">
-              <div class="cf-category-card">
-                <div class="category-icon-bg">
-                  <span class="category-emoji">{{ getCategoryIcon(cat) }}</span>
-                </div>
-                <span class="category-text">{{ cat }}</span>
+
+          <div class="cf-horizontal-scroll">
+            <div class="cf-scroll-content">
+              <div v-for="product in recommendedProductsList" :key="'rec-'+product.id" class="cf-product-card-horizontal">
+                <ProductCard :product="product" @add-to-cart="handleAddToCart" />
               </div>
-            </router-link>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Seções por Categoria -->
+      <section id="category-sections" class="products-sections py-5 bg-light">
+        <div class="container">
+          <div v-for="cat in categories" :key="cat" class="category-row mb-5">
+            <div class="d-flex justify-content-between align-items-end mb-4 px-2">
+              <div class="d-flex align-items-center gap-3">
+                <div>
+                  <h3 class="category-title mb-0">{{ cat }}</h3>
+                  <div class="cf-h-line"></div>
+                </div>
+              </div>
+              <router-link :to="`/products?category=${cat}`" class="text-decoration-none fw-bold text-primary small">
+                Ver Tudo <i class="fas fa-arrow-right ms-1"></i>
+              </router-link>
+            </div>
+
+            <div class="cf-horizontal-scroll">
+              <div class="cf-scroll-content">
+                <div v-for="product in getProdutosPorCategoria(cat)" :key="product.id" class="cf-product-card-horizontal">
+                  <ProductCard :product="product" @add-to-cart="handleAddToCart" />
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -81,11 +100,10 @@
         <div class="container py-lg-4">
           <div class="row g-4">
             <div class="col-md-4" v-for="f in features" :key="f.title">
-              <div class="cf-feature-box">
+              <div class="cf-feature-box text-center">
                 <div class="feature-icon-blob">{{ f.icon }}</div>
                 <h3 class="feature-h">{{ f.title }}</h3>
                 <p class="feature-p">{{ f.text }}</p>
-                <span class="feature-tag">{{ f.badge }}</span>
               </div>
             </div>
           </div>
@@ -96,215 +114,235 @@
 </template>
 
 <script>
-import { mapGetters } from 'vuex'
+import { mapGetters, mapActions, mapState } from 'vuex'
+import api from '@/services/api'
+import ProductCard from '@/components/products/ProductCard.vue'
 
 export default {
   name: 'Home',
+  components: {
+    ProductCard
+  },
   data() {
     return {
-      loading: false,
+      loading: true,
+      allProducts: [],
+      userRecommendations: [],
       features: [
-        { icon: '🚚', title: 'Entrega Veloz', text: 'Logística inteligente para você receber em casa rapidinho.', badge: 'Expressa' },
-        { icon: '🔒', title: 'Segurança Total', text: 'Dados protegidos e medicamentos com garantia de procedência.', badge: 'Certificada' },
-        { icon: '👨‍⚕️', title: 'Expertise', text: 'Dúvidas? Nossa equipe técnica está pronta para ajudar.', badge: '24 Horas' }
+        { icon: '🚚', title: 'Entrega Expressa', text: 'Receba seus produtos em até 2 horas em sua residência.' },
+        { icon: '🤖', title: 'IA ClickFarma', text: 'Nosso agente inteligente ajuda você a encontrar o melhor produto.' },
+        { icon: '💊', title: 'Procedência', text: 'Trabalhamos apenas com farmácias certificadas e produtos originais.' }
       ]
     }
   },
-  computed: { ...mapGetters(['categories']) },
+  computed: {
+    ...mapState(['products']),
+    ...mapGetters(['cartItemsCount']),
+    categories() {
+      // Retorna apenas as categorias que possuem ao menos um produto
+      const allCats = this.$store.getters.categories;
+      return allCats.filter(cat => 
+        this.allProducts.some(p => p.categoriaNome === cat || p.categoria === cat)
+      );
+    },
+    recommendedProductsList() {
+      if (!this.userRecommendations || this.userRecommendations.length === 0) return [];
+      // Filtra os produtos reais que estão na lista de IDs recomendados pela IA
+      return this.allProducts
+        .filter(p => this.userRecommendations.includes(p.id))
+        .sort((a, b) => this.userRecommendations.indexOf(a.id) - this.userRecommendations.indexOf(b.id))
+        .slice(0, 10);
+    }
+  },
+  async mounted() {
+    await this.initHome();
+  },
   methods: {
-    getCategoryIcon(cat) {
-      const icons = { 'Medicamentos': '💊', 'Cosméticos': '🧴', 'Higiene': '🚿', 'Vitaminas': '🌿', 'Maternidade': '👶', 'Bebês': '🍼' };
-      return icons[cat] || '📦';
+    ...mapActions(['addToCart', 'fetchCategories']),
+    async initHome() {
+      this.loading = true;
+      try {
+        // Carregar produtos e categorias reais em paralelo
+        await Promise.all([
+          this.fetchProductsList(),
+          this.fetchCategories()
+        ]);
+
+        // Tentar recomendações se logado
+        const rawUser = localStorage.getItem('user');
+        if (rawUser) {
+          const user = JSON.parse(rawUser);
+          const resRec = await api.get(`/gemini/recomendacoes?usuarioId=${user.id}`);
+          if (resRec.data && resRec.data.recomendacoes) {
+             this.userRecommendations = resRec.data.recomendacoes;
+          }
+        }
+      } catch (err) {
+        console.error('Erro ao inicializar Home:', err);
+      } finally {
+        this.loading = false;
+      }
+    },
+    async fetchProductsList() {
+      try {
+        const resP = await api.get('/produtos');
+        this.allProducts = resP.data;
+      } catch (err) {
+        console.error('Erro ao buscar produtos:', err);
+        this.allProducts = this.products; // Fallback
+      }
+    },
+    scrollToProducts() {
+      const el = document.getElementById('category-sections');
+      if (el) el.scrollIntoView({ behavior: 'smooth' });
+    },
+    getProdutosPorCategoria(cat) {
+      let lista = this.allProducts.filter(p => p.categoriaNome === cat || p.categoria === cat);
+      
+      // Se tiver recomendações, ordena
+      if (this.userRecommendations.length > 0) {
+        lista.sort((a, b) => {
+          const idxA = this.userRecommendations.indexOf(a.id);
+          const idxB = this.userRecommendations.indexOf(b.id);
+          if (idxA === -1 && idxB === -1) return 0;
+          if (idxA === -1) return 1;
+          if (idxB === -1) return -1;
+          return idxA - idxB;
+        });
+      }
+      return lista.slice(0, 12);
+    },
+    handleAddToCart(product) {
+      this.addToCart(product);
+      alert('Produto adicionado ao carrinho!');
     }
   }
 }
 </script>
 
 <style scoped>
-/* ---- HERO SECTION ---- */
+.home {
+  overflow-x: hidden;
+  width: 100%;
+  position: relative;
+  background: #fff;
+}
+
+/* HERO PREMIUM */
 .hero-section {
   position: relative;
-  height: 80vh;
-  min-height: 600px;
-  background: var(--cf-white);
+  min-height: 85vh;
+  background: #ffffff;
+  display: flex;
+  align-items: center;
+  width: 100%;
   overflow: hidden;
 }
-
-.hero-section::before {
-  content: '';
-  position: absolute;
-  top: 0; right: 0;
-  width: 40%; height: 100%;
-  background: var(--cf-green-xlight);
-  z-index: 1;
+.hero-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 16px;
+  background: rgba(42,92,69,0.06);
+  color: var(--cf-green);
+  border-radius: 100px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 1.5rem;
 }
-
-.hero-section .container {
+.hero-title {
+  font-size: clamp(2.5rem, 6vw, 4.2rem);
+  color: #0f172a;
+  font-weight: 900;
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+}
+.text-gradient {
+  background: linear-gradient(135deg, var(--cf-green) 0%, #3d7a5e 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.hero-subtitle {
+  font-size: 1.25rem;
+  color: #64748b;
+  max-width: 540px;
+  line-height: 1.6;
+}
+.hero-visual { position: relative; z-index: 2; }
+.hero-img {
+  width: 100%;
+  border-radius: 30px;
   position: relative;
   z-index: 2;
 }
 
-.hero-title {
-  font-size: clamp(2.5rem, 5vw, 4.2rem);
-  color: var(--cf-text-dark);
-  line-height: 1.1;
-  margin-bottom: 1.5rem;
+
+/* RECOMMENDATIONS */
+.ai-banner {
+  background: linear-gradient(90deg, #f8fafc 0%, #f1f5f9 100%);
+  border-left: 5px solid var(--cf-green) !important;
 }
-.hero-title em {
-  font-family: var(--cf-serif);
-  font-style: italic;
-  color: var(--cf-green);
+.ai-icon-pulse {
+  width: 48px; height: 48px;
+  background: var(--cf-green);
+  color: #fff;
+  border-radius: 14px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.2rem;
+  box-shadow: 0 0 0 0 rgba(42,92,69,0.4);
+  animation: ai-pulse 2s infinite;
+}
+@keyframes ai-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(42,92,69,0.4); }
+  70% { box-shadow: 0 0 0 15px rgba(42,92,69,0); }
+  100% { box-shadow: 0 0 0 0 rgba(42,92,69,0); }
 }
 
-.hero-subtitle {
-  font-size: 1.15rem;
-  color: var(--cf-text-muted);
-  max-width: 500px;
-  font-weight: 300;
+/* CARDS */
+.premium-card {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1px solid rgba(0,0,0,0.03) !important;
 }
-
-.hero-actions {
-  display: flex;
-  gap: 12px;
+.premium-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 20px 40px -15px rgba(0,0,0,0.1) !important;
 }
-
-/* Stats */
-.hero-stats {
+.card-img-wrap {
+  height: 180px;
   display: flex;
   align-items: center;
-  gap: 2rem;
+  justify-content: center;
+  background: #fff;
+  padding: 1.5rem;
 }
-.stat-item { display: flex; flex-direction: column; }
-.stat-num { font-family: var(--cf-sans); font-size: 1.6rem; font-weight: 500; color: var(--cf-green); line-height: 1; }
-.stat-label { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.12em; color: var(--cf-text-faint); margin-top: 4px; }
-.stat-sep { width: 1px; height: 30px; background: var(--cf-border-mid); }
+.card-img-wrap img { max-height: 100%; width: auto; object-fit: contain; }
 
-/* Visuals */
-.hero-visual-wrapper {
-  position: relative;
-  width: 100%; height: 400px;
-  display: flex; align-items: center; justify-content: center;
-}
-.hero-circle-bg {
-  width: 320px; height: 320px;
-  background: var(--cf-green-light);
-  border-radius: 50%;
-  border: 1px dashed var(--cf-green-mid);
-}
-.floating-icons { position: absolute; inset: 0; }
-.float-icon {
-  position: absolute; font-size: 3rem;
-  filter: drop-shadow(0 8px 15px rgba(0,0,0,0.1));
-  animation: float 4s infinite ease-in-out;
-}
-.icon-1 { top: 20%; left: 30%; animation-delay: 0s; }
-.icon-2 { top: 50%; right: 20%; animation-delay: 1s; }
-.icon-3 { bottom: 20%; left: 40%; animation-delay: 2s; }
-
-@keyframes float {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-20px); }
-}
-
-/* ---- CATEGORIES ---- */
-.section-desc { color: var(--cf-text-muted); font-weight: 300; font-size: 1.05rem; }
-
-.categories-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-  gap: 1.5rem;
-}
-
-.cf-category-card {
-  background: var(--cf-white);
-  border: 1px solid var(--cf-border);
-  border-radius: var(--cf-r-lg);
-  padding: 1.8rem 1rem;
-  text-align: center;
-  transition: all 300ms var(--cf-ease);
-}
-.category-item-link { text-decoration: none; }
-
-.category-icon-bg {
-  width: 70px; height: 70px;
-  background: var(--cf-ivory);
-  border-radius: 50%;
-  display: flex; align-items: center; justify-content: center;
-  margin: 0 auto 1.2rem;
-  transition: all 300ms var(--cf-ease);
-}
-.category-emoji { font-size: 2rem; }
-
-.category-text {
-  font-family: var(--cf-sans);
-  font-size: 0.85rem;
-  font-weight: 500;
-  color: var(--cf-text-mid);
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-}
-
-.category-item-link:hover .cf-category-card {
-  transform: translateY(-5px);
-  border-color: var(--cf-green-light);
-  box-shadow: var(--cf-shadow-md);
-}
-.category-item-link:hover .category-icon-bg {
-  background: var(--cf-green-xlight);
-  transform: scale(1.1);
-}
-.category-item-link:hover .category-text { color: var(--cf-green); }
-
-/* ---- FEATURES ---- */
-.cf-feature-box {
-  background: var(--cf-white);
-  padding: 2.5rem 2rem;
-  border-radius: var(--cf-r-xl);
-  height: 100%;
-  border: 1px solid var(--cf-border);
-  transition: all 300ms var(--cf-ease);
-}
-.feature-icon-blob {
-  font-size: 2.4rem;
-  margin-bottom: 1.25rem;
-}
-.feature-h {
-  font-family: var(--cf-sans);
-  font-size: 1.5rem;
+.category-title {
+  font-family: 'Fraunces', serif;
+  font-size: 2.2rem;
   font-weight: 600;
   color: var(--cf-text-dark);
-  margin-bottom: 0.8rem;
-}
-.feature-p {
-  font-size: 0.9rem;
-  color: var(--cf-text-muted);
-  line-height: 1.6;
-}
-.feature-tag {
-  display: inline-block;
-  font-size: 0.6rem;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--cf-green);
-  background: var(--cf-green-light);
-  padding: 3px 10px;
-  border-radius: 100px;
-  font-weight: 500;
-  margin-top: 1rem;
+  margin-bottom: 0;
 }
 
-.cf-feature-box:hover {
-  background: var(--cf-ivory);
-  border-color: var(--cf-green-light);
-  box-shadow: var(--cf-shadow-sm);
+.cf-h-line { width: 40px; height: 3px; background: var(--cf-green); border-radius: 2px; margin-top: 4px; }
+
+/* Scroll Horizontal */
+.cf-horizontal-scroll {
+  overflow-x: auto;
+  padding: 10px 0 25px;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
 }
+.cf-horizontal-scroll::-webkit-scrollbar { display: none; }
+.cf-scroll-content { display: flex; gap: 20px; width: max-content; padding: 0 5px; }
+.cf-product-card-horizontal { width: 280px; }
 
-.cf-spinner { color: var(--cf-green); }
-
-/* ---- RESPONSIVO ---- */
-@media (max-width: 991.98px) {
-  .hero-section { height: auto; padding: 4rem 0; }
-  .hero-section::before { display: none; }
+@media (max-width: 991px) {
+  .hero-section { min-height: 60vh; padding: 60px 0; }
   .hero-title { font-size: 2.8rem; }
+  .cf-product-card-horizontal { width: 240px; }
 }
 </style>

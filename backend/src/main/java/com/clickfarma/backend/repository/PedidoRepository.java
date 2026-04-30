@@ -25,4 +25,13 @@ public interface PedidoRepository extends JpaRepository<Pedido, Long> {
 
     @Query("SELECT p FROM Pedido p LEFT JOIN FETCH p.rastreio WHERE p.codigoPedido = :codigo")
     Pedido findByCodigoPedidoWithRastreio(@Param("codigo") String codigo);
+
+    @Query("SELECT p FROM Pedido p WHERE p.farmacia.id = :farmaciaId")
+    List<Pedido> findByFarmaciaId(@Param("farmaciaId") Long farmaciaId);
+
+    @Query("SELECT p FROM Pedido p WHERE p.farmacia.id = :farmaciaId AND p.dataPedido BETWEEN :inicio AND :fim")
+    List<Pedido> findByFarmaciaIdAndDataPedidoBetween(
+            @Param("farmaciaId") Long farmaciaId,
+            @Param("inicio") LocalDateTime inicio,
+            @Param("fim") LocalDateTime fim);
 }

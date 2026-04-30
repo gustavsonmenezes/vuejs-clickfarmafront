@@ -4,15 +4,16 @@ import com.clickfarma.backend.dto.MedicamentoExtraidoDTO;
 import com.clickfarma.backend.model.Produto;
 import com.clickfarma.backend.repository.ProdutoRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 import java.util.*;
 
 @Service
-@Slf4j
 public class GroqProcessadorReceitaService {
+    private static final Logger log = LoggerFactory.getLogger(GroqProcessadorReceitaService.class);
 
     @Autowired
     private GroqService groqService;

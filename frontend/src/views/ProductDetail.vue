@@ -15,8 +15,9 @@
         <!-- Esquerda: Imagem -->
         <div class="col-md-6 fade-in-up">
           <div class="detail-gallery">
-            <div class="main-image-wrapper mb-3">
-              <div class="cf-product-visual-large">
+            <div class="main-image-wrapper mb-3 overflow-hidden">
+              <img v-if="product.imageUrl" :src="product.imageUrl" class="product-img-large" style="width:100%; height:100%; object-fit: contain;">
+              <div v-else class="cf-product-visual-large">
                 <span class="cf-visual-icon">{{ getCategoryIcon(product.category) }}</span>
               </div>
             </div>
@@ -85,6 +86,7 @@
 
 <script>
 import { mapActions, mapState } from 'vuex'
+import api from '@/services/api'
 
 export default {
   name: 'ProductDetail',
@@ -96,13 +98,35 @@ export default {
   computed: {
     ...mapState(['products'])
   },
-  created() {
+  async mounted() {
     const productId = parseInt(this.$route.params.id)
-    this.product = this.products.find(p => p.id === productId)
-    if (!this.product) this.$router.push('/products')
+    // Se não tiver no Vuex, buscar da API (melhor para links diretos)
+    if (!this.product) {
+      try {
+        const res = await api.get(`/produtos/${productId}`);
+        this.product = res.data;
+      } catch (err) {
+        this.$router.push('/products');
+        return;
+      }
+    }
+    
+    this.registrarVisualizacao(productId);
   },
   methods: {
     ...mapActions(['addToCart']),
+    async registrarVisualizacao(productId) {
+      try {
+        const rawUser = localStorage.getItem('user');
+        if (rawUser) {
+          const user = JSON.parse(rawUser);
+          await api.post('/historico/visualizacao', {
+            usuarioId: user.id,
+            produtoId: productId
+          });
+        }
+      } catch (e) { /* ignore */ }
+    },
     getCategoryIcon(cat) {
       return { 'Medicamentos':'💊','Cosméticos':'🧴','Higiene':'🚿','Vitaminas':'🌿','Maternidade':'👶' }[cat] || '📦'
     },

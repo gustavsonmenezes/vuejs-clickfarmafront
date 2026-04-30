@@ -7,8 +7,10 @@ import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.stereotype.Service;
 import java.util.ArrayList;
+import java.util.List;
 
 @Service
 public class CustomUserDetailsService implements UserDetailsService {
@@ -21,6 +23,11 @@ public class CustomUserDetailsService implements UserDetailsService {
         Usuario usuario = usuarioRepository.findByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException("Usuário não encontrado com email: " + email));
 
-        return new User(usuario.getEmail(), usuario.getSenha(), new ArrayList<>());
+        List<SimpleGrantedAuthority> authorities = new ArrayList<>();
+        if (usuario.getRole() != null) {
+            authorities.add(new SimpleGrantedAuthority("ROLE_" + usuario.getRole()));
+        }
+
+        return new User(usuario.getEmail(), usuario.getSenha(), authorities);
     }
 }

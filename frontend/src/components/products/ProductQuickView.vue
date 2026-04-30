@@ -92,6 +92,8 @@
 </template>
 
 <script>
+import historicoService from '@/services/historicoService';
+
 export default {
   name: 'ProductQuickView',
   props: {
@@ -125,6 +127,9 @@ export default {
         this.qty = 1
         this.added = false
         document.body.style.overflow = 'hidden'
+        if (this.product?.id) {
+          historicoService.registrarVisualizacao(this.product.id);
+        }
       } else {
         document.body.style.overflow = ''
       }

@@ -60,6 +60,8 @@
               <li><router-link to="/products" class="cf-footer-link">Produtos</router-link></li>
               <li><router-link to="/promotions" class="cf-footer-link">Promoções</router-link></li>
               <li><router-link to="/track-order" class="cf-footer-link">Rastrear Pedido</router-link></li>
+              <li class="mt-2"><router-link to="/pharmacy/login" class="cf-footer-link text-warning"><i class="fas fa-store me-1"></i>Para Farmácias</router-link></li>
+              <li><router-link to="/courier/login" class="cf-footer-link text-warning"><i class="fas fa-motorcycle me-1"></i>Para Entregadores</router-link></li>
             </ul>
           </div>
 
@@ -395,9 +397,22 @@ export default {
 @media (max-width: 992px) {
   .cf-trust-grid { grid-template-columns: repeat(2, 1fr); gap: 1rem 1.5rem; }
 }
+@media (max-width: 768px) {
+  .cf-footer-body { padding: 2.5rem 0 2rem; }
+  .cf-footer-links { margin-bottom: 1.5rem; }
+}
 @media (max-width: 576px) {
-  .cf-trust-grid { grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+  .cf-trust-grid { grid-template-columns: 1fr; gap: 0.75rem; }
   .cf-footer-body { padding: 2rem 0 1.5rem; }
-  .cf-footer-desc { max-width: 100%; }
+  .cf-footer-desc { max-width: 100%; text-align: center; }
+  .cf-footer-brand { justify-content: center; }
+  .cf-social-row { justify-content: center; }
+  .cf-footer-col-title { text-align: center; }
+  .cf-footer-col-title::after { left: 50%; transform: translateX(-50%); }
+  .cf-footer-links { align-items: center; }
+  .cf-contact-item { justify-content: center; }
+  .cf-newsletter-label { text-align: center; }
+  .cf-copyright { text-align: center; width: 100%; }
+  .cf-legal { width: 100%; justify-content: center; }
 }
 </style>
