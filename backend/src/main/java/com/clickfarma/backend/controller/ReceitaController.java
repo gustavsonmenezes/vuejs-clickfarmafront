@@ -33,8 +33,8 @@ public class ReceitaController {
     private GroqProcessadorReceitaService groqProcessadorReceitaService;
 
     /**
-     * Processa uma receita médica extraindo medicamentos via IA
-     * Tenta OCR Space primeiro (mais preciso), depois Tesseract como fallback
+     * Processa uma receita médica extraindo medicamentos via IA Vision (Llama 3.2 90B Vision).
+     * Envia a imagem diretamente para o modelo de visão, com OCR como fallback complementar.
      */
     @PostMapping("/processar")
     public Mono<ResponseEntity<Map<String, Object>>> processarReceita(@RequestBody ReceitaRequestDTO request) {
@@ -47,15 +47,38 @@ public class ReceitaController {
             return Mono.just(ResponseEntity.badRequest().body(errorResponse));
         }
 
-        // OCR Space (rede) + Tesseract (CPU/bloqueante). Rodamos em paralelo e tiramos o Tesseract do thread de I/O.
-        log.info("Tentando OCR Space API...");
+        String imagemBase64 = request.getImagemBase64().contains(",")
+                ? request.getImagemBase64().substring(request.getImagemBase64().indexOf(",") + 1)
+                : request.getImagemBase64();
 
-        Mono<String> ocrSpaceMono = ocrService.extrairTextoDeImagem(request.getImagemBase64())
-                .timeout(Duration.ofSeconds(35))
+        return groqProcessadorReceitaService.processarReceitaComVision(imagemBase64)
+                .flatMap(dto -> {
+                    if (dto.getMedicamentos() == null || dto.getMedicamentos().isEmpty()) {
+                        if (dto.getMensagemOrientacao() != null && dto.getMensagemOrientacao().toLowerCase().contains("não foi possível")) {
+                            log.warn("Vision falhou, tentando fallback OCR...");
+                            return tentarFallbackOcr(request.getImagemBase64());
+                        }
+                    }
+                    Map<String, Object> response = new HashMap<>();
+                    response.put("sucesso", true);
+                    response.put("medicamentos", dto.getMedicamentos());
+                    response.put("textoOriginal", dto.getTextoOriginal());
+                    response.put("mensagemOrientacao", dto.getMensagemOrientacao());
+                    return Mono.just(ResponseEntity.ok(response));
+                })
+                .onErrorResume(erro -> {
+                    log.error("Erro no processamento Vision, tentando fallback OCR...", erro);
+                    return tentarFallbackOcr(request.getImagemBase64());
+                });
+    }
+
+    private Mono<ResponseEntity<Map<String, Object>>> tentarFallbackOcr(String imagemBase64) {
+        Mono<String> ocrSpaceMono = ocrService.extrairTextoDeImagem(imagemBase64)
+                .timeout(java.time.Duration.ofSeconds(35))
                 .onErrorReturn("Erro OCR Space: timeout");
 
-        Mono<String> tesseractMono = Mono.fromCallable(() -> tesseractOCRService.extrairTexto(request.getImagemBase64()))
-                .subscribeOn(Schedulers.boundedElastic());
+        Mono<String> tesseractMono = Mono.fromCallable(() -> tesseractOCRService.extrairTexto(imagemBase64))
+                .subscribeOn(reactor.core.scheduler.Schedulers.boundedElastic());
 
         return Mono.zip(ocrSpaceMono, tesseractMono)
                 .flatMap(tuple -> {
@@ -66,52 +89,26 @@ public class ReceitaController {
                     boolean tesseractFalhou = textoInvalido(textoTesseract);
 
                     if (ocrSpaceFalhou && tesseractFalhou) {
-                        log.error("Ambos OCR Space e Tesseract falharam");
                         Map<String, Object> errorResponse = new HashMap<>();
                         errorResponse.put("sucesso", false);
                         errorResponse.put("erro", "Não foi possível extrair texto da imagem. Tente com uma imagem de melhor qualidade.");
                         return Mono.just(ResponseEntity.ok(errorResponse));
                     }
 
-                    if (ocrSpaceFalhou) {
-                        log.warn("OCR Space falhou, tentando Tesseract...");
-                        return processarTextoComGroq(textoTesseract);
+                    String melhor = ocrSpaceFalhou ? textoTesseract : textoExtraido;
+                    int countA = groqProcessadorReceitaService.contarMedicamentosDeterministic(textoExtraido);
+                    int countB = groqProcessadorReceitaService.contarMedicamentosDeterministic(textoTesseract);
+                    if (countB > countA && !tesseractFalhou) {
+                        melhor = textoTesseract;
                     }
-
-                    if (tesseractFalhou) {
-                        log.info("✅ OCR Space bem-sucedido; Tesseract não trouxe complemento utilizável");
-                        return processarTextoComGroq(textoExtraido);
-                    }
-
-	                    String melhor = escolherMelhorLeituraOcr(textoExtraido, textoTesseract);
-	                    // Decide pela leitura que rende mais itens determinísticos (nomes), não só pelo tamanho do texto.
-	                    int countA = groqProcessadorReceitaService.contarMedicamentosDeterministic(textoExtraido);
-	                    int countB = groqProcessadorReceitaService.contarMedicamentosDeterministic(textoTesseract);
-	                    if (countB > countA) {
-	                        melhor = textoTesseract;
-	                    } else if (countA > countB) {
-	                        melhor = textoExtraido;
-	                    }
-	                    log.info("✅ OCR Space e Tesseract processados; usando '{}' para extração (itens: ocrSpace={}, tesseract={})",
-	                            melhor == textoTesseract ? "Tesseract" : "OCR Space", countA, countB);
                     return processarTextoComGroq(melhor);
                 })
                 .onErrorResume(erro -> {
-                    log.error("Erro geral no processamento da receita", erro);
-
-                    // Fallback para Tesseract se OCR Space falhar completamente
-                    log.info("Tentando Tesseract como último recurso...");
-                    return Mono.fromCallable(() -> tesseractOCRService.extrairTexto(request.getImagemBase64()))
-                            .subscribeOn(Schedulers.boundedElastic())
-                            .flatMap(textoTesseract -> {
-                                if (textoTesseract.startsWith("Erro")) {
-                                    Map<String, Object> errorResponse = new HashMap<>();
-                                    errorResponse.put("sucesso", false);
-                                    errorResponse.put("erro", "Erro ao processar imagem: " + erro.getMessage());
-                                    return Mono.just(ResponseEntity.internalServerError().body(errorResponse));
-                                }
-                                return processarTextoComGroq(textoTesseract);
-                            });
+                    log.error("Erro geral no fallback OCR", erro);
+                    Map<String, Object> errorResponse = new HashMap<>();
+                    errorResponse.put("sucesso", false);
+                    errorResponse.put("erro", "Erro ao processar imagem: " + erro.getMessage());
+                    return Mono.just(ResponseEntity.internalServerError().body(errorResponse));
                 });
     }
 
@@ -178,8 +175,8 @@ public class ReceitaController {
     public ResponseEntity<Map<String, String>> health() {
         Map<String, String> response = new HashMap<>();
         response.put("status", "OK");
-        response.put("ocrService", "OCR Space + Tesseract");
-        response.put("aiService", "Groq LLM");
+        response.put("primaryEngine", "Groq Vision (Llama 4 Scout)");
+        response.put("fallbackEngine", "OCR Space + Tesseract");
         response.put("groqConfigured", String.valueOf(groqProcessadorReceitaService != null && groqProcessadorReceitaService.isGroqConfigured()));
         response.put("timestamp", String.valueOf(System.currentTimeMillis()));
         return ResponseEntity.ok(response);

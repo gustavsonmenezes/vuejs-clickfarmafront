@@ -23,6 +23,9 @@ public class RastreioService {
     @Autowired
     private PedidoRepository pedidoRepository;
 
+    @Autowired
+    private RastreioStreamService rastreioStreamService;
+
     // Criar novo rastreio
     @Transactional
     public RastreioResponseDTO criarRastreio(RastreioRequestDTO requestDTO) {
@@ -46,7 +49,9 @@ public class RastreioService {
         pedidoRepository.save(pedido);
 
         Rastreio rastreioSalvo = rastreioRepository.save(rastreio);
-        return new RastreioResponseDTO(rastreioSalvo);
+        RastreioResponseDTO dto = new RastreioResponseDTO(rastreioSalvo);
+        rastreioStreamService.publish(dto);
+        return dto;
     }
 
     // Buscar rastreio por ID
@@ -99,7 +104,9 @@ public class RastreioService {
         }
 
         Rastreio rastreioAtualizado = rastreioRepository.save(rastreio);
-        return new RastreioResponseDTO(rastreioAtualizado);
+        RastreioResponseDTO dto = new RastreioResponseDTO(rastreioAtualizado);
+        rastreioStreamService.publish(dto);
+        return dto;
     }
 
     // Deletar rastreio
@@ -111,5 +118,4 @@ public class RastreioService {
         rastreioRepository.deleteById(id);
     }
 }
-
 

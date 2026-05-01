@@ -75,6 +75,123 @@ public class GroqProcessadorReceitaService {
         return groqService != null && groqService.isConfigured();
     }
 
+    public Mono<MedicamentoExtraidoDTO> processarReceitaComVision(String imagemBase64) {
+        log.info("Processando receita com Groq Vision (Llama 4 Scout)");
+
+        if (!isGroqConfigured()) {
+            log.warn("Groq não configurada; pulando Vision.");
+            MedicamentoExtraidoDTO dto = new MedicamentoExtraidoDTO();
+            dto.setTextoOriginal("Vision não disponível - Groq não configurada");
+            dto.setMedicamentos(Collections.emptyList());
+            dto.setMensagemOrientacao("Serviço de IA não configurado. Contate o administrador.");
+            return Mono.just(dto);
+        }
+
+        String prompt = """
+                Você é um assistente farmacêutico especialista em interpretar RECEITAS MÉDICAS MANUSCRITAS e IMPRESSAS do Brasil.
+
+                ANALISE A IMAGEM DA RECEITA e extraia TODOS os medicamentos prescritos.
+
+                REGRAS CRÍTICAS:
+                1. Extraia SOMENTE medicamentos que estão visíveis na imagem. Não invente.
+                2. Para cada medicamento, identifique: nome, dosagem (ex: 500mg), posologia (ex: 1 comprimido 8/8h), duração estimada.
+                3. Ignore cabeçalho (nome do médico, CRM, clínica) e rodapé ("fumar faz mal à saúde", assinaturas, carimbos).
+                4. Não repita o mesmo medicamento.
+                5. Se a handwriting for difícil, use contexto farmacêutico brasileiro para inferir o nome correto.
+
+                EXEMPLOS DE CORREÇÃO de handwriting:
+                - "azitromicna" -> "Azitromicina"
+                - "amoxlcllna" -> "Amoxicilina"
+                - "dlpirona" -> "Dipirona"
+                - "paracetamol 750" -> "Paracetamol 750mg"
+
+                Responda SOMENTE com JSON válido neste formato:
+                {
+                  "medicamentos": [
+                    {
+                      "nome": "nome_corrigido_do_medicamento",
+                      "quantidade": 1,
+                      "dosagem": "ex: 500mg",
+                      "posologia": "ex: 1 comprimido a cada 8 horas",
+                      "diasDuracao": 10,
+                      "descricao": "descrição breve do uso"
+                    }
+                  ]
+                }
+
+                Se não encontrar nenhum medicamento na imagem, retorne: {"medicamentos": []}
+                IMPORTANTE: Retorne apenas JSON válido, sem texto antes ou depois.
+                """;
+
+        List<Produto> cacheProdutos = produtoRepository.findAll();
+        log.info("Cache de {} produtos carregado para matching", cacheProdutos.size());
+
+        return groqService.chatWithVision(imagemBase64, prompt)
+                .map(resposta -> {
+                    log.info("Resposta Vision recebida: {} caracteres", resposta.length());
+                    return parseRespostaVision(resposta, cacheProdutos);
+                })
+                .map(this::filtrarItensIrrelevantes);
+    }
+
+    private MedicamentoExtraidoDTO parseRespostaVision(String respostaGroq, List<Produto> cacheProdutos) {
+        MedicamentoExtraidoDTO dto = new MedicamentoExtraidoDTO();
+        dto.setTextoOriginal("EXTRACAO_VISION_LLAMA_4_SCOUT");
+
+        if (respostaGroq == null || respostaGroq.startsWith("Erro")) {
+            log.warn("Vision retornou erro: {}", respostaGroq);
+            dto.setMedicamentos(Collections.emptyList());
+            dto.setMensagemOrientacao("Não foi possível ler a receita com IA. Tente com uma imagem de melhor qualidade.");
+            return dto;
+        }
+
+        try {
+            String respostaLimpa = limparJson(respostaGroq);
+            Map<String, Object> resultado = objectMapper.readValue(respostaLimpa, Map.class);
+
+            List<MedicamentoExtraidoDTO.MedicamentoItem> medicamentos = new ArrayList<>();
+            Set<String> nomesNormalizados = new HashSet<>();
+
+            if (resultado.containsKey("medicamentos")) {
+                List<Map<String, Object>> medsMap = (List<Map<String, Object>>) resultado.get("medicamentos");
+                for (Map<String, Object> med : medsMap) {
+                    MedicamentoExtraidoDTO.MedicamentoItem item = new MedicamentoExtraidoDTO.MedicamentoItem();
+                    item.setNome(sanitizarNomeMedicamento(med.get("nome")));
+                    String nomeNorm = normalizarTexto(item.getNome());
+                    if (nomeNorm.isBlank() || isNoisePhrase(nomeNorm)) {
+                        continue;
+                    }
+                    if (!nomesNormalizados.add(nomeNorm)) {
+                        continue;
+                    }
+                    item.setQuantidade(parseQuantidade(med.get("quantidade")));
+                    item.setDosagem((String) med.get("dosagem"));
+                    item.setPosologia((String) med.get("posologia"));
+                    item.setDiasDuracao(parseQuantidade(med.get("diasDuracao")));
+                    item.setDescricaoIA("EXTRACAO_VISION_LLAMA_4_SCOUT");
+
+                    buscarProdutoNoBanco(item, cacheProdutos);
+                    definirSituacaoCatalogo(item);
+                    medicamentos.add(item);
+                }
+            }
+
+            dto.setMedicamentos(medicamentos);
+            if (medicamentos.isEmpty()) {
+                dto.setMensagemOrientacao(
+                    "Não identificamos medicamentos na imagem. Tente uma foto com melhor foco e iluminação.");
+            } else {
+                dto.setMensagemOrientacao(mensagemOrientacaoFallback(dto));
+            }
+            return dto;
+        } catch (Exception e) {
+            log.error("Erro ao processar resposta Vision", e);
+            dto.setMedicamentos(Collections.emptyList());
+            dto.setMensagemOrientacao("Erro ao interpretar a receita com IA. Tente novamente com outra imagem.");
+            return dto;
+        }
+    }
+
     public Mono<MedicamentoExtraidoDTO> processarReceita(String textoReceita) {
         log.info("Processando receita com Groq para extração e cálculo de recompra.");
 
@@ -1052,11 +1169,17 @@ public class GroqProcessadorReceitaService {
     }
 
     private void buscarProdutoNoBanco(MedicamentoExtraidoDTO.MedicamentoItem item) {
+        buscarProdutoNoBanco(item, null);
+    }
+
+    private void buscarProdutoNoBanco(MedicamentoExtraidoDTO.MedicamentoItem item, List<Produto> cacheProdutos) {
         String nomeBuscaOriginal = item.getNome() == null ? "" : item.getNome().trim();
         String nomeBuscaSemDosagem = removerDosagem(nomeBuscaOriginal);
         String nomeBuscaNormalizado = normalizarTexto(nomeBuscaSemDosagem);
 
-        Optional<Produto> produto = encontrarMelhorProduto(nomeBuscaOriginal, nomeBuscaSemDosagem, nomeBuscaNormalizado);
+        Optional<Produto> produto = cacheProdutos != null
+                ? encontrarMelhorProdutoComCache(nomeBuscaOriginal, nomeBuscaSemDosagem, nomeBuscaNormalizado, cacheProdutos)
+                : encontrarMelhorProduto(nomeBuscaOriginal, nomeBuscaSemDosagem, nomeBuscaNormalizado);
 
         if (produto.isPresent()) {
             Produto p = produto.get();
@@ -1177,6 +1300,57 @@ public class GroqProcessadorReceitaService {
                     })
                     .collect(Collectors.toList());
             adicionarCandidatos(candidatos, porTokens);
+        }
+
+        Comparator<Produto> melhor = Comparator
+                .<Produto>comparingInt(p -> calcularScoreProduto(p, nomeNormalizado))
+                .thenComparingInt(p -> p.getEstoque() != null ? p.getEstoque() : 0);
+
+        return candidatos.values().stream().max(melhor);
+    }
+
+    private Optional<Produto> encontrarMelhorProdutoComCache(String nomeOriginal, String nomeSemDosagem, String nomeNormalizado, List<Produto> cacheProdutos) {
+        if (nomeNormalizado.isBlank() || nomeSemDosagem.length() < 2) {
+            return Optional.empty();
+        }
+
+        LinkedHashMap<Long, Produto> candidatos = new LinkedHashMap<>();
+
+        for (Produto p : cacheProdutos) {
+            String nomeProd = normalizarTexto(p.getNome());
+            if (nomeProd.equals(nomeNormalizado) || nomeProd.equals(normalizarTexto(nomeOriginal)) || nomeProd.equals(normalizarTexto(nomeSemDosagem))) {
+                candidatos.put(p.getId(), p);
+            }
+        }
+
+        for (Produto p : cacheProdutos) {
+            String nomeProd = normalizarTexto(p.getNome());
+            String descProd = normalizarTexto(p.getDescricao() != null ? p.getDescricao() : "");
+            if (nomeProd.contains(nomeNormalizado) || nomeProd.contains(normalizarTexto(nomeSemDosagem))
+                    || descProd.contains(nomeNormalizado) || descProd.contains(normalizarTexto(nomeSemDosagem))) {
+                candidatos.putIfAbsent(p.getId(), p);
+            }
+        }
+
+        Set<String> tokens = extrairTokensRelevantes(nomeNormalizado);
+        for (Produto p : cacheProdutos) {
+            String nomeProd = normalizarTexto(p.getNome());
+            String descProd = normalizarTexto(p.getDescricao() != null ? p.getDescricao() : "");
+            for (String token : tokens) {
+                if (nomeProd.contains(token) || descProd.contains(token)) {
+                    candidatos.putIfAbsent(p.getId(), p);
+                    break;
+                }
+            }
+        }
+
+        if (candidatos.isEmpty()) {
+            String nomeFonetico = simplificarParaFonetica(nomeNormalizado);
+            for (Produto p : cacheProdutos) {
+                if (simplificarParaFonetica(normalizarTexto(p.getNome())).equals(nomeFonetico)) {
+                    candidatos.put(p.getId(), p);
+                }
+            }
         }
 
         Comparator<Produto> melhor = Comparator

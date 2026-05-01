@@ -5,20 +5,31 @@ import com.clickfarma.backend.dto.MensagemResponseDTO;
 import com.clickfarma.backend.dto.RastreioRequestDTO;
 import com.clickfarma.backend.dto.RastreioResponseDTO;
 import com.clickfarma.backend.service.RastreioService;
+import com.clickfarma.backend.service.RastreioStreamService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/rastreios")
-@CrossOrigin(origins = "http://localhost:8082")
 public class RastreioController {
 
     @Autowired
     private RastreioService rastreioService;
+
+    @Autowired
+    private RastreioStreamService rastreioStreamService;
+
+    // GET - Stream SSE por pedido (atualizacoes em tempo real)
+    @GetMapping(value = "/pedido/{pedidoId}/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public SseEmitter streamPorPedido(@PathVariable Long pedidoId) {
+        return rastreioStreamService.subscribe(pedidoId);
+    }
 
     // POST - Criar novo rastreio
     @PostMapping
@@ -112,5 +123,4 @@ public class RastreioController {
         }
     }
 }
-
 

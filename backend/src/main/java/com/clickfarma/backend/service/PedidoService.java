@@ -48,6 +48,9 @@ public class PedidoService {
     private RastreioRepository rastreioRepository;
 
     @Autowired
+    private RastreioStreamService rastreioStreamService;
+
+    @Autowired
     private PagamentoService pagamentoService;
 
     @Autowired
@@ -254,7 +257,8 @@ public class PedidoService {
             rastreio.setDataPrevisaoEntrega(LocalDateTime.now().plusDays(5));
             rastreio.setStatus("EM_TRANSITO");
 
-            rastreioRepository.save(rastreio);
+            Rastreio rastreioSalvo = rastreioRepository.save(rastreio);
+            rastreioStreamService.publish(new RastreioResponseDTO(rastreioSalvo));
         }
 
         Pedido pedidoAtualizado = pedidoRepository.save(pedido);
@@ -298,7 +302,9 @@ public class PedidoService {
         rastreioRepository.save(rastreio);
         pedidoRepository.save(pedido);
 
-        return new RastreioResponseDTO(rastreio);
+        RastreioResponseDTO dto = new RastreioResponseDTO(rastreio);
+        rastreioStreamService.publish(dto);
+        return dto;
     }
 
     public List<PedidoResponseDTO> buscarPorStatus(String status) {

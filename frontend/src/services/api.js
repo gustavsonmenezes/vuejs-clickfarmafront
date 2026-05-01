@@ -1,8 +1,15 @@
 import axios from 'axios';
 
-// Configuração definitiva: URL completa do backend.
+// Base default: relative `/api` para funcionar com:
+// - nginx proxy em producao/docker
+// - webpack-dev-server proxy em dev
+// Opcionalmente pode ser sobrescrito por env var.
+const resolvedBaseURL =
+    (typeof process !== 'undefined' && process.env && (process.env.VUE_APP_API_BASE_URL || process.env.VUE_APP_API_URL)) ||
+    '/api';
+
 const api = axios.create({
-    baseURL: 'http://localhost:8080/api',
+    baseURL: resolvedBaseURL,
     headers: {
         'Content-Type': 'application/json'
     }
