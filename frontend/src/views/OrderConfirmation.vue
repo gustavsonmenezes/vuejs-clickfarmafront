@@ -149,6 +149,9 @@
                 <button class="btn btn-outline-secondary w-100" @click="printOrder">
                   <i class="fas fa-print me-2"></i>Imprimir Pedido
                 </button>
+                <a :href="shareWhatsApp()" target="_blank" rel="noopener" class="btn btn-success w-100 mb-2 share-whatsapp-btn">
+                  <i class="fab fa-whatsapp me-2"></i>Compartilhar via WhatsApp
+                </a>
               </div>
             </div>
 
@@ -357,6 +360,15 @@ export default {
       })
     },
 
+    shareWhatsApp() {
+      const text = `📦 Pedido ClickFarma #${this.order.id}\n`
+        + `Status: Confirmado\n`
+        + `Total: R$ ${this.order.total.toFixed(2)}\n\n`
+        + `Acompanhe seu pedido na ClickFarma! 💚`;
+      const encoded = encodeURIComponent(text);
+      return `https://wa.me/?text=${encoded}`;
+    },
+
     continueShopping() {
       this.$router.push('/products')
     },
@@ -516,5 +528,21 @@ export default {
     page-break-inside: avoid;
     border: 1px solid #333;
   }
+}
+
+.share-whatsapp-btn {
+  background-color: #25D366;
+  border-color: #25D366;
+  color: white;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.share-whatsapp-btn:hover {
+  background-color: #128C7E;
+  border-color: #128C7E;
+  color: white;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(37, 211, 102, 0.3);
 }
 </style>

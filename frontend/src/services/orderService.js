@@ -42,7 +42,16 @@ export class OrderService {
   }
 
   static async updateOrderStatus(orderId, status) {
-    // Para integração com backend
-    console.log(`Atualizando pedido ${orderId} para status: ${status}`)
+    console.log(`Atualizando pedido ${orderId} para status: ${status}`);
+  }
+
+  static async trackOrder(codigoPedido) {
+    try {
+      const response = await api.get(`/pedidos/${codigoPedido}/rastreio`);
+      return response.data;
+    } catch (error) {
+      console.error('Erro ao rastrear pedido:', error.response?.data || error.message);
+      throw error;
+    }
   }
 }

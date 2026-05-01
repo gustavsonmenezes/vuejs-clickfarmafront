@@ -443,28 +443,17 @@ export default createStore({
 
     async login({ commit }, credentials) {
       try {
-        const response = await new Promise(resolve => setTimeout(() => {
-          resolve({
-            data: {
-              user: {
-                id: 1,
-                name: credentials.name || credentials.email,
-                email: credentials.email,
-                role: 'user'
-              },
-              token: 'mock-token-' + Math.random().toString(36).substr(2)
-            }
-          });
-        }, 1000));
-
-        commit('SET_USER', response.data.user);
-        commit('SET_AUTH_TOKEN', response.data.token);
-        localStorage.setItem('user', JSON.stringify(response.data.user));
-        console.log('✅ Login realizado com sucesso');
-        return response.data;
+        const response = await authService.login(credentials);
+        const user = response.data;
+        commit('SET_USER', user);
+        commit('SET_AUTH_TOKEN', user.token);
+        localStorage.setItem('user', JSON.stringify(user));
+        localStorage.setItem('authToken', user.token);
+        console.log('✅ Login realizado com sucesso no backend:', user);
+        return user;
       } catch (error) {
-        console.error('❌ Erro no login:', error);
-        throw error.response ? error.response.data : { message: 'Erro de conexão' };
+        console.error('❌ Erro no login:', error.response?.data || error.message);
+        throw error.response?.data || { message: 'Erro de conexão' };
       }
     },
 

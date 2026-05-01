@@ -41,19 +41,16 @@
           >
         </div>
         <div class="ms-3">
-          <h6 class="mb-1 font-weight-bold">Pagamento Simulado (Demo)</h6>
-          <p class="small text-muted mb-0">Finaliza o pedido no sistema e já libera rastreio, sem redirecionar.</p>
+          <h6 class="mb-1 font-weight-bold">Pagamento</h6>
+          <p class="small text-muted mb-0">Finaliza o pedido no sistema e acompanhe o rastreio.</p>
         </div>
-        <i class="fas fa-vial fa-2x ms-auto text-muted"></i>
+        <i class="fas fa-credit-card fa-2x ms-auto text-muted"></i>
       </div>
     </div>
 
     <div class="alert alert-primary border-0 shadow-sm mt-4 d-flex align-items-center p-3">
       <i class="fas fa-shield-alt fa-lg me-3 text-primary"></i>
-      <p class="small mb-0">
-        No <strong>Mercado Pago</strong>, você será redirecionado para o ambiente seguro ao finalizar.
-        No modo <strong>Simulado</strong>, o pedido é finalizado no próprio sistema.
-      </p>
+
     </div>
   </div>
 </template>

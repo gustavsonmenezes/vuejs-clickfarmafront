@@ -15,13 +15,13 @@
           <div class="row g-3 align-items-end">
             <div class="col-md-8">
               <label class="form-label">Número do pedido</label>
-              <input 
-                v-model="searchOrderId" 
-                type="text" 
-                class="form-control" 
-                placeholder="Ex: ORD-ABC123XYZ"
-                @keyup.enter="loadOrder"
-              >
+                <input 
+                  v-model="searchOrderId" 
+                  type="text" 
+                  class="form-control" 
+                  placeholder="Ex: PED1746000000"
+                  @keyup.enter="loadOrder"
+                >
             </div>
             <div class="col-md-4">
               <button 
@@ -51,7 +51,7 @@
               @click="selectOrder(order)"
             >
               <div class="d-flex w-100 justify-content-between">
-                <h6 class="mb-1">Pedido #{{ order.id }}</h6>
+                <h6 class="mb-1">Pedido #{{ order.codigoPedido || order.id }}</h6>
                 <span :class="statusClass(order.status)" class="badge">
                   {{ getStatusText(order.status) }}
                 </span>
@@ -70,7 +70,7 @@
             <!-- Informações Básicas do Pedido -->
             <div class="card mb-4">
               <div class="card-header bg-primary text-white">
-                <h5 class="mb-0">Pedido #{{ currentOrder.id }}</h5>
+                <h5 class="mb-0">Pedido #{{ currentOrder.codigoPedido || currentOrder.id }}</h5>
               </div>
               <div class="card-body">
                 <div class="row">
@@ -183,6 +183,7 @@
 
 <script>
 import { mapActions, mapGetters } from 'vuex'
+import { OrderService } from '@/services/orderService'
 import OrderTimeline from '@/components/orders/OrderTimeline.vue'
 import LiveTrackingMap from '@/components/orders/LiveTrackingMap.vue'
 
@@ -241,12 +242,27 @@ export default {
       this.loading = true
       this.searchPerformed = true
 
+      const query = this.searchOrderId.trim()
+
+      // 1) Tenta buscar no backend (API de rastreio)
+      try {
+        const trackingData = await OrderService.trackOrder(query)
+        if (trackingData) {
+          this.currentOrder = this.buildOrderFromTracking(trackingData)
+          this.loading = false
+          return
+        }
+      } catch (e) {
+        // Nao encontrado no backend, tenta localStorage
+      }
+
+      // 2) Fallback: busca no localStorage
       try {
         const savedOrders = JSON.parse(localStorage.getItem('userOrders') || '[]')
-        const order = savedOrders.find(o => 
-          o.id.toLowerCase() === this.searchOrderId.trim().toLowerCase()
+        const order = savedOrders.find(o =>
+          (o.id && o.id.toLowerCase() === query.toLowerCase()) ||
+          (o.codigoPedido && o.codigoPedido.toLowerCase() === query.toLowerCase())
         )
-        
         if (order) {
           this.currentOrder = order
           await this.loadTrackingInfo()
@@ -260,9 +276,28 @@ export default {
         this.loading = false
       }
     },
+
+    buildOrderFromTracking(tracking) {
+      return {
+        id: tracking.codigoPedido || tracking.pedidoId,
+        codigoPedido: tracking.codigoPedido,
+        status: tracking.status || 'processing',
+        date: tracking.dataEnvio || new Date().toISOString(),
+        items: tracking.itens || [],
+        total: tracking.valorTotal || 0,
+        deliveryInfo: tracking.enderecoEntrega || {},
+        paymentMethod: tracking.metodoPagamento || 'pix',
+        rastreio: {
+          transportadora: tracking.transportadora,
+          status: tracking.status,
+          ultimaLocalizacao: tracking.ultimaLocalizacao,
+          dataPrevisaoEntrega: tracking.dataPrevisaoEntrega
+        }
+      }
+    },
     
     selectOrder(order) {
-      this.searchOrderId = order.id
+      this.searchOrderId = order.codigoPedido || order.id
       this.loadOrder()
     },
     

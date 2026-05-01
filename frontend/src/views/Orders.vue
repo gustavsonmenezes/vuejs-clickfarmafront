@@ -59,7 +59,7 @@
               <div class="card-body">
                 <div class="d-flex justify-content-between align-items-start mb-3">
                   <div>
-                    <h5 class="card-title mb-1">Pedido #{{ order.id }}</h5>
+                    <h5 class="card-title mb-1">Pedido #{{ order.codigoPedido || order.id }}</h5>
                     <p class="text-muted small mb-0">
                       <i class="fas fa-calendar me-1"></i>
                       {{ formatDate(order.date) }}
@@ -123,6 +123,15 @@
                   >
                     <i class="fas fa-shipping-fast me-1"></i>Rastrear
                   </button>
+                  
+                  <a 
+                    :href="getWhatsAppLink(order)" 
+                    target="_blank" 
+                    rel="noopener"
+                    class="btn btn-sm share-whatsapp-btn"
+                  >
+                    <i class="fab fa-whatsapp me-1"></i>WhatsApp
+                  </a>
                   
                   <button 
                     v-if="order.status === 'confirmed' || order.status === 'processing'" 
@@ -244,19 +253,17 @@ export default {
   },
   methods: {
     isValidOrder(order) {
-      // VALIDAÇÃO RIGOROSA - apenas pedidos reais
       return order && 
-             order.id && 
-             order.id.startsWith('ORD-') && // Deve começar com ORD-
+             (order.id || order.codigoPedido) && 
              order.items && 
              Array.isArray(order.items) && 
              order.items.length > 0 &&
              order.date &&
              order.total !== undefined &&
              order.total !== null &&
-             order.total > 0 && // Total deve ser maior que zero
-             order.paymentMethod && // Deve ter método de pagamento
-             order.deliveryType // Deve ter tipo de entrega
+             order.total > 0 &&
+             order.paymentMethod &&
+             order.deliveryType
     },
     
     formatDate(dateString) {
@@ -340,21 +347,31 @@ export default {
     },
     
     viewOrderDetails(order) {
-      // Navega para a página de detalhes do pedido
-      this.$router.push(`/tracking/${order.id}`)
+      const identifier = order.codigoPedido || order.id;
+      this.$router.push(`/tracking/${identifier}`)
     },
     
     trackOrder(order) {
-      // Navega para a página de rastreamento
-      this.$router.push(`/tracking/${order.id}`)
+      const identifier = order.codigoPedido || order.id;
+      this.$router.push(`/tracking/${identifier}`)
     },
     
     cancelOrder(order) {
-      if (confirm(`Tem certeza que deseja cancelar o pedido #${order.id}?`)) {
+      const identifier = order.codigoPedido || order.id;
+      if (confirm(`Tem certeza que deseja cancelar o pedido #${identifier}?`)) {
         order.status = 'cancelled'
         this.saveOrdersToStorage()
         alert('Pedido cancelado com sucesso!')
       }
+    },
+    
+    getWhatsAppLink(order) {
+      const identifier = order.codigoPedido || order.id;
+      const text = `Meu pedido ClickFarma #${identifier}\n`
+        + `Status: ${this.statusText(order.status)}\n`
+        + `Total: R$ ${this.getOrderTotal(order)}\n\n`
+        + `Acompanhe seu pedido na ClickFarma! `;
+      return `https://wa.me/?text=${encodeURIComponent(text)}`;
     },
     
     clearAllOrders() {
@@ -415,8 +432,9 @@ export default {
     
     // Log detalhado dos pedidos
     this.validOrders.forEach((order, index) => {
-      console.log(`📦 Pedido ${index + 1}:`, {
+      console.log(`Pedido ${index + 1}:`, {
         id: order.id,
+        codigoPedido: order.codigoPedido,
         status: order.status,
         total: order.total,
         items: order.items.length,

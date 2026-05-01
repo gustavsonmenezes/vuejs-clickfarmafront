@@ -14,7 +14,7 @@ axios.defaults.headers.common['Content-Type'] = 'application/json'
 // Interceptor para token
 axios.interceptors.request.use(
   config => {
-    const token = localStorage.getItem('token')
+    const token = localStorage.getItem('authToken')
     if (token) {
       config.headers.Authorization = `Bearer ${token}`
     }
@@ -30,4 +30,8 @@ import 'bootstrap/dist/js/bootstrap.bundle.min.js'
 const app = createApp(App)
 app.use(router)
 app.use(store)
-app.mount('#app')
+
+// Restaura sessão do usuário ao iniciar
+store.dispatch('checkAuthStatus').then(() => {
+  app.mount('#app')
+})

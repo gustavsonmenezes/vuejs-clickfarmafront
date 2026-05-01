@@ -18,6 +18,7 @@ import com.clickfarma.backend.repository.ProdutoRepository;
 import com.clickfarma.backend.repository.RastreioRepository;
 import com.clickfarma.backend.repository.UsuarioRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -58,6 +59,15 @@ public class PedidoService {
 
     @Autowired
     private EmailNotificationService emailNotificationService;
+
+    @Autowired
+    private WhatsAppService whatsAppService;
+
+    @Autowired
+    private TelegramService telegramService;
+
+    @Value("${telegram.entregador.chat-id}")
+    private String entregadorChatId;
 
     /**
      * Cria o pedido normal (sem considerar agendamento de recompra).
@@ -118,6 +128,7 @@ public class PedidoService {
 
         PedidoResponseDTO responseDTO = new PedidoResponseDTO(pedidoSalvo);
         responseDTO.setLinkPagamento(linkPagamento);
+        responseDTO.setWhatsappLink(whatsAppService.gerarLinkCompartilhar(pedidoSalvo));
 
         emailNotificationService.enviarConfirmacaoPedido(usuario, pedidoSalvo, linkPagamento);
 
@@ -147,6 +158,26 @@ public class PedidoService {
             pedido.setStatus(Pedido.StatusPedido.ENVIADO);
             pedido.setDataAtualizacao(LocalDateTime.now());
             pedidoRepository.save(pedido);
+        }
+
+        // Notifica entregador via Telegram
+        notificarEntregador(pedido);
+    }
+
+    private void notificarEntregador(Pedido pedido) {
+        try {
+            StringBuilder msg = new StringBuilder();
+            msg.append("📦 *Novo Pedido para Entrega*\n\n");
+            msg.append("*Pedido:* #").append(pedido.getCodigoPedido()).append("\n");
+            msg.append("*Cliente:* ").append(pedido.getUsuario().getNome()).append("\n");
+            msg.append("*Endereço:* ").append(pedido.getEnderecoEntrega()).append("\n");
+            msg.append("*Valor:* R$ ").append(pedido.getValorTotal()).append("\n\n");
+            msg.append("✅ Prepare o pedido para entrega!");
+
+            telegramService.enviarMensagem(entregadorChatId, msg.toString());
+        } catch (Exception e) {
+            // Falha silenciosa - não deve impedir o fluxo do pedido
+            org.slf4j.LoggerFactory.getLogger(PedidoService.class).warn("Erro ao notificar entregador via Telegram", e);
         }
     }
 
@@ -263,7 +294,10 @@ public class PedidoService {
 
         Pedido pedidoAtualizado = pedidoRepository.save(pedido);
         emailNotificationService.enviarAtualizacaoStatusPedido(pedidoAtualizado.getUsuario(), pedidoAtualizado);
-        return new PedidoResponseDTO(pedidoAtualizado);
+
+        PedidoResponseDTO responseDTO = new PedidoResponseDTO(pedidoAtualizado);
+        responseDTO.setWhatsappLink(whatsAppService.gerarLinkStatusPedido(pedidoAtualizado));
+        return responseDTO;
     }
 
     @Transactional

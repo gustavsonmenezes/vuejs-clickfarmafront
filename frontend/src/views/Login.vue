@@ -156,7 +156,11 @@ export default {
       this.loading = true;
       
       try {
-        const user = await this.login(this.credentials);
+        const loginPayload = {
+          email: this.credentials.email,
+          senha: this.credentials.password
+        };
+        const user = await this.login(loginPayload);
         
         // Saudação personalizada
         const userName = user.name?.split(' ')[0] || '';

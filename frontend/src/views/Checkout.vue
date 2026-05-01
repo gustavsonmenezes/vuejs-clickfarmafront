@@ -2,6 +2,24 @@
   <div class="container mt-5 mb-5">
     <div class="row">
       <div class="col-md-8">
+        <!-- Info Farmácia -->
+        <div class="card border-0 bg-light mb-4">
+          <div class="card-body d-flex align-items-center justify-content-between p-3">
+            <div class="d-flex align-items-center">
+              <div class="bg-white rounded-circle p-2 me-3 shadow-sm">
+                <i class="fas fa-store text-primary fa-lg"></i>
+              </div>
+              <div>
+                <h6 class="mb-0 fw-bold">ClickFarma - Matriz</h6>
+                <small class="text-muted">Rua da Hora, 123 · Aberto até 22h</small>
+              </div>
+            </div>
+            <a :href="googleMapsLink" target="_blank" class="btn btn-sm btn-outline-primary">
+              <i class="fas fa-map-marker-alt me-1"></i>Ver no mapa
+            </a>
+          </div>
+        </div>
+
         <!-- Endereço -->
         <div class="card shadow-sm border-0 p-4 mb-4">
           <h4 class="mb-4 font-weight-bold">📍 Entrega</h4>
@@ -129,6 +147,9 @@ export default {
   },
   computed: {
     ...mapState(['user']),
+    googleMapsLink() {
+      return 'https://www.google.com/maps/search/?api=0&query=ClickFarma+Recife+PE';
+    },
     enderecoEntrega() {
       const f = this.enderecoForm;
       const parts = [
@@ -169,6 +190,11 @@ export default {
     },
 
     async finalizar() {
+      if (!this.user) {
+        alert('Você precisa estar logado para finalizar o pedido.');
+        this.$router.push('/login');
+        return;
+      }
       if (!this.enderecoValido) {
         alert('Preencha os dados de entrega (campos obrigatorios).');
         return;
@@ -176,7 +202,7 @@ export default {
       this.loading = true;
       try {
         const pedidoRequest = {
-          usuarioId: this.user ? this.user.id : 1,
+          usuarioId: this.user.id,
           itens: this.localCart.map(item => ({
             produtoId: item.id,
             quantidade: item.quantity || 1

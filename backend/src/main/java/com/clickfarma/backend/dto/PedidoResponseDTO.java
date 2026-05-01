@@ -21,6 +21,7 @@ public class PedidoResponseDTO {
     private Double valorFrete;
     private Double totalFinal;
     private String linkPagamento;
+    private String whatsappLink;
 
     // Construtor padrão
     public PedidoResponseDTO() {}
@@ -87,4 +88,7 @@ public class PedidoResponseDTO {
 
     public String getLinkPagamento() { return linkPagamento; }
     public void setLinkPagamento(String linkPagamento) { this.linkPagamento = linkPagamento; }
+
+    public String getWhatsappLink() { return whatsappLink; }
+    public void setWhatsappLink(String whatsappLink) { this.whatsappLink = whatsappLink; }
 }

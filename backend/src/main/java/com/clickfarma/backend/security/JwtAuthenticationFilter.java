@@ -29,6 +29,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             "/api/gemini/",
             "/api/produtos/",
             "/api/categorias/",
+            "/api/pedidos",
+            "/api/rastreios/",
+            "/api/receita/",
+            "/api/telegram/webhook",
+            "/api/email/teste/",
             "/swagger-ui/",
             "/v3/api-docs/"
     );
