@@ -1,10 +1,91 @@
 <template>
+<<<<<<< main
   <div class="checkout-page">
     <div class="container py-lg-5 py-4">
       
       <div class="mb-5 fade-in-up">
         <span class="section-eyebrow">Finalização</span>
         <h1 class="section-title">Finalizar <em>Pedido</em></h1>
+=======
+  <div class="container mt-5 mb-5">
+    <div class="row">
+      <div class="col-md-8">
+        <!-- Endereço -->
+        <div class="card shadow-sm border-0 p-4 mb-4">
+          <h4 class="mb-4 font-weight-bold">📍 Entrega</h4>
+          <div class="row g-3">
+            <div class="col-12">
+              <label class="form-label">Rua *</label>
+              <input
+                type="text"
+                v-model.trim="enderecoForm.rua"
+                class="form-control bg-light"
+                placeholder="Ex: Rua das Flores"
+              >
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Número *</label>
+              <input
+                type="text"
+                v-model.trim="enderecoForm.numero"
+                class="form-control bg-light"
+                placeholder="Ex: 123"
+              >
+            </div>
+            <div class="col-md-8">
+              <label class="form-label">Complemento</label>
+              <input
+                type="text"
+                v-model.trim="enderecoForm.complemento"
+                class="form-control bg-light"
+                placeholder="Apto, bloco, referência..."
+              >
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Bairro *</label>
+              <input
+                type="text"
+                v-model.trim="enderecoForm.bairro"
+                class="form-control bg-light"
+                placeholder="Ex: Centro"
+              >
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Cidade *</label>
+              <input
+                type="text"
+                v-model.trim="enderecoForm.cidade"
+                class="form-control bg-light"
+                placeholder="Ex: Recife"
+              >
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">UF *</label>
+              <input
+                type="text"
+                v-model.trim="enderecoForm.uf"
+                class="form-control bg-light text-uppercase"
+                maxlength="2"
+                placeholder="Ex: PE"
+              >
+            </div>
+            <div class="col-md-8">
+              <label class="form-label">CEP *</label>
+              <input
+                type="text"
+                v-model.trim="enderecoForm.cep"
+                class="form-control bg-light"
+                placeholder="Ex: 50000-000"
+              >
+              <small class="text-muted">Campos com * são obrigatórios.</small>
+            </div>
+          </div>
+        </div>
+        <!-- Pagamento (Componente Filho) -->
+        <div class="card shadow-sm border-0 p-4">
+          <PaymentMethod @update-method="setMetodo" />
+        </div>
+>>>>>>> main
       </div>
 
       <div class="row g-4">
@@ -80,6 +161,20 @@
               </div>
             </div>
           </div>
+<<<<<<< main
+=======
+          <button
+            @click="finalizar"
+            :disabled="loading || !enderecoValido"
+            class="btn btn-primary btn-lg w-100 py-3 font-weight-bold shadow-sm"
+          >
+            <span v-if="loading" class="spinner-border spinner-border-sm me-2"></span>
+            {{ loading ? 'Processando...' : 'FINALIZAR E PAGAR' }}
+          </button>
+          <small v-if="!enderecoValido" class="text-danger d-block mt-2">
+            Preencha os dados de entrega para continuar.
+          </small>
+>>>>>>> main
         </div>
       </div>
 
@@ -98,13 +193,38 @@ export default {
   data() {
     return {
       loading: false,
-      endereco: 'Rua das Flores, 123',
+      enderecoForm: {
+        rua: '',
+        numero: '',
+        complemento: '',
+        bairro: '',
+        cidade: '',
+        uf: '',
+        cep: ''
+      },
       metodo: 'MERCADO_PAGO',
       localCart: []
     };
   },
   computed: {
     ...mapState(['user']),
+    enderecoEntrega() {
+      const f = this.enderecoForm;
+      const parts = [
+        [f.rua, f.numero].filter(Boolean).join(', ').trim(),
+        f.complemento,
+        f.bairro,
+        [f.cidade, (f.uf || '').toUpperCase()].filter(Boolean).join(' - ').trim(),
+        f.cep ? `CEP ${f.cep}` : ''
+      ].filter(Boolean);
+      return parts.join(' · ');
+    },
+    enderecoValido() {
+      const f = this.enderecoForm;
+      return Boolean(
+        f.rua && f.numero && f.bairro && f.cidade && f.uf && f.cep
+      );
+    },
     cartTotal() {
       return this.localCart.reduce((total, item) => total + (item.price * item.quantity), 0);
     }
@@ -117,17 +237,29 @@ export default {
         this.localCart = [];
       }
     }
+    // Preenche com o endereco do usuario se existir (best-effort).
+    try {
+      const endereco = (this.user && this.user.endereco) ? String(this.user.endereco) : '';
+      if (endereco) {
+        // Nao tenta "parsear" string livre; apenas coloca como rua quando vier pronto.
+        this.enderecoForm.rua = endereco;
+      }
+    } catch (e) {}
   },
   methods: {
     setMetodo(m) { this.metodo = m; },
     async finalizar() {
+      if (!this.enderecoValido) {
+        alert('Preencha os dados de entrega (campos obrigatorios).');
+        return;
+      }
       this.loading = true;
       try {
         const pedidoRequest = {
           usuarioId: this.user ? this.user.id : 1,
           itens: this.localCart.map(item => ({ produtoId: item.id, quantidade: item.quantity || 1 })),
           metodoPagamento: this.metodo,
-          enderecoEntrega: this.endereco,
+          enderecoEntrega: this.enderecoEntrega,
           observacoes: '',
           subtotal: this.cartTotal,
           valorFrete: 0.0,
@@ -135,10 +267,31 @@ export default {
         };
 
         const res = await OrderService.createOrder(pedidoRequest);
+<<<<<<< main
         if (res.linkPagamento) {
           window.location.href = res.linkPagamento;
         } else {
           alert("Erro: Link de pagamento não gerado.");
+=======
+
+        // Salva o identificador do pedido para a tela de sucesso (Mercado Pago redireciona de volta).
+        try {
+          if (res && res.id) localStorage.setItem('ultimoPedidoId', String(res.id));
+          if (res && res.codigoPedido) localStorage.setItem('ultimoCodigoPedido', String(res.codigoPedido));
+        } catch (err) {
+          // best-effort; nao deve impedir o checkout
+        }
+
+        if (res.linkPagamento) {
+          window.location.href = res.linkPagamento;
+        } else {
+          // Fluxo simulado: segue dentro do sistema.
+          if (this.$router) {
+            this.$router.push('/sucesso-pagamento');
+          } else {
+            window.location.href = '/sucesso-pagamento';
+          }
+>>>>>>> main
         }
       } catch (e) {
         console.error(e);
@@ -150,6 +303,7 @@ export default {
   }
 }
 </script>
+<<<<<<< main
 
 <style scoped>
 .checkout-page { background: var(--cf-white); min-height: 90vh; }
@@ -192,3 +346,5 @@ export default {
 
 .text-green { color: var(--cf-green); }
 </style>
+=======
+>>>>>>> main

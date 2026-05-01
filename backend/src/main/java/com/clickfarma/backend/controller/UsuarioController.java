@@ -4,6 +4,7 @@ import com.clickfarma.backend.dto.UsuarioRequestDTO;
 import com.clickfarma.backend.dto.UsuarioResponseDTO;
 import com.clickfarma.backend.dto.MensagemResponseDTO;
 import com.clickfarma.backend.dto.PedidoResponseDTO;
+import com.clickfarma.backend.dto.TelegramLinkResponseDTO;
 import com.clickfarma.backend.service.UsuarioService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -138,6 +139,53 @@ public class UsuarioController {
             return ResponseEntity.ok(new MensagemResponseDTO(
                     "Endereço adicionado com sucesso!",
                     true
+            ));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest()
+                    .body(new MensagemResponseDTO(e.getMessage(), false));
+        }
+    }
+
+    @PatchMapping("/{id}/telegram")
+    public ResponseEntity<?> vincularTelegram(
+            @PathVariable Long id,
+            @RequestParam String telegramId) {
+        try {
+            UsuarioResponseDTO usuarioAtualizado = usuarioService.vincularTelegram(id, telegramId);
+            return ResponseEntity.ok(new MensagemResponseDTO(
+                    "Telegram vinculado com sucesso!",
+                    true,
+                    usuarioAtualizado
+            ));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest()
+                    .body(new MensagemResponseDTO(e.getMessage(), false));
+        }
+    }
+
+    @PostMapping("/{id}/telegram/link")
+    public ResponseEntity<?> gerarLinkTelegram(@PathVariable Long id) {
+        try {
+            TelegramLinkResponseDTO response = usuarioService.gerarLinkTelegram(id);
+            return ResponseEntity.ok(new MensagemResponseDTO(
+                    "Link de vinculação Telegram gerado com sucesso!",
+                    true,
+                    response
+            ));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest()
+                    .body(new MensagemResponseDTO(e.getMessage(), false));
+        }
+    }
+
+    @DeleteMapping("/{id}/telegram")
+    public ResponseEntity<?> removerTelegram(@PathVariable Long id) {
+        try {
+            UsuarioResponseDTO usuarioAtualizado = usuarioService.removerTelegram(id);
+            return ResponseEntity.ok(new MensagemResponseDTO(
+                    "Telegram removido com sucesso!",
+                    true,
+                    usuarioAtualizado
             ));
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest()

@@ -15,6 +15,8 @@ import java.util.Map;
 public class WebhookController {
     private static final Logger log = LoggerFactory.getLogger(WebhookController.class);
 
+    private static final Logger log = LoggerFactory.getLogger(WebhookController.class);
+
     private final PedidoRepository pedidoRepository;
 
     @PostMapping("/mercadopago")

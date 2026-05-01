@@ -1,24 +1,26 @@
 package com.clickfarma.backend.dto;
 
 import java.util.List;
+import java.util.ArrayList;
 
 /**
  * DTO para retorno dos medicamentos extraídos da receita
  */
 public class MedicamentoExtraidoDTO {
-    private List<MedicamentoItem> medicamentos;
-    private String textoOriginal;  // O texto extraído da receita (para debug)
 
-    // Construtores
+    private List<MedicamentoItem> medicamentos = new ArrayList<>();
+    private String textoOriginal;
+
+    /**
+     * Texto explicando a leitura da receita e o que o ClickFarma oferece (incluindo alternativas).
+     */
+    private String mensagemOrientacao;
+
+    // Construtor padrão
     public MedicamentoExtraidoDTO() {
     }
 
-    public MedicamentoExtraidoDTO(List<MedicamentoItem> medicamentos, String textoOriginal) {
-        this.medicamentos = medicamentos;
-        this.textoOriginal = textoOriginal;
-    }
-
-    // Getters e Setters
+    // Getter e Setter
     public List<MedicamentoItem> getMedicamentos() {
         return medicamentos;
     }
@@ -35,32 +37,43 @@ public class MedicamentoExtraidoDTO {
         this.textoOriginal = textoOriginal;
     }
 
+    public String getMensagemOrientacao() {
+        return mensagemOrientacao;
+    }
+
+    public void setMensagemOrientacao(String mensagemOrientacao) {
+        this.mensagemOrientacao = mensagemOrientacao;
+    }
+
     /**
      * Classe interna para representar um item de medicamento
      */
     public static class MedicamentoItem {
         private String nome;
         private Integer quantidade;
-        private String dosagem;  // Ex: "500mg"
-        private Long produtoId;   // ID do produto no banco (opcional)
-        private Double preco;     // Preço do produto (opcional)
+        private String dosagem;           // Ex: "500mg"
+        private Long produtoId;           // ID do produto no banco (opcional)
+        private Double preco;             // Preço do produto (opcional)
         private String descricaoProduto;  // Descrição do produto
         private String nomeCompleto;      // Nome completo do produto no banco
         private String descricaoIA;       // Descrição fornecida pela IA
         private Integer estoque;          // Quantidade em estoque
 
-        // Construtores
-        public MedicamentoItem() {
-            this.quantidade = 1; // Quantidade padrão
-            this.preco = 0.0;
-        }
+        // NOVOS CAMPOS PARA RECOMPRA
+        private String posologia;         // Ex: "1 comprimido a cada 12 horas"
+        private Integer diasDuracao;      // Ex: 30 (calculado pela IA)
 
-        public MedicamentoItem(String nome, Integer quantidade, String dosagem) {
-            this.nome = nome;
-            this.quantidade = quantidade != null ? quantidade : 1;
-            this.dosagem = dosagem;
+        /**
+         * DISPONIVEL | SEM_ESTOQUE | NAO_ENCONTRADO
+         */
+        private String situacaoCatalogo;
+
+        private List<AlternativaSugeridaDTO> alternativasSugeridas = new ArrayList<>();
+
+        // Construtor padrão (estoque null = ainda não vinculado ao catálogo; 0 = vinculado mas esgotado)
+        public MedicamentoItem() {
+            this.quantidade = 1;
             this.preco = 0.0;
-            this.estoque = 0;
         }
 
         // Getters e Setters
@@ -77,7 +90,7 @@ public class MedicamentoExtraidoDTO {
         }
 
         public void setQuantidade(Integer quantidade) {
-            this.quantidade = quantidade != null ? quantidade : 1;
+            this.quantidade = quantidade;
         }
 
         public String getDosagem() {
@@ -133,7 +146,40 @@ public class MedicamentoExtraidoDTO {
         }
 
         public void setEstoque(Integer estoque) {
-            this.estoque = estoque != null ? estoque : 0;
+            this.estoque = estoque;
+        }
+
+        // NOVOS GETTERS E SETTERS
+        public String getPosologia() {
+            return posologia;
+        }
+
+        public void setPosologia(String posologia) {
+            this.posologia = posologia;
+        }
+
+        public Integer getDiasDuracao() {
+            return diasDuracao;
+        }
+
+        public void setDiasDuracao(Integer diasDuracao) {
+            this.diasDuracao = diasDuracao;
+        }
+
+        public String getSituacaoCatalogo() {
+            return situacaoCatalogo;
+        }
+
+        public void setSituacaoCatalogo(String situacaoCatalogo) {
+            this.situacaoCatalogo = situacaoCatalogo;
+        }
+
+        public List<AlternativaSugeridaDTO> getAlternativasSugeridas() {
+            return alternativasSugeridas;
+        }
+
+        public void setAlternativasSugeridas(List<AlternativaSugeridaDTO> alternativasSugeridas) {
+            this.alternativasSugeridas = alternativasSugeridas != null ? alternativasSugeridas : new ArrayList<>();
         }
 
         @Override
@@ -145,6 +191,8 @@ public class MedicamentoExtraidoDTO {
                     ", preco=" + preco +
                     ", descricaoProduto='" + descricaoProduto + '\'' +
                     ", estoque=" + estoque +
+                    ", posologia='" + posologia + '\'' +
+                    ", diasDuracao=" + diasDuracao +
                     '}';
         }
     }

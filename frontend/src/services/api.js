@@ -11,8 +11,15 @@ const api = axios.create({
 // Interceptor para adicionar token JWT (se existir)
 api.interceptors.request.use(
     (config) => {
+<<<<<<< main
         const token = localStorage.getItem('authToken');
         if (token) {
+=======
+        // O projeto usa 'authToken' em varios pontos (store/login). Mantemos compatibilidade com 'access_token'.
+        const token = localStorage.getItem('authToken') || localStorage.getItem('access_token');
+        // Só anexa se parecer um JWT real (3 partes separadas por '.').
+        if (token && token.split('.').length === 3) {
+>>>>>>> main
             config.headers.Authorization = `Bearer ${token}`;
         }
         return config;

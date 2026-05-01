@@ -12,5 +12,7 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
 
     boolean existsByEmail(String email);
 
-    long countByRole(String role);
+    Optional<Usuario> findByTelegramLinkToken(String telegramLinkToken);
+
+    Optional<Usuario> findByTelegramId(String telegramId);
 }

@@ -9,6 +9,7 @@ public class UsuarioResponseDTO {
     private String email;
     private String telefone;
     private String endereco;
+    private String telegramId;
     private LocalDateTime dataCadastro;
     private Integer quantidadePedidos;
 
@@ -18,6 +19,7 @@ public class UsuarioResponseDTO {
         this.email = usuario.getEmail();
         this.telefone = usuario.getTelefone();
         this.endereco = usuario.getEndereco();
+        this.telegramId = usuario.getTelegramId();
         this.dataCadastro = usuario.getDataCadastro();
         this.quantidadePedidos = usuario.getPedidos() != null ?
                 usuario.getPedidos().size() : 0;
@@ -38,6 +40,9 @@ public class UsuarioResponseDTO {
 
     public String getEndereco() { return endereco; }
     public void setEndereco(String endereco) { this.endereco = endereco; }
+
+    public String getTelegramId() { return telegramId; }
+    public void setTelegramId(String telegramId) { this.telegramId = telegramId; }
 
     public LocalDateTime getDataCadastro() { return dataCadastro; }
     public void setDataCadastro(LocalDateTime dataCadastro) { this.dataCadastro = dataCadastro; }

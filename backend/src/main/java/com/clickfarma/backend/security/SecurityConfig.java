@@ -48,7 +48,18 @@ public class SecurityConfig {
                                 "/swagger-resources/**",
                                 "/webjars/**"
                         ).permitAll()
+<<<<<<< main
+=======
+                        .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers("/api/telegram/webhook").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/email/teste/*").permitAll()
+                        .requestMatchers("/api/produtos/**").permitAll()
+                        .requestMatchers("/api/categorias/**").permitAll()
+>>>>>>> main
                         .requestMatchers(HttpMethod.POST, "/api/pedidos").permitAll()
+                        // Para o fluxo academico/demo: permitir consulta de pedido e rastreio sem exigir login.
+                        .requestMatchers(HttpMethod.GET, "/api/pedidos/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/rastreios/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/usuarios").permitAll()
                         .anyRequest().authenticated()
                 )

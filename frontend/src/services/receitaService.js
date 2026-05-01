@@ -1,5 +1,37 @@
+<<<<<<< main
 // Usa o proxy do vue.config.js em dev e o mesmo origin em produção
 const API_URL = '/api/receita';
+=======
+// Configuração da URL da API
+// Para desenvolvimento local: http://localhost:8080/api/receita
+// Para produção: /api/receita (proxy do servidor)
+
+// Vue CLI normalmente usa process.env.VUE_APP_*
+// Vite usa import.meta.env.VITE_*
+// Importante: o default deve ser relativo (/api/receita) para funcionar com:
+// - proxy do vue.config.js no dev
+// - proxy do nginx no Docker
+// - acesso por IP/domínio (evita "localhost" apontar para a máquina do navegador)
+const getApiUrl = () => {
+    try {
+        // Tenta usar a variável de ambiente do Vite
+        if (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_URL) {
+            return import.meta.env.VITE_API_URL;
+        }
+        // Tenta usar a variável de ambiente do Webpack/Vue CLI (caso mude de bundler)
+        if (typeof process !== 'undefined' && process.env && process.env.VUE_APP_API_URL) {
+            return process.env.VUE_APP_API_URL;
+        }
+    } catch (e) {
+        console.warn('Aviso: Não foi possível ler as variáveis de ambiente.', e);
+    }
+    // Fallback padrão (funciona com proxy /api)
+    return '/api/receita';
+};
+
+const normalizeBaseUrl = (url) => String(url || '').replace(/\/+$/, '');
+const API_URL = normalizeBaseUrl(getApiUrl());
+>>>>>>> main
 
 class ReceitaService {
     /**
@@ -22,12 +54,26 @@ class ReceitaService {
             });
 
             if (!response.ok) {
-                const error = await response.json();
-                throw new Error(error.erro || 'Erro ao processar receita');
+                const contentType = response.headers.get('content-type') || '';
+                let payload = null;
+                if (contentType.includes('application/json')) {
+                    payload = await response.json().catch(() => null);
+                } else {
+                    payload = await response.text().catch(() => null);
+                }
+                const msg =
+                    (payload && typeof payload === 'object' && (payload.erro || payload.message)) ||
+                    (typeof payload === 'string' && payload.trim()) ||
+                    `Erro ao processar receita (HTTP ${response.status})`;
+                throw new Error(msg);
             }
 
             const data = await response.json();
-            
+
+            if (data.mensagemOrientacao === undefined) {
+                data.mensagemOrientacao = null;
+            }
+
             // Garantir que os medicamentos têm todos os campos necessários
             if (data.medicamentos && Array.isArray(data.medicamentos)) {
                 data.medicamentos = data.medicamentos.map(med => ({
@@ -35,11 +81,17 @@ class ReceitaService {
                     nomeCompleto: med.nomeCompleto || med.nome || '',
                     quantidade: med.quantidade || 1,
                     dosagem: med.dosagem || '',
-                    preco: med.preco || 0,
+                    preco: med.preco ?? 0,
                     descricaoProduto: med.descricaoProduto || med.descricaoIA || '',
                     descricaoIA: med.descricaoIA || '',
-                    produtoId: med.produtoId || null,
-                    estoque: med.estoque !== undefined ? med.estoque : -1
+                    produtoId: med.produtoId ?? null,
+                    estoque: med.estoque !== undefined && med.estoque !== null ? med.estoque : null,
+                    situacaoCatalogo: med.situacaoCatalogo || null,
+                    posologia: med.posologia || '',
+                    diasDuracao: med.diasDuracao,
+                    alternativasSugeridas: Array.isArray(med.alternativasSugeridas)
+                        ? med.alternativasSugeridas
+                        : []
                 }));
             }
 

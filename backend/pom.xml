@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+		 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 		 xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 
@@ -14,7 +15,7 @@
 	<artifactId>backend</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<name>backend</name>
-	<description>Backend ClickFarma - Sistema de Farmácia</description>
+	<description>Backend ClickFarma - Sistema de Farmácia com IA e Recompra Automática</description>
 
 	<properties>
 		<java.version>17</java.version>
@@ -24,8 +25,12 @@
 		<maven-compiler-plugin.version>3.14.1</maven-compiler-plugin.version>
 		<google-cloud-vertexai.version>1.5.0</google-cloud-vertexai.version>
 		<mercadopago.version>2.1.2</mercadopago.version>
+
+		<!-- Encoding -->
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+
+		<!-- Opções de build -->
 		<maven.javadoc.skip>true</maven.javadoc.skip>
 		<maven.test.skip>true</maven.test.skip>
 	</properties>
@@ -49,18 +54,22 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-data-jpa</artifactId>
 		</dependency>
+
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-web</artifactId>
 		</dependency>
+
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-security</artifactId>
 		</dependency>
+
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-validation</artifactId>
 		</dependency>
+
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-webflux</artifactId>
@@ -72,6 +81,12 @@
 			<optional>true</optional>
 		</dependency>
 
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-mail</artifactId>
+		</dependency>
+
+		<!-- OCR (Tesseract via Tess4J) -->
 		<dependency>
 			<groupId>net.sourceforge.tess4j</groupId>
 			<artifactId>tess4j</artifactId>
@@ -119,13 +134,20 @@
 			<version>${springdoc.version}</version>
 		</dependency>
 
-		<!-- Google Gemini AI Dependencies -->
+		<!-- Google Gemini / Vertex AI -->
 		<dependency>
 			<groupId>com.google.cloud</groupId>
 			<artifactId>google-cloud-vertexai</artifactId>
 			<version>${google-cloud-vertexai.version}</version>
 		</dependency>
 
+		<dependency>
+			<groupId>com.google.cloud</groupId>
+			<artifactId>google-cloud-aiplatform</artifactId>
+			<version>3.45.0</version>
+		</dependency>
+
+		<!-- Utilitários HTTP/JSON -->
 		<dependency>
 			<groupId>com.google.code.gson</groupId>
 			<artifactId>gson</artifactId>
@@ -138,7 +160,7 @@
 			<version>4.5.14</version>
 		</dependency>
 
-		<!-- SDK Oficial do Mercado Pago - Versão Estável -->
+		<!-- SDK Oficial do Mercado Pago -->
 		<dependency>
 			<groupId>com.mercadopago</groupId>
 			<artifactId>sdk-java</artifactId>
@@ -151,21 +173,17 @@
 			<artifactId>spring-boot-starter-test</artifactId>
 			<scope>test</scope>
 		</dependency>
+
 		<dependency>
 			<groupId>org.springframework.security</groupId>
 			<artifactId>spring-security-test</artifactId>
 			<scope>test</scope>
 		</dependency>
-
-		<dependency>
-			<groupId>com.google.cloud</groupId>
-			<artifactId>google-cloud-aiplatform</artifactId>
-			<version>3.45.0</version>
-		</dependency>
 	</dependencies>
 
 	<build>
 		<plugins>
+			<!-- Compilador -->
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
@@ -184,6 +202,7 @@
 				</configuration>
 			</plugin>
 
+			<!-- Spring Boot -->
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>

@@ -1,6 +1,7 @@
 package com.clickfarma.backend.service;
 
 import com.clickfarma.backend.dto.PedidoResponseDTO;
+import com.clickfarma.backend.dto.TelegramLinkResponseDTO;
 import com.clickfarma.backend.dto.UsuarioRequestDTO;
 import com.clickfarma.backend.dto.UsuarioResponseDTO;
 import com.clickfarma.backend.model.Pedido;
@@ -22,7 +23,7 @@ public class UsuarioService {
     private UsuarioRepository usuarioRepository;
 
     @Autowired
-    private PasswordEncoder passwordEncoder;
+    private TelegramIntegrationService telegramIntegrationService;
 
     // Criar usuário
     public UsuarioResponseDTO criarUsuario(UsuarioRequestDTO usuarioDTO) {
@@ -140,6 +141,32 @@ public class UsuarioService {
         // Por enquanto, vamos apenas atualizar o endereço principal
         usuario.setEndereco(endereco);
         usuarioRepository.save(usuario);
+    }
+
+    public UsuarioResponseDTO vincularTelegram(Long id, String telegramId) {
+        if (telegramId == null || telegramId.isBlank()) {
+            throw new RuntimeException("Telegram ID é obrigatório");
+        }
+
+        Usuario usuario = usuarioRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Usuário não encontrado com ID: " + id));
+
+        usuario.setTelegramId(telegramId.trim());
+        return new UsuarioResponseDTO(usuarioRepository.save(usuario));
+    }
+
+    public UsuarioResponseDTO removerTelegram(Long id) {
+        Usuario usuario = usuarioRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Usuário não encontrado com ID: " + id));
+
+        usuario.setTelegramId(null);
+        usuario.setTelegramLinkToken(null);
+        usuario.setTelegramLinkExpiresAt(null);
+        return new UsuarioResponseDTO(usuarioRepository.save(usuario));
+    }
+
+    public TelegramLinkResponseDTO gerarLinkTelegram(Long id) {
+        return telegramIntegrationService.gerarLinkVinculacao(id);
     }
 
     // Gerar relatório de usuários

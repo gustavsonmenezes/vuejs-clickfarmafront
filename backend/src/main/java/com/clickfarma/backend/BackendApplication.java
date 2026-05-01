@@ -5,10 +5,18 @@ import com.clickfarma.backend.repository.UsuarioRepository;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+<<<<<<< main
 import org.springframework.context.annotation.Bean;
 import org.springframework.security.crypto.password.PasswordEncoder;
+=======
+import org.springframework.scheduling.annotation.EnableScheduling; // ADICIONE ESTE IMPORT
+
+
+>>>>>>> main
 
 @SpringBootApplication
+@EnableScheduling
+
 public class BackendApplication {
 
 	public static void main(String[] args) {

@@ -28,6 +28,15 @@ public class Usuario {
     @Column(length = 200)
     private String endereco;
 
+    @Column(name = "telegram_id", length = 100)
+    private String telegramId;
+
+    @Column(name = "telegram_link_token", length = 120, unique = true)
+    private String telegramLinkToken;
+
+    @Column(name = "telegram_link_expires_at")
+    private LocalDateTime telegramLinkExpiresAt;
+
     @Column(name = "data_cadastro")
     private LocalDateTime dataCadastro;
 
@@ -70,6 +79,15 @@ public class Usuario {
 
     public String getEndereco() { return endereco; }
     public void setEndereco(String endereco) { this.endereco = endereco; }
+
+    public String getTelegramId() { return telegramId; }
+    public void setTelegramId(String telegramId) { this.telegramId = telegramId; }
+
+    public String getTelegramLinkToken() { return telegramLinkToken; }
+    public void setTelegramLinkToken(String telegramLinkToken) { this.telegramLinkToken = telegramLinkToken; }
+
+    public LocalDateTime getTelegramLinkExpiresAt() { return telegramLinkExpiresAt; }
+    public void setTelegramLinkExpiresAt(LocalDateTime telegramLinkExpiresAt) { this.telegramLinkExpiresAt = telegramLinkExpiresAt; }
 
     public LocalDateTime getDataCadastro() { return dataCadastro; }
     public void setDataCadastro(LocalDateTime dataCadastro) { this.dataCadastro = dataCadastro; }

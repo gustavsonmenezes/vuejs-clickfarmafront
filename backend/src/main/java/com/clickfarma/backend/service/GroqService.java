@@ -17,7 +17,7 @@ import com.clickfarma.backend.model.Produto;
 @Service
 public class GroqService {
 
-    @Value("${GROQ_API_KEY:}")
+    @Value("${GROQ_API_KEY:${groq.api.key:}}")
     private String apiKey;
 
     @Autowired
@@ -34,98 +34,22 @@ public class GroqService {
     }
 
     public Mono<String> chat(String mensagem) {
-        if (apiKey == null || apiKey.isEmpty() || apiKey.equals("your_groq_api_key_here")) {
-            System.err.println("❌ Chave da API Groq/Llama não configurada");
-            return Mono.just("⚠️ Chave da API Llama não configurada no .env. (Verifique GROQ_API_KEY)");
-        }
-
-        // Recupera produtos em tempo real do BD para construir o contexto:
-        List<Produto> produtos = null;
-        try {
-            if (produtoRepository != null) {
-                produtos = produtoRepository.findAll();
-            }
-        } catch(Exception e) {
-            System.err.println("Aviso: Não foi possível carregar o repositório de Produtos para injeção do Groq.");
-        }
-
-        StringBuilder catalogoContexto = new StringBuilder();
-        if (produtos != null && !produtos.isEmpty()) {
-            catalogoContexto.append("\nNOSSO ESTOQUE ATUAL:\n");
-            for (Produto p : produtos) {
-                if (p.getEstoque() != null && p.getEstoque() > 0) {
-                    catalogoContexto.append("- ").append(p.getNome()).append(" (R$ ").append(p.getPreco()).append(")\n");
-                }
-            }
-            catalogoContexto.append("\nIMPORTANTE: NUNCA sugira, invente ou recomende medicamentos que NÃO estejam listados acima. Só ofereça produtos listados no NOSSO ESTOQUE ATUAL. Se uma condição não for tratável com nosso estoque, explique cordialmente.\n");
-        } else {
-            catalogoContexto.append("\n[Nenhum produto em estoque no momento. Informe ao cliente para retornar mais tarde.]\n");
-        }
-
-        Map<String, Object> requestBody = new HashMap<>();
-        requestBody.put("model", "llama-3.3-70b-versatile");
-        
-        List<Map<String, String>> messages = new java.util.ArrayList<>();
-        messages.add(Map.of("role", "system", "content", 
-            "Você é o Agente de IA oficial da farmácia ClickFarma. Suas regras estritas são: \n" +
-            "1. Foque EXCLUSIVAMENTE em produtos da ClickFarma, dicas de bem-estar e interações de itens de farmácia.\n" +
-            "2. Apenas recomende produtos que NÃO necessitam de prescrição médica. NUNCA recomende antibióticos ou tarjas-preta.\n" +
-            "3. Mantenha respostas curtas, em MARKDOWN amigável." +
-            catalogoContexto.toString()
-        ));
-        messages.add(Map.of("role", "user", "content", mensagem));
-        
-        requestBody.put("messages", messages);
-        requestBody.put("temperature", 0.7);
-
-        return processarRequisicaoChat(requestBody);
+        return chat(mensagem, 0.7);
     }
 
-    public Mono<String> chatWithHistory(List<Map<String, String>> conversacao) {
-        if (apiKey == null || apiKey.isEmpty() || apiKey.equals("your_groq_api_key_here")) {
-            System.err.println("❌ Chave da API Groq/Llama não configurada");
-            return Mono.just("⚠️ Chave da API Llama não configurada no .env. (Verifique GROQ_API_KEY)");
-        }
+    public boolean isConfigured() {
+        return apiKey != null && !apiKey.isBlank();
+    }
 
-        List<Produto> produtos = null;
-        try {
-            if (produtoRepository != null) {
-                produtos = produtoRepository.findAll();
-            }
-        } catch(Exception e) {
-            System.err.println("Aviso: Não foi possível carregar o repositório.");
-        }
-
-        StringBuilder catalogoContexto = new StringBuilder();
-        if (produtos != null && !produtos.isEmpty()) {
-            catalogoContexto.append("\nNOSSO ESTOQUE ATUAL:\n");
-            for (Produto p : produtos) {
-                if (p.getEstoque() != null && p.getEstoque() > 0) {
-                    catalogoContexto.append("- ").append(p.getNome()).append(" (R$ ").append(p.getPreco()).append(")\n");
-                }
-            }
-            catalogoContexto.append("\nIMPORTANTE: NUNCA sugira, invente ou recomende medicamentos que NÃO estejam listados acima. Só ofereça produtos listados no NOSSO ESTOQUE ATUAL. Se uma condição não for tratavel com o que temos, explique cordialmente.\n");
-        } else {
-            catalogoContexto.append("\n[Nenhum produto em estoque no momento. Informe ao cliente para retornar mais tarde.]\n");
+    public Mono<String> chat(String mensagem, double temperature) {
+        if (apiKey == null || apiKey.isEmpty()) {
+            return Mono.error(new IllegalStateException("GROQ_API_KEY (ou groq.api.key) não configurada"));
         }
 
         Map<String, Object> requestBody = new HashMap<>();
         requestBody.put("model", "llama-3.3-70b-versatile");
-        
-        List<Map<String, String>> messages = new java.util.ArrayList<>();
-        messages.add(Map.of("role", "system", "content", 
-            "Você é o Agente de IA oficial da farmácia ClickFarma. Suas regras estritas são: \n" +
-            "1. Foque EXCLUSIVAMENTE em tutoria, produtos, saúde e dicas de bem-estar.\n" +
-            "2. Apenas recomende produtos que NÃO necessitam de prescrição médica.\n" +
-            "3. Mantenha respostas curtas e humanas, em MARKDOWN." +
-            catalogoContexto.toString()
-        ));
-        
-        // Add the history. Frontend sends role and content
-        messages.addAll(conversacao);
-        
-        requestBody.put("messages", messages);
-        requestBody.put("temperature", 0.7);
+        requestBody.put("messages", List.of(Map.of("role", "user", "content", mensagem)));
+        requestBody.put("temperature", temperature);
 
         return processarRequisicaoChat(requestBody);
     }

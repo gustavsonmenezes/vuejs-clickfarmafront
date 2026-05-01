@@ -158,6 +158,20 @@ public class PedidoController {
         }
     }
 
+    // GET - Rastrear pedido por ID (mais fácil para o frontend)
+    @GetMapping("/{pedidoId}/rastreio/por-id")
+    public ResponseEntity<?> rastrearPedidoPorId(@PathVariable Long pedidoId) {
+        try {
+            // Reaproveita o service via codigoPedido, mas buscando antes.
+            PedidoResponseDTO pedido = pedidoService.buscarPorId(pedidoId);
+            RastreioResponseDTO rastreio = pedidoService.rastrearPedido(pedido.getCodigoPedido());
+            return ResponseEntity.ok(rastreio);
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(new MensagemResponseDTO(e.getMessage(), false));
+        }
+    }
+
     // POST - Atualizar rastreio
     @PostMapping("/{pedidoId}/rastreio/atualizar")
     public ResponseEntity<?> atualizarRastreio(
