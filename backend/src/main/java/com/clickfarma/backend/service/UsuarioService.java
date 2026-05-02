@@ -168,6 +168,18 @@ public class UsuarioService {
         return telegramIntegrationService.gerarLinkVinculacao(id);
     }
 
+    public UsuarioResponseDTO atualizarRole(Long id, String novaRole) {
+        Usuario usuario = usuarioRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Usuário não encontrado com ID: " + id));
+        
+        if (!"USER".equals(novaRole) && !"ADMIN".equals(novaRole)) {
+            throw new RuntimeException("Role inválida. Use USER ou ADMIN.");
+        }
+        
+        usuario.setRole(novaRole);
+        return new UsuarioResponseDTO(usuarioRepository.save(usuario));
+    }
+
     // Gerar relatório de usuários
     public Map<String, Object> gerarRelatorioUsuarios() {
         List<Usuario> usuarios = usuarioRepository.findAll();

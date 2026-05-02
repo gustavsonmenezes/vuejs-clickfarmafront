@@ -12,6 +12,7 @@ public class UsuarioResponseDTO {
     private String telegramId;
     private LocalDateTime dataCadastro;
     private Integer quantidadePedidos;
+    private String role;
 
     public UsuarioResponseDTO(Usuario usuario) {
         this.id = usuario.getId();
@@ -23,6 +24,7 @@ public class UsuarioResponseDTO {
         this.dataCadastro = usuario.getDataCadastro();
         this.quantidadePedidos = usuario.getPedidos() != null ?
                 usuario.getPedidos().size() : 0;
+        this.role = usuario.getRole();
     }
 
     // Getters e Setters
@@ -51,4 +53,7 @@ public class UsuarioResponseDTO {
     public void setQuantidadePedidos(Integer quantidadePedidos) {
         this.quantidadePedidos = quantidadePedidos;
     }
+
+    public String getRole() { return role; }
+    public void setRole(String role) { this.role = role; }
 }

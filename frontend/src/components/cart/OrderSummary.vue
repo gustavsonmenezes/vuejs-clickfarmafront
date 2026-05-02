@@ -48,7 +48,7 @@
         class="btn btn-primary btn-block btn-lg py-3 shadow-sm"
         :class="{ 'disabled': itemsCount === 0 }"
     >
-      Finalizar Compra
+      Prosseguir para Pagamento
     </router-link>
   </div>
 </template>

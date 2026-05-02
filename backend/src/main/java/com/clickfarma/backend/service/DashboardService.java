@@ -39,6 +39,17 @@ public class DashboardService {
         resumo.put("totalProdutos", totalProdutos);
         resumo.put("totalPedidos", totalPedidos);
 
+        // Faturamento Total
+        List<Pedido> todosPedidos = pedidoRepository.findAll();
+        BigDecimal faturamento = todosPedidos.stream()
+                .filter(p -> p.getValorTotal() != null && (p.getStatus() == Pedido.StatusPedido.PAGO 
+                        || p.getStatus() == Pedido.StatusPedido.ENTREGUE 
+                        || p.getStatus() == Pedido.StatusPedido.ENVIADO))
+                .map(Pedido::getValorTotal)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        
+        resumo.put("faturamentoTotal", faturamento.toString().replace('.', ','));
+
         // Pedidos recentes
         List<Pedido> pedidosRecentes = pedidoRepository.findTop10ByOrderByDataPedidoDesc();
         resumo.put("pedidosRecentes", pedidosRecentes.size());
@@ -79,24 +90,29 @@ public class DashboardService {
     }
 
     public Map<String, Object> obterProdutosPopulares(Integer limite) {
-        // Implementar lógica de produtos mais vendidos
-        // Por enquanto, retorna produtos com estoque mais baixo (supostamente os mais vendidos)
-        List<Produto> produtos = produtoRepository.findByEstoqueLessThan(50)
-                .stream()
+        List<Object[]> resultados = pedidoRepository.findTopProdutos();
+        
+        List<Map<String, Object>> topProdutos = resultados.stream()
                 .limit(limite)
+                .map(row -> {
+                    Long produtoId = (Long) row[0];
+                    Long quantidade = ((Number) row[1]).longValue();
+                    BigDecimal receita = (BigDecimal) row[2];
+                    
+                    Produto p = produtoRepository.findById(produtoId).orElse(null);
+                    if (p == null) return null;
+
+                    Map<String, Object> map = new HashMap<>();
+                    map.put("nome", p.getNome());
+                    map.put("quantidade", quantidade);
+                    map.put("receita", receita.toString().replace('.', ','));
+                    return map;
+                })
+                .filter(m -> m != null)
                 .collect(Collectors.toList());
 
         Map<String, Object> resultado = new HashMap<>();
-        resultado.put("total", produtos.size());
-        resultado.put("produtos", produtos.stream()
-                .map(p -> Map.of(
-                        "id", p.getId(),
-                        "nome", p.getNome(),
-                        "preco", p.getPreco(),
-                        "estoque", p.getEstoque()
-                ))
-                .collect(Collectors.toList()));
-
+        resultado.put("produtos", topProdutos);
         return resultado;
     }
 

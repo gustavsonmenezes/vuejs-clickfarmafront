@@ -31,7 +31,7 @@ public class GroqService {
     }
 
     public Mono<String> chat(String mensagem) {
-        return chat(mensagem, 0.7);
+        return chat(mensagem, 0.3);
     }
 
     public boolean isConfigured() {
@@ -43,10 +43,24 @@ public class GroqService {
             return Mono.error(new IllegalStateException("GROQ_API_KEY (ou groq.api.key) não configurada"));
         }
 
+        String systemPrompt = "Voce e o chatbot da ClickFarma, uma farmacia online. " +
+            "REGRAS ABSOLUTAS — NAO QUEBRE NENHUMA:\n" +
+            "1. MAXIMO 2-3 frases. NUNCA mais que 3 linhas.\n" +
+            "2. VAI DIRETO AO PONTO. Sem saudacoes, sem 'claro', sem 'existem varios'.\n" +
+            "3. Cite apenas 1-2 nomes de remedios com dosagem.\n" +
+            "4. NAO faca listas. NAO use bullet points. NAO use numeracao.\n" +
+            "5. NUNCA diga 'consulte um medico' a menos que seja emergencia real.\n" +
+            "6. Responda em portugues brasileiro.\n" +
+            "7. Se nao souber: 'Nao tenho essa informacao.'";
+
         Map<String, Object> requestBody = new HashMap<>();
         requestBody.put("model", "llama-3.3-70b-versatile");
-        requestBody.put("messages", List.of(Map.of("role", "user", "content", mensagem)));
+        requestBody.put("messages", List.of(
+            Map.of("role", "system", "content", systemPrompt),
+            Map.of("role", "user", "content", mensagem)
+        ));
         requestBody.put("temperature", temperature);
+        requestBody.put("max_tokens", 150);
 
         return webClient.post()
                 .uri("/chat/completions")
@@ -67,12 +81,50 @@ public class GroqService {
 
     public Mono<String> analyzeCart(List<Map<String, Object>> cartItems, Double totalPrice) {
         String prompt = buildCartAnalysisPrompt(cartItems, totalPrice);
-        return this.chat(prompt);
+        return chatWithSystemPrompt(prompt, cartAnalysisPrompt());
+    }
+
+    private String cartAnalysisPrompt() {
+        return "Voce e um consultor de farmacia da ClickFarma. " +
+            "Analise os itens do carrinho e responda de forma concisa (MAXIMO 5 linhas) com:\n" +
+            "1. **Economia**: sugira 1 generico ou alternativa mais barata\n" +
+            "2. **Alerta**: mencione interacoes se houver\n" +
+            "3. **Dica**: 1 conselho de uso\n" +
+            "Seja direto, sem introducoes.";
+    }
+
+    private Mono<String> chatWithSystemPrompt(String userMessage, String systemPrompt) {
+        Map<String, Object> requestBody = new HashMap<>();
+        requestBody.put("model", "llama-3.3-70b-versatile");
+        requestBody.put("messages", List.of(
+            Map.of("role", "system", "content", systemPrompt),
+            Map.of("role", "user", "content", userMessage)
+        ));
+        requestBody.put("temperature", 0.3);
+        requestBody.put("max_tokens", 200);
+
+        return webClient.post()
+                .uri("/chat/completions")
+                .header("Authorization", "Bearer " + apiKey)
+                .header("Content-Type", "application/json")
+                .bodyValue(requestBody)
+                .retrieve()
+                .bodyToMono(String.class)
+                .map(responseBody -> {
+                    try {
+                        JsonNode root = objectMapper.readTree(responseBody);
+                        return root.path("choices").get(0).path("message").path("content").asText();
+                    } catch (Exception e) {
+                        return "Erro ao processar resposta: " + e.getMessage();
+                    }
+                })
+                .onErrorResume(e -> Mono.just("Erro tecnico ao analisar carrinho."));
     }
 
     public Mono<String> getWellnessSuggestions(String userId, String userName) {
         String prompt = String.format(
-            "Voce e um assistente de saude da ClickFarma. O usuario %s solicitou recomendacoes de bem-estar. Forneca 3 dicas praticas de saude em MARKDOWN.",
+            "Voce e um assistente de saude da ClickFarma. Responda em MAXIMO 3 linhas. " +
+            "De 1 dica pratica de bem-estar para %s.",
             userName != null ? userName : "Cliente"
         );
         return this.chat(prompt);
@@ -163,11 +215,14 @@ public class GroqService {
 
     private String buildCartAnalysisPrompt(List<Map<String, Object>> cartItems, Double totalPrice) {
         StringBuilder prompt = new StringBuilder();
-        prompt.append("Analise o carrinho de compras e forneca sugestoes em MARKDOWN:\n\n");
+        prompt.append("Itens no carrinho:\n");
         for (Map<String, Object> item : cartItems) {
-            prompt.append("- ").append(item.get("name")).append("\n");
+            String name = (String) item.get("name");
+            Double price = ((Number) item.get("price")).doubleValue();
+            Integer quantity = ((Number) item.get("quantity")).intValue();
+            prompt.append(String.format("- %s (R$ %.2f x %d)\n", name, price, quantity));
         }
-        prompt.append("Total: R$ ").append(totalPrice);
+        prompt.append(String.format("Total: R$ %.2f", totalPrice));
         return prompt.toString();
     }
 }

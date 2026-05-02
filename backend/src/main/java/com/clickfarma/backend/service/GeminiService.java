@@ -33,11 +33,53 @@ public class GeminiService {
             return Mono.just("⚠️ Chave da API Gemini não configurada. Configure a variável GEMINI_API_KEY.");
         }
 
-        // Construir prompt inteligente para análise de carrinho
         String prompt = buildCartAnalysisPrompt(cartItems, totalPrice);
         System.out.println("📤 Enviando análise de carrinho para Gemini");
 
-        return this.chat(prompt);
+        return chatWithSystemPrompt(prompt, cartAnalysisPrompt());
+    }
+
+    private String cartAnalysisPrompt() {
+        return "Voce e um consultor de farmacia da ClickFarma. " +
+            "Analise os itens do carrinho e responda de forma concisa (MAXIMO 5 linhas) com:\n" +
+            "1. **Economia**: sugira 1 genérico ou alternativa mais barata\n" +
+            "2. **Alerta**: mencione interações se houver\n" +
+            "3. **Dica**: 1 conselho de uso\n" +
+            "Seja direto, sem introducoes.";
+    }
+
+    private Mono<String> chatWithSystemPrompt(String userMessage, String systemPrompt) {
+        Map<String, Object> request = new HashMap<>();
+        Map<String, Object> content = new HashMap<>();
+        content.put("parts", List.of(
+                Map.of("text", systemPrompt + "\n\n" + userMessage)
+        ));
+        request.put("contents", List.of(content));
+
+        return webClient.post()
+                .uri("/models/gemini-1.5-flash:generateContent?key=" + apiKey)
+                .header("Content-Type", "application/json")
+                .bodyValue(request)
+                .retrieve()
+                .bodyToMono(Map.class)
+                .map(response -> {
+                    try {
+                        List<Map<String, Object>> candidates =
+                                (List<Map<String, Object>>) response.get("candidates");
+                        if (candidates != null && !candidates.isEmpty()) {
+                            Map<String, Object> candidate = candidates.get(0);
+                            Map<String, Object> contentResp =
+                                    (Map<String, Object>) candidate.get("content");
+                            List<Map<String, Object>> parts =
+                                    (List<Map<String, Object>>) contentResp.get("parts");
+                            return (String) parts.get(0).get("text");
+                        }
+                        return "Nao consegui analisar o carrinho.";
+                    } catch (Exception e) {
+                        return "Erro ao processar resposta: " + e.getMessage();
+                    }
+                })
+                .onErrorResume(e -> Mono.just("Erro tecnico ao analisar carrinho."));
     }
 
     /**
@@ -45,32 +87,18 @@ public class GeminiService {
      */
     private String buildCartAnalysisPrompt(List<Map<String, Object>> cartItems, Double totalPrice) {
         StringBuilder prompt = new StringBuilder();
-        prompt.append("Você é um assistente especializado em farmácia e saúde. ");
-        prompt.append("Analise o carrinho de compras a seguir e forneça sugestões úteis em MARKDOWN:\n\n");
-
-        prompt.append("**Itens no Carrinho:**\n");
+        prompt.append("Você é um assistente de farmácia. Responda em MAXIMO 3 linhas. ");
+        prompt.append("Analise o carrinho e forneça apenas:\n");
+        prompt.append("- 1 dica de economia ou genérico disponível\n");
+        prompt.append("- 1 alerta de interação se houver\n\n");
+        prompt.append("Itens:\n");
         for (Map<String, Object> item : cartItems) {
             String name = (String) item.get("name");
             Double price = ((Number) item.get("price")).doubleValue();
             Integer quantity = ((Number) item.get("quantity")).intValue();
-            String category = (String) item.get("category");
-            String description = (String) item.get("description");
-
-            prompt.append(String.format("- **%s** (Categoria: %s)\n", name, category));
-            prompt.append(String.format("  - Descrição: %s\n", description));
-            prompt.append(String.format("  - Preço unitário: R$ %.2f | Quantidade: %d | Subtotal: R$ %.2f\n\n",
-                    price, quantity, price * quantity));
+            prompt.append(String.format("- %s (R$ %.2f x %d)\n", name, price, quantity));
         }
-
-        prompt.append(String.format("**Total do Carrinho:** R$ %.2f\n\n", totalPrice));
-
-        prompt.append("Por favor, forneça:\n");
-        prompt.append("1. **Análise de Economia**: Existem genéricos ou versões mais baratas disponíveis?\n");
-        prompt.append("2. **Dicas de Uso**: Conselhos sobre como usar os medicamentos (horários, com/sem alimentos)?\n");
-        prompt.append("3. **Alertas**: Possíveis interações entre medicamentos ou contraindicações?\n");
-        prompt.append("4. **Sugestões**: Outros produtos que poderiam complementar a compra?\n\n");
-        prompt.append("Responda de forma clara e concisa, usando MARKDOWN com negrito, listas e seções bem definidas.");
-
+        prompt.append(String.format("Total: R$ %.2f", totalPrice));
         return prompt.toString();
     }
 
@@ -79,12 +107,9 @@ public class GeminiService {
      */
     public Mono<String> getWellnessSuggestions(String userId, String userName) {
         String prompt = String.format(
-                "Olá Gemini! Você é um assistente de saúde da ClickFarma. " +
-                        "O usuário %s (ID: %s) solicitou recomendações de bem-estar. " +
-                        "Forneça 3 dicas práticas de saúde, nutrição ou cuidados pessoais em MARKDOWN. " +
-                        "Seja amigável e use emojis.",
-                userName != null ? userName : "Cliente",
-                userId != null ? userId : "N/A"
+                "Voce e assistente de saude da ClickFarma. Responda em MAXIMO 3 linhas. " +
+                "Dê 1 dica pratica de bem-estar para %s.",
+                userName != null ? userName : "Cliente"
         );
         return this.chat(prompt);
     }
@@ -97,11 +122,24 @@ public class GeminiService {
 
         System.out.println("📤 Enviando mensagem para Gemini: " + mensagem);
 
+        String systemPrompt = "Voce e o chatbot da ClickFarma, uma farmacia online. " +
+            "REGRAS ABSOLUTAS — NAO QUEBRE NENHUMA:\n" +
+            "1. MAXIMO 2-3 frases. NUNCA mais que 3 linhas.\n" +
+            "2. VAI DIRETO AO PONTO. Sem saudacoes, sem 'claro', sem 'existem varios'.\n" +
+            "3. Cite apenas 1-2 nomes de remedios com dosagem.\n" +
+            "4. NAO faca listas. NAO use bullet points. NAO use numeracao.\n" +
+            "5. NUNCA diga 'consulte um medico' a menos que seja emergencia real.\n" +
+            "6. Responda em portugues brasileiro.\n" +
+            "7. Se nao souber: 'Nao tenho essa informacao.'\n\n" +
+            "Exemplo de resposta boa:\n" +
+            "Usuario: 'Qual remedio para dor de cabeca?'\n" +
+            "Voce: 'Para dor de cabeça leve, use Paracetamol 500mg ou Ibuprofeno 400mg. Tome a cada 6-8 horas com agua.'\n\n";
+
         Map<String, Object> request = new HashMap<>();
 
         Map<String, Object> content = new HashMap<>();
         content.put("parts", List.of(
-                Map.of("text", mensagem)
+                Map.of("text", systemPrompt + "Pergunta do usuario: " + mensagem)
         ));
 
         request.put("contents", List.of(content));

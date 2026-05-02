@@ -15,6 +15,7 @@ import BackendOrderTracking from '../views/BackendOrderTracking.vue'
 
 import AdminLogin from '../views/admin/AdminLogin.vue'
 import AdminDashboard from '../views/admin/AdminDashboard.vue'
+import AdminDashboardOverview from '../views/admin/AdminDashboardOverview.vue'
 import ProductManagement from '../views/admin/ProductManagement.vue'
 import InventoryManagement from '../views/admin/InventoryManagement.vue'
 import OrderManagement from '../views/admin/OrderManagement.vue'
@@ -192,7 +193,7 @@ const routes = [
       {
         path: 'dashboard',
         name: 'AdminDashboardOverview',
-        component: { template: '<div>Bem-vindo ao Painel Administrativo!</div>' }
+        component: AdminDashboardOverview
       },
       {
         path: 'products',
@@ -231,7 +232,7 @@ const router = createRouter({
 router.beforeEach((to, from, next) => {
   const isAuthenticated = localStorage.getItem('authToken')
   const user = JSON.parse(localStorage.getItem('user') || '{}')
-  const isAdmin = user.role === 'admin'
+  const isAdmin = user.role && user.role.toUpperCase() === 'ADMIN'
 
   if (to.meta.requiresAuth && !isAuthenticated) {
     if (to.path.startsWith('/admin')) {

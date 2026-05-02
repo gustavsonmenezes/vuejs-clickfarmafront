@@ -1,6 +1,7 @@
 package com.clickfarma.backend.dto;
 
 import com.clickfarma.backend.model.Rastreio;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 public class RastreioResponseDTO {
@@ -15,6 +16,9 @@ public class RastreioResponseDTO {
     private String status;
     private String ultimaLocalizacao;
     private LocalDateTime ultimaAtualizacao;
+    private BigDecimal valorTotal;
+    private String metodoPagamento;
+    private String enderecoEntrega;
 
     public RastreioResponseDTO(Rastreio rastreio) {
         this.id = rastreio.getId();
@@ -30,6 +34,9 @@ public class RastreioResponseDTO {
         if (rastreio.getPedido() != null) {
             this.pedidoId = rastreio.getPedido().getId();
             this.codigoPedido = rastreio.getPedido().getCodigoPedido();
+            this.valorTotal = rastreio.getPedido().getValorTotal();
+            this.metodoPagamento = rastreio.getPedido().getMetodoPagamento();
+            this.enderecoEntrega = rastreio.getPedido().getEnderecoEntrega();
         }
     }
 
@@ -66,4 +73,13 @@ public class RastreioResponseDTO {
 
     public LocalDateTime getUltimaAtualizacao() { return ultimaAtualizacao; }
     public void setUltimaAtualizacao(LocalDateTime ultimaAtualizacao) { this.ultimaAtualizacao = ultimaAtualizacao; }
+
+    public BigDecimal getValorTotal() { return valorTotal; }
+    public void setValorTotal(BigDecimal valorTotal) { this.valorTotal = valorTotal; }
+
+    public String getMetodoPagamento() { return metodoPagamento; }
+    public void setMetodoPagamento(String metodoPagamento) { this.metodoPagamento = metodoPagamento; }
+
+    public String getEnderecoEntrega() { return enderecoEntrega; }
+    public void setEnderecoEntrega(String enderecoEntrega) { this.enderecoEntrega = enderecoEntrega; }
 }

@@ -54,6 +54,9 @@ export default {
     OrderSummary,
     CartAIAdvisor
   },
+  mounted() {
+    console.log('🛒 CartPage - Items no carrinho:', this.cart.length)
+  },
   computed: {
     ...mapState(['cart']),
     ...mapGetters(['cartItemsCount', 'cartTotal'])

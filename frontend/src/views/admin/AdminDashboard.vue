@@ -1,147 +1,70 @@
-  <template>
+<template>
   <div class="admin-dashboard d-flex">
-    <!-- Overlay para mobile -->
-    <div 
-      v-if="sidebarOpen && isMobile" 
-      class="sidebar-overlay" 
-      @click="closeSidebar"
-    ></div>
+    <!-- Mobile overlay -->
+    <div v-if="sidebarOpen && isMobile" class="admin-overlay" @click="closeSidebar"></div>
     
     <!-- Sidebar -->
-    <nav 
-      class="admin-sidebar bg-dark text-white p-3" 
-      :class="{ 'sidebar-open': sidebarOpen }"
-    >
-      <div class="sidebar-header d-flex justify-content-between align-items-center mb-4">
-        <h4 class="text-center mb-0">Painel Admin</h4>
-        <button 
-          v-if="isMobile" 
-          @click="closeSidebar" 
-          class="btn btn-outline-light btn-sm d-md-none"
-        >
-          ✕
+    <nav class="admin-sidebar" :class="{ 'sidebar-open': sidebarOpen }">
+      <div class="sidebar-header">
+        <h5 class="mb-0">ClickFarma</h5>
+        <button v-if="isMobile" @click="closeSidebar" class="btn-close-white">
+          <i class="fas fa-xmark"></i>
         </button>
       </div>
       
-      <ul class="nav flex-column">
-        <li class="nav-item">
-          <router-link 
-            to="/admin/dashboard" 
-            class="nav-link text-white"
-            :class="{ active: $route.path === '/admin/dashboard' }"
-            @click="closeSidebar"
-          >
-            <i class="fas fa-tachometer-alt me-2"></i>
-            Início
-          </router-link>
-        </li>
-        <li class="nav-item">
-          <router-link 
-            to="/admin/products" 
-            class="nav-link text-white"
-            :class="{ active: $route.path === '/admin/products' }"
-            @click="closeSidebar"
-          >
-            <i class="fas fa-pills me-2"></i>
-            Gerenciar Produtos
-          </router-link>
-        </li>
-        <li class="nav-item">
-          <router-link 
-            to="/admin/inventory" 
-            class="nav-link text-white"
-            :class="{ active: $route.path === '/admin/inventory' }"
-            @click="closeSidebar"
-          >
-            <i class="fas fa-boxes me-2"></i>
-            Gerenciar Estoque
-          </router-link>
-        </li>
-        <li class="nav-item">
-          <router-link 
-            to="/admin/orders" 
-            class="nav-link text-white"
-            :class="{ active: $route.path === '/admin/orders' }"
-            @click="closeSidebar"
-          >
-            <i class="fas fa-shopping-cart me-2"></i>
-            Visualizar Pedidos
-          </router-link>
-        </li>
-        <li class="nav-item">
-          <router-link 
-            to="/admin/prescriptions" 
-            class="nav-link text-white"
-            :class="{ active: $route.path === '/admin/prescriptions' }"
-            @click="closeSidebar"
-          >
-            <i class="fas fa-file-medical me-2"></i>
-            Validar Receitas
-          </router-link>
-        </li>
-        <li class="nav-item">
-          <router-link 
-            to="/admin/users" 
-            class="nav-link text-white"
-            :class="{ active: $route.path === '/admin/users' }"
-            @click="closeSidebar"
-          >
-            <i class="fas fa-users me-2"></i>
-            Gerenciar Usuários
-          </router-link>
-        </li>
-      </ul>
+      <div class="sidebar-nav">
+        <router-link to="/admin/dashboard" class="nav-item" :class="{ active: $route.path === '/admin/dashboard' }" @click="closeSidebar">
+          <i class="fas fa-grid-2"></i>
+          <span>Visão Geral</span>
+        </router-link>
+        <router-link to="/admin/products" class="nav-item" :class="{ active: $route.path === '/admin/products' }" @click="closeSidebar">
+          <i class="fas fa-pills"></i>
+          <span>Produtos</span>
+        </router-link>
+        <router-link to="/admin/inventory" class="nav-item" :class="{ active: $route.path === '/admin/inventory' }" @click="closeSidebar">
+          <i class="fas fa-warehouse"></i>
+          <span>Estoque</span>
+        </router-link>
+        <router-link to="/admin/orders" class="nav-item" :class="{ active: $route.path === '/admin/orders' }" @click="closeSidebar">
+          <i class="fas fa-bag-shopping"></i>
+          <span>Pedidos</span>
+        </router-link>
+        <router-link to="/admin/prescriptions" class="nav-item" :class="{ active: $route.path === '/admin/prescriptions' }" @click="closeSidebar">
+          <i class="fas fa-file-medical"></i>
+          <span>Receitas</span>
+        </router-link>
+        <router-link to="/admin/users" class="nav-item" :class="{ active: $route.path === '/admin/users' }" @click="closeSidebar">
+          <i class="fas fa-users"></i>
+          <span>Usuários</span>
+        </router-link>
+      </div>
       
-      <div class="sidebar-footer mt-auto">
-        <hr class="text-white-50">
-        <div class="user-info mb-3">
-          <small class="text-white-50">Logado como:</small>
-          <div class="text-white">{{ currentUser?.name || 'Administrador' }}</div>
+      <div class="sidebar-footer">
+        <div class="user-info">
+          <div class="avatar">{{ currentUser?.name?.charAt(0)?.toUpperCase() || 'A' }}</div>
+          <div class="details">
+            <div class="name">{{ currentUser?.name || 'Administrador' }}</div>
+            <div class="role">Admin</div>
+          </div>
         </div>
-        <button @click="logout" class="btn btn-outline-light w-100">
-          <i class="fas fa-sign-out-alt me-2"></i>
-          Sair
+        <button @click="logout" class="btn-logout">
+          <i class="fas fa-arrow-right-from-bracket"></i>
+          <span>Sair</span>
         </button>
       </div>
     </nav>
     
-    <!-- Conteúdo Principal -->
-    <main class="main-content flex-grow-1">
-      <!-- Header do conteúdo principal -->
-      <header class="main-header bg-white shadow-sm p-3 d-flex justify-content-between align-items-center">
-        <div class="d-flex align-items-center">
-          <button 
-            @click="toggleSidebar" 
-            class="btn btn-outline-secondary me-3 d-md-none"
-          >
-            <i class="fas fa-bars"></i>
-          </button>
-          <h1 class="h4 mb-0">{{ pageTitle }}</h1>
-        </div>
-        
-        <div class="header-actions d-flex align-items-center">
-          <div class="dropdown">
-            <button 
-              class="btn btn-outline-secondary dropdown-toggle" 
-              type="button" 
-              id="userDropdown" 
-              data-bs-toggle="dropdown"
-            >
-              <i class="fas fa-user-circle me-1"></i>
-              {{ currentUser?.name || 'Admin' }}
-            </button>
-            <ul class="dropdown-menu dropdown-menu-end">
-              <li><a class="dropdown-item" href="#"><i class="fas fa-user me-2"></i>Perfil</a></li>
-              <li><a class="dropdown-item" href="#"><i class="fas fa-cog me-2"></i>Configurações</a></li>
-              <li><hr class="dropdown-divider"></li>
-              <li><a class="dropdown-item" href="#" @click="logout"><i class="fas fa-sign-out-alt me-2"></i>Sair</a></li>
-            </ul>
-          </div>
-        </div>
+    <!-- Main Content -->
+    <main class="main-content">
+      <header class="main-header">
+        <button @click="toggleSidebar" class="btn-menu d-md-none">
+          <i class="fas fa-bars"></i>
+        </button>
+        <h1 class="page-title">{{ pageTitle }}</h1>
+        <div class="header-spacer"></div>
       </header>
       
-      <!-- Conteúdo da página -->
-      <div class="page-content p-4">
+      <div class="page-content">
         <router-view />
       </div>
     </main>
@@ -161,12 +84,12 @@ export default {
   computed: {
     pageTitle() {
       const routeTitles = {
-        '/admin/dashboard': 'Dashboard',
-        '/admin/products': 'Gerenciar Produtos',
-        '/admin/inventory': 'Gerenciar Estoque',
-        '/admin/orders': 'Visualizar Pedidos',
+        '/admin/dashboard': 'Visão Geral',
+        '/admin/products': 'Produtos',
+        '/admin/inventory': 'Estoque',
+        '/admin/orders': 'Pedidos',
         '/admin/prescriptions': 'Validar Receitas',
-        '/admin/users': 'Gerenciar Usuários'
+        '/admin/users': 'Usuários'
       }
       return routeTitles[this.$route.path] || 'Painel Administrativo'
     }
@@ -214,12 +137,15 @@ export default {
 </script>
 
 <style scoped>
-.admin-dashboard { 
-  min-height: 100vh; 
+.admin-dashboard {
+  min-height: 100vh;
+  background-color: var(--cf-bg);
+  font-family: var(--cf-font);
 }
 
+/* Sidebar */
 .admin-sidebar {
-  width: 280px;
+  width: 260px;
   height: 100vh;
   position: fixed;
   left: 0;
@@ -227,143 +153,197 @@ export default {
   z-index: 1040;
   display: flex;
   flex-direction: column;
-  transition: transform 0.3s ease-in-out;
-  background: linear-gradient(180deg, #2c5aa0 0%, #1e3a8a 100%) !important;
+  background: var(--cf-slate-900);
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  border-right: 1px solid rgba(255,255,255,0.06);
 }
 
+.sidebar-header {
+  padding: 20px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+
+.sidebar-header h5 {
+  color: white;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.btn-close-white {
+  background: none;
+  border: none;
+  color: rgba(255,255,255,0.7);
+  font-size: 1.1rem;
+  cursor: pointer;
+  padding: 4px;
+}
+
+.btn-close-white:hover {
+  color: white;
+}
+
+/* Navigation */
+.sidebar-nav {
+  flex: 1;
+  padding: 16px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  color: var(--cf-slate-400);
+  text-decoration: none;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: all 0.15s ease;
+}
+
+.nav-item:hover {
+  background: rgba(255,255,255,0.06);
+  color: var(--cf-slate-200);
+}
+
+.nav-item.active {
+  background: rgba(59, 130, 246, 0.12);
+  color: var(--cf-primary-500);
+}
+
+.nav-item i {
+  width: 20px;
+  text-align: center;
+  font-size: 0.9rem;
+}
+
+/* Footer */
+.sidebar-footer {
+  padding: 16px;
+  border-top: 1px solid rgba(255,255,255,0.08);
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px;
+  margin-bottom: 8px;
+}
+
+.avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: var(--cf-primary-600);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 0.875rem;
+}
+
+.details .name {
+  color: white;
+  font-size: 0.8125rem;
+  font-weight: 500;
+}
+
+.details .role {
+  color: var(--cf-slate-500);
+  font-size: 0.75rem;
+}
+
+.btn-logout {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: rgba(255,255,255,0.06);
+  border: none;
+  border-radius: 8px;
+  color: var(--cf-slate-400);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-logout:hover {
+  background: rgba(255,255,255,0.1);
+  color: white;
+}
+
+/* Main Content */
 .main-content {
-  margin-left: 280px;
+  margin-left: 260px;
   min-height: 100vh;
-  transition: margin-left 0.3s ease-in-out;
+  transition: margin-left 0.25s ease;
 }
 
 .main-header {
   position: sticky;
   top: 0;
   z-index: 1030;
-  border-bottom: 1px solid #dee2e6;
+  height: 64px;
+  padding: 0 32px;
+  display: flex;
+  align-items: center;
+  background: rgba(255,255,255,0.9);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--cf-border);
 }
 
-.page-content {
-  background-color: #f8f9fa;
-  min-height: calc(100vh - 80px);
-}
-
-.nav-link { 
-  font-size: 1rem; 
-  padding: 12px 16px; 
-  border-radius: 8px;
-  margin-bottom: 4px;
-  transition: all 0.2s ease-in-out;
-  border-left: 3px solid transparent;
-}
-
-.nav-link:hover { 
-  background-color: rgba(255,255,255,0.15) !important; 
-  transform: translateX(4px);
-  border-left-color: #ffffff;
-}
-
-.nav-link.active {
-  background-color: rgba(255,255,255,0.2) !important;
-  font-weight: 600;
-  border-left-color: #ffffff;
-}
-
-.sidebar-footer {
-  margin-top: auto;
-}
-
-.user-info {
-  font-size: 0.9rem;
-}
-
-/* Botões com cor azul */
-.btn-outline-primary {
-  border-color: #2c5aa0;
-  color: #2c5aa0;
-}
-
-.btn-outline-primary:hover {
-  background-color: #2c5aa0;
-  border-color: #2c5aa0;
-}
-
-/* Responsividade Mobile */
-@media (max-width: 767.98px) {
-  .admin-sidebar {
-    transform: translateX(-100%);
-  }
-  
-  .admin-sidebar.sidebar-open {
-    transform: translateX(0);
-  }
-  
-  .main-content {
-    margin-left: 0;
-  }
-  
-  .sidebar-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.5);
-    z-index: 1039;
-  }
-}
-
-/* Animações */
-@keyframes slideIn {
-  from {
-    opacity: 0;
-    transform: translateY(-10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.page-content {
-  animation: slideIn 0.3s ease-out;
-}
-
-/* Melhorias visuais */
-.btn {
-  transition: all 0.2s ease-in-out;
-}
-
-.btn:hover {
-  transform: translateY(-1px);
-}
-
-.dropdown-menu {
+.btn-menu {
+  background: none;
   border: none;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  color: var(--cf-slate-600);
+  font-size: 1.2rem;
+  cursor: pointer;
+  padding: 8px;
+  margin-right: 12px;
 }
 
-.dropdown-item {
-  transition: background-color 0.2s ease-in-out;
+.page-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--cf-slate-900);
+  margin: 0;
+  letter-spacing: -0.01em;
 }
 
-.dropdown-item:hover {
-  background-color: #f8f9fa;
+.header-spacer {
+  flex: 1;
 }
 
-/* Ícones com cor mais suave */
-.nav-link i {
-  color: rgba(255,255,255,0.8);
+.page-content {
+  padding: 24px 32px;
+  max-width: 1400px;
 }
 
-.nav-link.active i {
-  color: #ffffff;
+/* Mobile Overlay */
+.admin-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.4);
+  z-index: 1039;
 }
 
-/* Header com cor azul sutil */
-.main-header {
-  background: linear-gradient(135deg, #ffffff 0%, #f0f8ff 100%) !important;
+/* Responsive */
+@media (max-width: 767.98px) {
+  .admin-sidebar { transform: translateX(-100%); }
+  .admin-sidebar.sidebar-open { transform: translateX(0); }
+  .main-content { margin-left: 0; }
+  .page-content { padding: 16px; }
+  .main-header { padding: 0 16px; }
 }
 </style>
-

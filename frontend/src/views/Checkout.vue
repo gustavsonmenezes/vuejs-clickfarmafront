@@ -122,12 +122,11 @@
 </template>
 
 <script>
-import { mapState } from 'vuex';
+import { mapState, mapGetters } from 'vuex';
 import { OrderService } from '@/services/orderService.js';
 import PaymentMethod from '@/components/checkout/PaymentMethod.vue';
 
 export default {
-  props: ['cart'],
   components: { PaymentMethod },
   data() {
     return {
@@ -141,15 +140,15 @@ export default {
         uf: '',
         cep: ''
       },
-      metodo: 'MERCADO_PAGO',
-      localCart: []
+      metodo: 'MERCADO_PAGO'
     };
   },
   computed: {
-    ...mapState(['user']),
+    ...mapState(['user', 'cart']),
     googleMapsLink() {
       return 'https://www.google.com/maps/search/?api=0&query=ClickFarma+Recife+PE';
     },
+    ...mapGetters(['cartItemsCount', 'cartTotal']),
     enderecoEntrega() {
       const f = this.enderecoForm;
       const parts = [
@@ -166,15 +165,9 @@ export default {
       return Boolean(
         f.rua && f.numero && f.bairro && f.cidade && f.uf && f.cep
       );
-    },
-    cartTotal() {
-      return this.localCart.reduce((total, item) => total + (item.price * item.quantity), 0);
     }
   },
   created() {
-    if (this.cart) {
-      this.localCart = JSON.parse(this.cart);
-    }
     // Preenche com o endereco do usuario se existir (best-effort).
     try {
       const endereco = (this.user && this.user.endereco) ? String(this.user.endereco) : '';
@@ -203,7 +196,7 @@ export default {
       try {
         const pedidoRequest = {
           usuarioId: this.user.id,
-          itens: this.localCart.map(item => ({
+          itens: this.cart.map(item => ({
             produtoId: item.id,
             quantidade: item.quantity || 1
           })),

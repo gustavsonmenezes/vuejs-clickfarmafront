@@ -61,39 +61,6 @@ public class EmailNotificationService {
         return enviarEmail(usuario.getEmail(), "Compra #" + pedido.getCodigoPedido() + " confirmada - ClickFarma", html);
     }
 
-        String itensHtml = buildTabelaItens(pedido.getItens());
-
-        String pagamentoHtml = (linkPagamento != null && !linkPagamento.isBlank())
-                ? "<table role=\"presentation\" width=\"100%%\" cellpadding=\"0\" cellspacing=\"0\">" +
-                "<tr><td align=\"center\" style=\"padding:24px 0 8px;\">" +
-                "<a href=\"" + linkPagamento + "\" " +
-                "style=\"display:inline-block;padding:14px 32px;background:#15803D;color:#ffffff;text-decoration:none;border-radius:8px;font-weight:600;font-size:16px;\">" +
-                "Finalizar pagamento</a></td></tr></table>"
-                : "<div style=\"background:#F0FDF4;border:1px solid #BBF7D0;border-radius:8px;padding:16px;margin:16px 0;text-align:center;\">" +
-                "<span style=\"color:#15803D;font-weight:600;\">Pagamento confirmado</span></div>";
-
-        String endereco = formatarEndereco(pedido);
-
-        String statusBadge = "PAGO".equalsIgnoreCase(pedido.getStatus() != null ? pedido.getStatus().name() : "")
-                ? buildStatusBadgeComIcone(pedido.getStatus())
-                : "<div style=\"display:inline-block;background:#15803D;color:#FFFFFF;padding:8px 20px;border-radius:20px;font-size:14px;font-weight:600;margin:8px 0 16px;\">Pedido confirmado</div>";
-
-        String html = buildTemplate(
-                "Pedido Confirmado",
-                "Olá, " + usuario.getNome() + "!",
-                "Seu pedido <strong>#" + pedido.getCodigoPedido() + "</strong> foi recebido com sucesso.",
-                statusBadge,
-                pagamentoHtml,
-                itensHtml,
-                "Total",
-                formatarMoeda(pedido.getValorTotal()),
-                endereco,
-                "Endereço de entrega"
-        );
-
-        return enviarEmail(usuario.getEmail(), "Pedido #" + pedido.getCodigoPedido() + " confirmado - ClickFarma", html);
-    }
-
     public boolean enviarAtualizacaoStatusPedido(Usuario usuario, Pedido pedido) {
         if (!podeEnviarPara(usuario)) {
             return false;

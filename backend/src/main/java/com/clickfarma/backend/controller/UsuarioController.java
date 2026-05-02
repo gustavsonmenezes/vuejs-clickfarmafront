@@ -207,4 +207,22 @@ public class UsuarioController {
                     .body(new MensagemResponseDTO(e.getMessage(), false));
         }
     }
+
+    // PATCH - Atualizar role do usuário (Admin)
+    @PatchMapping("/{id}/role")
+    public ResponseEntity<?> atualizarRole(
+            @PathVariable Long id,
+            @RequestParam String role) {
+        try {
+            UsuarioResponseDTO usuarioAtualizado = usuarioService.atualizarRole(id, role);
+            return ResponseEntity.ok(new MensagemResponseDTO(
+                    "Role atualizada com sucesso!",
+                    true,
+                    usuarioAtualizado
+            ));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest()
+                    .body(new MensagemResponseDTO(e.getMessage(), false));
+        }
+    }
 }

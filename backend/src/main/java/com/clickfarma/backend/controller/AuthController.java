@@ -49,7 +49,8 @@ public class AuthController {
                     token,
                     usuario.getId(),
                     usuario.getNome(),
-                    usuario.getEmail()
+                    usuario.getEmail(),
+                    usuario.getRole()
             ));
 
         } catch (Exception e) {

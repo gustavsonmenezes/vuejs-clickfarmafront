@@ -25,4 +25,7 @@ public interface PedidoRepository extends JpaRepository<Pedido, Long> {
 
     @Query("SELECT p FROM Pedido p LEFT JOIN FETCH p.rastreio WHERE p.codigoPedido = :codigo")
     Pedido findByCodigoPedidoWithRastreio(@Param("codigo") String codigo);
+
+    @Query("SELECT ip.produto.id, SUM(ip.quantidade), SUM(ip.subtotal) FROM ItemPedido ip GROUP BY ip.produto.id ORDER BY SUM(ip.quantidade) DESC")
+    List<Object[]> findTopProdutos();
 }

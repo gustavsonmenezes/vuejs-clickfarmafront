@@ -3,6 +3,7 @@ package com.clickfarma.backend.dto;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Size;
 import java.math.BigDecimal;
 
@@ -20,7 +21,7 @@ public class ProdutoRequestDTO {
     private BigDecimal preco;
 
     @NotNull(message = "Estoque é obrigatório")
-    @Positive(message = "Estoque deve ser maior que zero")
+    @Min(value = 0, message = "Estoque deve ser zero ou maior")
     private Integer estoque;
 
     private Long categoriaId;
