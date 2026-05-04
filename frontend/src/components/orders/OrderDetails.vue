@@ -80,13 +80,13 @@
       <div class="card-body">
         <div v-for="item in order.items" :key="item.id" class="d-flex justify-content-between align-items-center mb-3 pb-3 border-bottom">
           <div class="d-flex align-items-center">
-            <img :src="getItemImage(item)" :alt="item.name" class="rounded me-3" width="60" height="60">
+            <img :src="getItemImage(item)" :alt="item.name || item.nome" class="rounded me-3" width="60" height="60">
             <div>
-              <h6 class="mb-1">{{ item.name }}</h6>
+              <h6 class="mb-1">{{ item.name || item.nome }}</h6>
               <small class="text-muted">Quantidade: {{ item.quantity }}</small>
             </div>
           </div>
-          <span class="fw-bold">R$ {{ (item.price * item.quantity).toFixed(2) }}</span>
+          <span class="fw-bold">R$ {{ ((item.price || item.preco || 0) * item.quantity).toFixed(2) }}</span>
         </div>
         
         <div class="row mt-3">

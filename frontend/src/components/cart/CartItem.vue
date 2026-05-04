@@ -6,7 +6,7 @@
         <div class="col-md-2 text-center">
           <img 
             :src="itemImage" 
-            :alt="item.name"
+            :alt="itemName"
             class="img-fluid rounded item-image"
             @error="handleImageError"
             loading="lazy"
@@ -15,9 +15,9 @@
         
         <!-- Informações do produto -->
         <div class="col-md-4">
-          <h5 class="item-name">{{ item.name }}</h5>
+          <h5 class="item-name">{{ itemName }}</h5>
           <p class="text-muted item-description">{{ truncatedDescription }}</p>
-          <span class="badge bg-secondary">{{ item.category }}</span>
+          <span class="badge bg-secondary">{{ itemCat }}</span>
         </div>
         
         <!-- Quantidade -->
@@ -69,31 +69,38 @@ export default {
       validator: (item) => {
         return (
           item.id &&
-          item.name &&
-          item.description &&
-          typeof item.price === 'number' &&
+          (item.name || item.nome) &&
+          (item.description || item.descricao) &&
+          typeof (item.price || item.preco) === 'number' &&
           typeof item.quantity === 'number'
         )
       }
     }
   },
-  data() {
-    return {
-      imageError: false
-    }
-  },
   computed: {
+    itemName() {
+      return this.item.name || this.item.nome || 'Produto'
+    },
+    itemDesc() {
+      return this.item.description || this.item.descricao || ''
+    },
+    itemCat() {
+      return this.item.category || this.item.categoriaNome || ''
+    },
+    itemPriceVal() {
+      return this.item.price || this.item.preco || 0
+    },
     truncatedDescription() {
       const maxLength = 60
-      return this.item.description.length > maxLength 
-        ? this.item.description.substring(0, maxLength) + '...' 
-        : this.item.description
+      return this.itemDesc.length > maxLength 
+        ? this.itemDesc.substring(0, maxLength) + '...' 
+        : this.itemDesc
     },
     itemTotal() {
-      return (this.item.price * this.item.quantity).toFixed(2)
+      return (this.itemPriceVal * this.item.quantity).toFixed(2)
     },
     itemPrice() {
-      return this.item.price.toFixed(2)
+      return this.itemPriceVal.toFixed(2)
     },
     itemImage() {
       return placeholderConfig.getProductImage(this.item.image)

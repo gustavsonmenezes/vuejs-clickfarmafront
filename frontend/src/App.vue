@@ -75,14 +75,14 @@ export default {
   position: fixed;
   bottom: 150px;
   right: 20px;
-  width: 380px;
-  height: 600px;
+  width: 420px;
+  height: 650px;
   z-index: 1000;
-  border-radius: 12px;
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.18);
+  border-radius: 16px;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.2);
   overflow: hidden;
   animation: slideInUp 300ms ease-in-out;
-  background: white;
+  background: transparent;
 }
 
 @keyframes slideInUp {

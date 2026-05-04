@@ -1,20 +1,20 @@
 <template>
-  <div class="cf-product-card" :class="{ 'is-unavailable': !product.inStock }">
+  <div class="cf-product-card" :class="{ 'is-unavailable': !isInStock }">
 
-    <!-- Área visual do produto -->
-    <router-link :to="`/products/${product.id}`" class="cf-card-image" tabindex="-1">
+      <!-- Área visual do produto -->
+      <router-link :to="`/products/${product.id}`" class="cf-card-image" tabindex="-1">
 
-      <!-- Fundo sage com ícone de categoria -->
-      <div class="cf-product-visual">
-        <span class="cf-product-icon">{{ getCategoryIcon(product.category) }}</span>
-      </div>
+        <!-- Fundo sage com ícone de categoria -->
+        <div class="cf-product-visual">
+          <span class="cf-product-icon">{{ getCategoryIcon(product.categoriaNome) }}</span>
+        </div>
 
-      <!-- Badge de estoque -->
-      <div class="cf-badges">
-        <span class="cf-stock-badge" :class="product.inStock ? 'badge-in' : 'badge-out'">
-          {{ product.inStock ? 'Em estoque' : 'Indisponível' }}
-        </span>
-      </div>
+        <!-- Badge de estoque -->
+        <div class="cf-badges">
+          <span class="cf-stock-badge" :class="isInStock ? 'badge-in' : 'badge-out'">
+            {{ isInStock ? 'Em estoque' : 'Indisponível' }}
+          </span>
+        </div>
 
       <!-- Wishlist — aparece no hover -->
       <button class="cf-wishlist" @click.prevent.stop title="Salvar">
@@ -27,11 +27,11 @@
     <!-- Informações do produto -->
     <div class="cf-card-body">
 
-      <span class="cf-category-label">{{ product.category }}</span>
+      <span class="cf-category-label">{{ product.categoriaNome }}</span>
 
       <router-link :to="`/products/${product.id}`" class="cf-card-link">
-        <h3 class="cf-product-name">{{ product.name }}</h3>
-        <p class="cf-product-desc">{{ product.description }}</p>
+        <h3 class="cf-product-name">{{ product.nome }}</h3>
+        <p class="cf-product-desc">{{ product.descricao }}</p>
       </router-link>
 
       <!-- Preço + botão -->
@@ -43,7 +43,7 @@
 
         <button
             class="cf-add-btn"
-            :disabled="!product.inStock || addingToCart"
+            :disabled="!isInStock || addingToCart"
             :class="{ 'is-added': addedToCart }"
             @click="handleAddToCart"
         >
@@ -72,16 +72,21 @@ export default {
     return { addingToCart: false, addedToCart: false }
   },
   computed: {
+    isInStock() {
+      return (this.product.estoque || 0) > 0
+    },
     formattedPrice() {
-      return this.product.price.toFixed(2).replace('.', ',')
+      const price = this.product.preco || this.product.price || 0
+      return price.toFixed(2).replace('.', ',')
     },
     installmentPrice() {
-      return (this.product.price / 12).toFixed(2).replace('.', ',')
+      const price = this.product.preco || this.product.price || 0
+      return (price / 12).toFixed(2).replace('.', ',')
     },
     shortButtonText() {
       if (this.addingToCart) return '...'
       if (this.addedToCart)  return 'OK!'
-      if (!this.product.inStock) return 'Indisponível'
+      if (!this.isInStock) return 'Indisponível'
       return 'Adicionar'
     }
   },
@@ -91,7 +96,7 @@ export default {
     },
     async handleAddToCart(e) {
       e.stopPropagation()
-      if (!this.product.inStock || this.addingToCart) return
+      if (!this.isInStock || this.addingToCart) return
       this.addingToCart = true
       try {
         await this.$store.dispatch('addToCart', this.product)

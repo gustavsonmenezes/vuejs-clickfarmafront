@@ -6,22 +6,32 @@ import com.clickfarma.backend.model.Categoria;
 import com.clickfarma.backend.model.Produto;
 import com.clickfarma.backend.repository.CategoriaRepository;
 import com.clickfarma.backend.repository.ProdutoRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
 public class ProdutoService {
+
+    private static final Logger log = LoggerFactory.getLogger(ProdutoService.class);
 
     @Autowired
     private ProdutoRepository produtoRepository;
 
     @Autowired
     private CategoriaRepository categoriaRepository;
+
+    @Autowired
+    private GroqService groqService;
 
     // Criar produto
     public ProdutoResponseDTO criarProduto(ProdutoRequestDTO produtoDTO) {
@@ -132,6 +142,37 @@ public class ProdutoService {
 
         Produto produtoAtualizado = produtoRepository.save(produto);
         return new ProdutoResponseDTO(produtoAtualizado);
+    }
+
+    public List<ProdutoResponseDTO> buscarPorSintoma(String sintoma) {
+        if (sintoma == null || sintoma.isBlank()) {
+            return List.of();
+        }
+
+        if (!groqService.isConfigured()) {
+            log.warn("GroqService nao configurado, buscando por texto simples");
+            return produtoRepository.buscarPorNomeOuDescricao(sintoma)
+                    .stream()
+                    .map(ProdutoResponseDTO::new)
+                    .collect(Collectors.toList());
+        }
+
+        List<String> nomesSugeridos = groqService.buscarNomesPorSintoma(sintoma);
+        log.info("IA sugeriu {} nomes para o sintoma '{}': {}", nomesSugeridos.size(), sintoma, nomesSugeridos);
+
+        if (nomesSugeridos.isEmpty()) {
+            return List.of();
+        }
+
+        Set<Produto> produtosEncontrados = new LinkedHashSet<>();
+        for (String nomeMedicamento : nomesSugeridos) {
+            List<Produto> resultados = produtoRepository.buscarPorNomeOuDescricao(nomeMedicamento);
+            produtosEncontrados.addAll(resultados);
+        }
+
+        return produtosEncontrados.stream()
+                .map(ProdutoResponseDTO::new)
+                .collect(Collectors.toList());
     }
 
     // Deletar produto

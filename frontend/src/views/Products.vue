@@ -1,128 +1,113 @@
 <template>
   <div class="products-page">
     <!-- Header Section -->
-    <section class="products-header bg-primary text-white py-4 mb-4">
+    <section class="products-header text-white py-5 mb-4">
       <div class="container">
         <div class="row align-items-center">
           <div class="col-md-8">
-            <h1 class="display-6 fw-bold mb-2">💊 Nossos Produtos</h1>
-            <p class="lead mb-0">Encontre os melhores medicamentos e produtos para sua saúde</p>
+            <h1 class="display-5 fw-bold mb-2">💊 Nossos Produtos</h1>
+            <p class="lead mb-0 opacity-75">Encontre os melhores medicamentos e produtos para sua saúde</p>
           </div>
-          <div class="col-md-4 text-md-end">
-            <div class="products-count">
-              <span class="badge bg-light text-primary fs-6">
-                {{ filteredProducts.length || 0 }} produtos encontrados
-              </span>
-            </div>
+          <div class="col-md-4 text-md-end mt-3 mt-md-0">
+            <span class="badge bg-white text-success fs-6 px-3 py-2 shadow-sm">
+              {{ filteredProducts.length }} produtos encontrados
+            </span>
           </div>
         </div>
       </div>
     </section>
 
     <div class="container">
-      <!-- Filters & Search Section -->
-      <div class="filters-section mb-4">
-        <div class="row g-3">
-          <div class="col-lg-5 col-md-6">
-            <div class="search-box">
-              <i class="fas fa-search search-icon"></i>
-              <input
-                  v-model="searchTerm"
-                  type="text"
-                  class="form-control search-input"
-                  placeholder="Buscar produtos por nome ou descrição..."
-              >
-            </div>
+      <!-- Smart Search Box -->
+      <div class="smart-search-card mb-4 p-3 bg-white rounded-3 shadow-sm border">
+        <div class="row g-2 align-items-center">
+          <div class="col-md-8 position-relative">
+            <i class="fas fa-search search-icon"></i>
+            <input
+                v-model="searchTerm"
+                @keyup.enter="fetchProducts"
+                type="text"
+                class="form-control form-control-lg ps-5 border-0 bg-light"
+                placeholder="O que você procura? (Ex: Dor de cabeça, Dipirona...)"
+            >
           </div>
-          <div class="col-lg-3 col-md-6">
-            <div class="filter-group">
-              <label class="form-label fw-semibold">📁 Categoria</label>
-              <select v-model="filters.category" class="form-select">
-                <option value="">Todas as categorias</option>
-                <option v-for="cat in categoriesList" :key="cat" :value="cat">
-                  {{ getCategoryIcon(cat) }} {{ cat }}
-                </option>
-              </select>
-            </div>
-          </div>
-          <div class="col-lg-2 col-md-6">
-            <div class="filter-group">
-              <label class="form-label fw-semibold">🔀 Ordenar</label>
-              <select v-model="filters.sortBy" class="form-select">
-                <option value="name">📝 Nome A-Z</option>
-                <option value="name_desc">📝 Nome Z-A</option>
-                <option value="price">💰 Menor preço</option>
-                <option value="price_desc">💰 Maior preço</option>
-              </select>
-            </div>
-          </div>
-          <div class="col-lg-2 col-md-6">
-            <div class="filter-group">
-              <label class="form-label fw-semibold">📦 Estoque</label>
-              <select v-model="filters.stock" class="form-select">
-                <option value="all">Todos</option>
-                <option value="in_stock">Em estoque</option>
-                <option value="out_of_stock">Fora de estoque</option>
-              </select>
-            </div>
-          </div>
-        </div>
-
-        <!-- Active Filters -->
-        <div v-if="hasActiveFilters" class="active-filters mt-3">
-          <div class="d-flex flex-wrap gap-2 align-items-center">
-            <span class="fw-semibold">Filtros ativos:</span>
-            <span v-if="searchTerm" class="badge bg-primary">
-              Busca: "{{ searchTerm }}"
-              <button @click="searchTerm = ''" class="btn-close btn-close-white ms-1" style="font-size: 0.7rem;"></button>
-            </span>
-            <span v-if="filters.category" class="badge bg-success">
-              {{ filters.category }}
-              <button @click="filters.category = ''" class="btn-close btn-close-white ms-1" style="font-size: 0.7rem;"></button>
-            </span>
-            <span v-if="filters.stock !== 'all'" class="badge bg-warning text-dark">
-              {{ filters.stock === 'in_stock' ? 'Em estoque' : 'Fora de estoque' }}
-              <button @click="filters.stock = 'all'" class="btn-close ms-1" style="font-size: 0.7rem;"></button>
-            </span>
-            <button @click="clearAllFilters" class="btn btn-sm btn-outline-secondary">
-              Limpar todos
+          <div class="col-md-4 d-flex gap-2 justify-content-end">
+            <button
+                class="btn btn-outline-secondary btn-lg"
+                @click="clearAllFilters"
+                v-if="hasActiveFilters"
+            >
+              <i class="fas fa-times"></i> Limpar
+            </button>
+            <button
+                class="btn btn-ai btn-lg px-4"
+                @click="buscarComIA"
+                :disabled="aiLoading || !searchTerm"
+            >
+              <span v-if="aiLoading" class="spinner-border spinner-border-sm me-2"></span>
+              <i v-else class="fas fa-wand-magic-sparkles me-2"></i>
+              {{ aiLoading ? 'Pensando...' : 'Buscar com IA' }}
             </button>
           </div>
         </div>
       </div>
 
+      <!-- AI Search Banner -->
+      <div v-if="aiSintoma" class="ai-banner mb-4">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <i class="fas fa-robot me-2 text-primary"></i>
+            <strong>Busca Inteligente:</strong> Recomendado para <em>"{{ aiSintoma }}"</em>
+            <span class="badge bg-primary ms-2">{{ filteredProducts.length }} produto(s)</span>
+          </div>
+          <button @click="limparBuscaIA" class="btn btn-sm btn-outline-secondary">
+            Voltar para catálogo
+          </button>
+        </div>
+      </div>
+
+      <!-- Filters Bar -->
+      <div class="filters-bar mb-4 d-flex flex-wrap gap-3 align-items-center justify-content-between">
+        <div class="d-flex gap-2 flex-wrap">
+          <select v-model="filters.category" class="form-select form-select-sm w-auto">
+            <option value="">📁 Categoria</option>
+            <option v-for="cat in categoriesList" :key="cat" :value="cat">{{ cat }}</option>
+          </select>
+          <select v-model="filters.stock" class="form-select form-select-sm w-auto">
+            <option value="all">📦 Estoque</option>
+            <option value="in_stock">Em estoque</option>
+            <option value="out_of_stock">Sem estoque</option>
+          </select>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+          <span class="text-muted small">Ordenar por:</span>
+          <select v-model="filters.sortBy" class="form-select form-select-sm w-auto">
+            <option value="name">Nome A-Z</option>
+            <option value="price">Menor Preço</option>
+            <option value="price_desc">Maior Preço</option>
+          </select>
+        </div>
+      </div>
+
       <!-- Loading State -->
       <div v-if="loading" class="text-center py-5">
-        <div class="loading-spinner">
-          <div class="spinner-border text-primary" style="width: 3rem; height: 3rem;" role="status">
-            <span class="visually-hidden">Carregando...</span>
-          </div>
-          <p class="mt-3 text-muted">Carregando produtos...</p>
-        </div>
+        <div class="spinner-border text-success" style="width: 3rem; height: 3rem;" role="status"></div>
+        <p class="mt-3 text-muted">Carregando produtos...</p>
       </div>
 
       <!-- Error State -->
       <div v-else-if="error" class="error-state text-center py-5">
-        <div class="error-icon mb-3">
-          <i class="fas fa-exclamation-triangle text-danger" style="font-size: 4rem;"></i>
-        </div>
+        <i class="fas fa-exclamation-circle text-danger mb-3" style="font-size: 3rem;"></i>
         <h4 class="text-danger mb-3">Ops! Algo deu errado</h4>
         <p class="text-muted mb-4">{{ error }}</p>
-        <button @click="retryLoading" class="btn btn-primary btn-lg">
-          <i class="fas fa-redo me-2"></i>Tentar Novamente
-        </button>
+        <button @click="retryLoading" class="btn btn-success">Tentar Novamente</button>
       </div>
 
       <!-- Empty State -->
       <div v-else-if="filteredProducts.length === 0" class="empty-state text-center py-5">
-        <div class="empty-icon mb-3">
-          <i class="fas fa-search text-muted" style="font-size: 4rem;"></i>
-        </div>
+        <i class="fas fa-box-open text-muted mb-3" style="font-size: 4rem;"></i>
         <h4 class="text-muted mb-3">Nenhum produto encontrado</h4>
-        <p class="text-muted mb-4">Tente ajustar os filtros ou termos de busca</p>
-        <button @click="clearAllFilters" class="btn btn-primary">
-          <i class="fas fa-times me-2"></i>Limpar Filtros
-        </button>
+        <button @click="clearAllFilters" class="btn btn-primary">Limpar Filtros</button>
       </div>
 
       <!-- Products Grid -->
@@ -140,26 +125,6 @@
           </div>
         </div>
       </div>
-
-      <!-- Quick Actions -->
-      <div v-if="!loading && !error && filteredProducts.length > 0" class="quick-actions mt-5 text-center">
-        <div class="card border-0 bg-light">
-          <div class="card-body py-4">
-            <h5 class="mb-3">Precisa de ajuda para encontrar?</h5>
-            <div class="d-flex flex-wrap justify-content-center gap-3">
-              <button class="btn btn-outline-primary">
-                <i class="fas fa-headset me-2"></i>Falar com Farmacêutico
-              </button>
-              <button class="btn btn-outline-success">
-                <i class="fas fa-prescription me-2"></i>Enviar Receita
-              </button>
-              <button class="btn btn-outline-info">
-                <i class="fas fa-question-circle me-2"></i>Tire suas Dúvidas
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
     </div>
   </div>
 </template>
@@ -170,140 +135,125 @@ import ProductCard from '@/components/products/ProductCard.vue'
 
 export default {
   name: 'Products',
-  components: {
-    ProductCard
-  },
+  components: { ProductCard },
   data() {
     return {
       searchTerm: '',
-      filters: {
-        category: '',
-        sortBy: 'name',
-        stock: 'all'
-      },
+      filters: { category: '', sortBy: 'name', stock: 'all' },
       loading: false,
-      error: null
+      error: null,
+      aiLoading: false,
+      aiSintoma: '',
+      aiProducts: null
     }
   },
   computed: {
     ...mapState(['products']),
-
     categoriesList() {
-      if (!this.products || !Array.isArray(this.products)) {
-        return []
-      }
-      const categories = [...new Set(this.products.map(p => p.category))].filter(Boolean)
-      return categories.sort()
+      if (!this.products) return []
+      return [...new Set(this.products.map(p => p.categoriaNome || p.categoria).filter(Boolean))].sort()
     },
-
     filteredProducts() {
-      if (!this.products || !Array.isArray(this.products)) {
-        return []
-      }
+      let base = this.aiProducts || this.products
+      if (!base || !Array.isArray(base)) return []
 
-      let filtered = this.products.filter(product => {
-        const searchTermLower = this.searchTerm.toLowerCase()
-        const matchesSearch = !this.searchTerm ||
-            (product.name && product.name.toLowerCase().includes(searchTermLower)) ||
-            (product.description && product.description.toLowerCase().includes(searchTermLower))
+      let result = base.filter(p => {
+        // Se é busca IA, não aplica filtro textual (já foi filtrado pelo backend)
+        const isIaSearch = !!this.aiSintoma
+        if (isIaSearch) {
+          const matchCat = !this.filters.category || (p.categoriaNome === this.filters.category) || (p.categoria === this.filters.category)
+          const stock = p.estoque !== undefined ? p.estoque : (p.stock || 0)
+          const matchStock = this.filters.stock === 'all' || 
+                             (this.filters.stock === 'in_stock' && stock > 0) || 
+                             (this.filters.stock === 'out_of_stock' && stock === 0)
+          return matchCat && matchStock
+        }
 
-        const matchesCategory = !this.filters.category || product.category === this.filters.category
-
-        // CORREÇÃO: Usa estoque ao invés de inStock
-        const matchesStock = this.filters.stock === 'all' ||
-            (this.filters.stock === 'in_stock' && product.estoque > 0) ||
-            (this.filters.stock === 'out_of_stock' && product.estoque === 0)
-
-        return matchesSearch && matchesCategory && matchesStock
+        const nome = (p.nome || p.name || '').toLowerCase()
+        const desc = (p.descricao || p.description || '').toLowerCase()
+        const term = this.searchTerm.toLowerCase()
+        
+        const matchSearch = !this.searchTerm || nome.includes(term) || desc.includes(term)
+        const matchCat = !this.filters.category || (p.categoriaNome === this.filters.category) || (p.categoria === this.filters.category)
+        
+        const stock = p.estoque !== undefined ? p.estoque : (p.stock || 0)
+        const matchStock = this.filters.stock === 'all' || 
+                           (this.filters.stock === 'in_stock' && stock > 0) || 
+                           (this.filters.stock === 'out_of_stock' && stock === 0)
+        
+        return matchSearch && matchCat && matchStock
       })
 
-      // Ordenação
-      switch (this.filters.sortBy) {
-        case 'name_desc':
-          filtered.sort((a, b) => (b.name || '').localeCompare(a.name || ''))
-          break
-        case 'price':
-          filtered.sort((a, b) => (a.price || 0) - (b.price || 0))
-          break
-        case 'price_desc':
-          filtered.sort((a, b) => (b.price || 0) - (a.price || 0))
-          break
-        default: // 'name'
-          filtered.sort((a, b) => (a.name || '').localeCompare(b.name || ''))
-      }
+      // Sorting
+      result.sort((a, b) => {
+        const nomeA = a.nome || a.name || ''
+        const nomeB = b.nome || b.name || ''
+        const priceA = a.preco || a.price || 0
+        const priceB = b.preco || b.price || 0
 
-      return filtered
+        if (this.filters.sortBy === 'price') return priceA - priceB
+        if (this.filters.sortBy === 'price_desc') return priceB - priceA
+        return nomeA.localeCompare(nomeB)
+      })
+
+      return result
     },
-
     hasActiveFilters() {
-      return this.searchTerm || this.filters.category || this.filters.stock !== 'all'
+      return this.searchTerm || this.filters.category || this.filters.stock !== 'all' || this.aiSintoma
     }
   },
   async mounted() {
-    console.log('🚀 Componente Products montado - inicializando...')
     await this.initializeComponent()
   },
   methods: {
     ...mapActions(['fetchProducts']),
-
-    getCategoryIcon(category) {
-      const icons = {
-        'Medicamentos': '💊',
-        'Cosméticos': '🧴',
-        'Higiene': '🚿',
-        'Vitaminas': '🌿',
-        'Maternidade': '👶'
-      }
-      return icons[category] || '📦'
-    },
-
     async initializeComponent() {
       this.loading = true
       this.error = null
-
       try {
-        console.log('📦 Buscando produtos da API...')
         await this.fetchProducts()
-        console.log('✅ Produtos carregados com sucesso')
-        console.log('📊 Total de produtos:', this.products?.length || 0)
-        if (this.products && this.products.length > 0) {
-          console.log('📋 Exemplo do primeiro produto:', this.products[0])
-        }
-        this.trackPageView()
       } catch (err) {
-        console.error('❌ Erro ao carregar produtos:', err)
-        this.error = 'Erro ao carregar produtos. Tente novamente.'
+        this.error = 'Erro ao carregar produtos.'
       } finally {
         this.loading = false
       }
     },
-
-    trackPageView() {
-      if (window.gtag) {
-        window.gtag('event', 'page_view', {
-          page_title: 'Página de Produtos',
-          page_location: '/products'
-        })
-      }
-    },
-
     handleAddToCart(product) {
-      console.log(`📦 Produto adicionado ao carrinho: ${product.name}`)
-      // Dispara evento para adicionar ao carrinho
       this.$emit('add-to-cart', product)
     },
-
     retryLoading() {
       this.initializeComponent()
     },
-
     clearAllFilters() {
       this.searchTerm = ''
-      this.filters = {
-        category: '',
-        sortBy: 'name',
-        stock: 'all'
+      this.filters = { category: '', sortBy: 'name', stock: 'all' }
+      this.limparBuscaIA()
+    },
+    async buscarComIA() {
+      if (!this.searchTerm) return
+      this.aiLoading = true
+      this.error = null
+      try {
+        const res = await fetch('/api/produtos/busca-inteligente', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sintoma: this.searchTerm })
+        })
+        if (!res.ok) throw new Error('Falha na IA')
+        const data = await res.json()
+        this.aiSintoma = this.searchTerm
+        this.aiProducts = data.produtos || []
+        if (this.aiProducts.length === 0) this.error = `A IA não encontrou produtos para "${this.searchTerm}"`
+      } catch (err) {
+        this.error = 'Erro na busca inteligente.'
+      } finally {
+        this.aiLoading = false
       }
+    },
+    limparBuscaIA() {
+      this.aiSintoma = ''
+      this.aiProducts = null
+      this.error = null
     }
   }
 }
@@ -311,73 +261,50 @@ export default {
 
 <style scoped>
 .products-header {
-  background: linear-gradient(135deg, #198754 0%, #146c43 100%);
-  border-radius: 0 0 20px 20px;
+  background: linear-gradient(135deg, #198754 0%, #0f5132 100%);
+  border-radius: 0 0 30px 30px;
 }
-
-.search-box {
-  position: relative;
+.smart-search-card input {
+  font-size: 1.1rem;
 }
-
-.search-input {
-  padding-left: 2.5rem;
-}
-
 .search-icon {
   position: absolute;
-  left: 1rem;
+  left: 1.2rem;
   top: 50%;
   transform: translateY(-50%);
-  color: #6c757d;
+  color: #adb5bd;
   z-index: 10;
 }
-
-.filter-group label {
-  font-size: 0.9rem;
-  margin-bottom: 0.5rem;
+.btn-ai {
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: white;
+  font-weight: 600;
+  border: none;
 }
-
-.active-filters {
-  padding: 1rem;
+.btn-ai:hover:not(:disabled) {
+  color: white;
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+.btn-ai:disabled {
+  background: #adb5bd;
+  color: white;
+}
+.ai-banner {
   background: #f8f9fa;
-  border-radius: 10px;
-  border: 1px solid #e9ecef;
+  border-left: 4px solid #667eea;
+  padding: 1rem 1.5rem;
+  border-radius: 0 8px 8px 0;
 }
-
+.filters-bar select {
+  border-color: #e9ecef;
+  background-color: #f8f9fa;
+}
 .products-grid {
-  animation: fadeIn 0.5s ease-in;
+  animation: fadeIn 0.4s ease-out;
 }
-
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(20px); }
+  from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: translateY(0); }
-}
-
-.loading-spinner {
-  padding: 3rem 0;
-}
-
-.error-state, .empty-state {
-  padding: 4rem 1rem;
-}
-
-.quick-actions .card {
-  border-radius: 15px;
-}
-
-/* Responsividade */
-@media (max-width: 768px) {
-  .products-header {
-    border-radius: 0 0 15px 15px;
-    padding: 2rem 0;
-  }
-
-  .products-header h1 {
-    font-size: 1.8rem;
-  }
-
-  .search-input {
-    font-size: 0.9rem;
-  }
 }
 </style>

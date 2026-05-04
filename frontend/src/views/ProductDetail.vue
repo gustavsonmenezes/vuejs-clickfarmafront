@@ -5,19 +5,19 @@
         <img src="https://via.placeholder.com/400" alt="Product Image" class="img-fluid rounded">
       </div>
       <div class="col-md-6">
-        <h2>{{ product.name }}</h2>
-        <p class="text-muted">{{ product.category }}</p>
-        <p>{{ product.description }}</p>
-        <h3 class="text-success">R$ {{ product.price.toFixed(2) }}</h3>
-        <p :class="{'text-success': product.inStock, 'text-danger': !product.inStock}">
-          {{ product.inStock ? 'Em estoque' : 'Fora de estoque' }}
+        <h2>{{ product.nome }}</h2>
+        <p class="text-muted">{{ product.categoriaNome }}</p>
+        <p>{{ product.descricao }}</p>
+        <h3 class="text-success">R$ {{ (product.preco || 0).toFixed(2) }}</h3>
+        <p :class="{'text-success': isInStock, 'text-danger': !isInStock}">
+          {{ isInStock ? 'Em estoque' : 'Fora de estoque' }}
         </p>
         <button 
           @click="handleAddToCart(product)" 
           class="btn btn-primary btn-lg"
-          :disabled="!product.inStock"
+          :disabled="!isInStock"
         >
-          {{ product.inStock ? 'Adicionar ao carrinho' : 'Indisponível' }}
+          {{ isInStock ? 'Adicionar ao carrinho' : 'Indisponível' }}
         </button>
         <router-link to="/products" class="btn btn-secondary btn-lg ms-2">Voltar aos Produtos</router-link>
       </div>
@@ -41,7 +41,10 @@ export default {
     }
   },
   computed: {
-    ...mapState(['products'])
+    ...mapState(['products']),
+    isInStock() {
+      return (this.product?.estoque || 0) > 0
+    }
   },
   created() {
     const productId = parseInt(this.$route.params.id)
@@ -62,7 +65,7 @@ export default {
   watch: {
     lastAddedProduct(newProduct) {
       if (newProduct) {
-        alert(`${newProduct.name} adicionado ao carrinho!`);
+        alert(`${newProduct.nome} adicionado ao carrinho!`);
         this.lastAddedProduct = null;
       }
     }

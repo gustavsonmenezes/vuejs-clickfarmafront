@@ -10,12 +10,12 @@
     <!-- Lista de itens -->
     <div class="cf-sum-items">
       <div v-for="item in cart" :key="item.id" class="cf-sum-item">
-        <div class="cf-item-thumb">{{ getCategoryIcon(item.category) }}</div>
+        <div class="cf-item-thumb">{{ getCategoryIcon(item.category || item.categoriaNome) }}</div>
         <div class="cf-item-info">
-          <span class="cf-item-name">{{ item.name }}</span>
+          <span class="cf-item-name">{{ item.name || item.nome }}</span>
           <span class="cf-item-qty">Qtd: {{ item.quantity }}</span>
         </div>
-        <span class="cf-item-price">R$&nbsp;{{ (item.price * item.quantity).toFixed(2).replace('.', ',') }}</span>
+        <span class="cf-item-price">R$&nbsp;{{ ((item.price || item.preco || 0) * item.quantity).toFixed(2).replace('.', ',') }}</span>
       </div>
     </div>
 
@@ -95,7 +95,7 @@ export default {
       return this.cart.reduce((t, i) => t + i.quantity, 0)
     },
     cartTotal() {
-      return this.cart.reduce((t, i) => t + i.price * i.quantity, 0)
+      return this.cart.reduce((t, i) => t + (i.price || i.preco || 0) * i.quantity, 0)
     },
     orderTotal() {
       const delivery = this.deliveryPrice ?? 0

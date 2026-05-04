@@ -51,7 +51,9 @@ public class GroqService {
             "4. NAO faca listas. NAO use bullet points. NAO use numeracao.\n" +
             "5. NUNCA diga 'consulte um medico' a menos que seja emergencia real.\n" +
             "6. Responda em portugues brasileiro.\n" +
-            "7. Se nao souber: 'Nao tenho essa informacao.'";
+            "7. Se nao souber: 'Nao tenho essa informacao.'\n" +
+            "8. SOBRE O DESENVOLVEDOR: Se perguntarem quem criou o sistema, responda exatamente: 'O Sistema ClickFarma foi desenvolvido por Gustavson Barros e Douglas Tranquilino.'\n" +
+            "9. REGRA DE OURO: Quando o usuario perguntar sobre sintomas ou pedir recomendacao de remedio, voce DEVE incluir a tag |CARRINHO:NomeExatoProduto| no final da frase. Exemplo: 'Para dor de cabeca use Dipirona. |CARRINHO:Dipirona|'";
 
         Map<String, Object> requestBody = new HashMap<>();
         requestBody.put("model", "llama-3.3-70b-versatile");
@@ -211,6 +213,70 @@ public class GroqService {
             if (prefix.contains("gif")) return "image/gif";
         }
         return "image/jpeg";
+    }
+
+    public List<String> buscarNomesPorSintoma(String sintoma) {
+        String systemPrompt = "Voce e um assistente de farmacia. Retorne APENAS um JSON valido com um array de strings contendo nomes de medicamentos e produtos de farmacia comuns para tratar o sintoma informado. Nao inclua explicacoes, nem markdown, nem backticks. Apenas o JSON puro. Exemplo: [\"Dipirona\", \"Paracetamol\", \"Ibuprofeno\"]";
+        String userPrompt = "Liste medicamentos para: " + sintoma;
+
+        try {
+            String response = chatWithSystemPromptSync(userPrompt, systemPrompt);
+
+            String jsonStr = response.trim();
+            if (jsonStr.startsWith("```")) {
+                int firstBrace = jsonStr.indexOf('[');
+                int lastBrace = jsonStr.lastIndexOf(']') + 1;
+                if (firstBrace >= 0 && lastBrace > firstBrace) {
+                    jsonStr = jsonStr.substring(firstBrace, lastBrace);
+                }
+            }
+
+            JsonNode node = objectMapper.readTree(jsonStr);
+            if (node.isArray()) {
+                List<String> nomes = new java.util.ArrayList<>();
+                for (JsonNode item : node) {
+                    if (item.isTextual() && !item.asText().isBlank()) {
+                        nomes.add(item.asText());
+                    }
+                }
+                return nomes;
+            }
+        } catch (Exception e) {
+            log.error("Erro ao buscar nomes por sintoma '{}': {}", sintoma, e.getMessage());
+        }
+        return List.of();
+    }
+
+    private String chatWithSystemPromptSync(String userMessage, String systemPrompt) {
+        if (apiKey == null || apiKey.isEmpty()) {
+            throw new IllegalStateException("GROQ_API_KEY nao configurada");
+        }
+
+        Map<String, Object> requestBody = new HashMap<>();
+        requestBody.put("model", "llama-3.3-70b-versatile");
+        requestBody.put("messages", List.of(
+            Map.of("role", "system", "content", systemPrompt),
+            Map.of("role", "user", "content", userMessage)
+        ));
+        requestBody.put("temperature", 0.2);
+        requestBody.put("max_tokens", 300);
+
+        String responseBody = webClient.post()
+                .uri("/chat/completions")
+                .header("Authorization", "Bearer " + apiKey)
+                .header("Content-Type", "application/json")
+                .bodyValue(requestBody)
+                .retrieve()
+                .bodyToMono(String.class)
+                .block();
+
+        try {
+            JsonNode root = objectMapper.readTree(responseBody);
+            return root.path("choices").get(0).path("message").path("content").asText();
+        } catch (Exception e) {
+            log.error("Erro ao parsear resposta Groq: {}", e.getMessage());
+            throw new RuntimeException("Erro ao processar resposta da IA", e);
+        }
     }
 
     private String buildCartAnalysisPrompt(List<Map<String, Object>> cartItems, Double totalPrice) {

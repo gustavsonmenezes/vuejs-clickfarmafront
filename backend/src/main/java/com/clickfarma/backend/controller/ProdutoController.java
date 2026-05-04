@@ -11,10 +11,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/produtos")
-@CrossOrigin(origins = "http://localhost:8082")
 public class ProdutoController {
 
     @Autowired
@@ -129,6 +129,27 @@ public class ProdutoController {
         } catch (RuntimeException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body(new MensagemResponseDTO(e.getMessage(), false));
+        }
+    }
+
+    // POST - Busca inteligente por sintoma usando IA
+    @PostMapping("/busca-inteligente")
+    public ResponseEntity<?> buscaInteligente(@RequestBody Map<String, String> request) {
+        try {
+            String sintoma = request.get("sintoma");
+            if (sintoma == null || sintoma.isBlank()) {
+                return ResponseEntity.badRequest()
+                        .body(new MensagemResponseDTO("O campo 'sintoma' e obrigatorio", false));
+            }
+            List<ProdutoResponseDTO> produtos = produtoService.buscarPorSintoma(sintoma);
+            return ResponseEntity.ok(Map.of(
+                    "sintoma", sintoma,
+                    "produtos", produtos,
+                    "total", produtos.size()
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new MensagemResponseDTO("Erro na busca inteligente: " + e.getMessage(), false));
         }
     }
 }

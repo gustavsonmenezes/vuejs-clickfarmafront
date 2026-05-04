@@ -130,10 +130,12 @@ public class GeminiService {
             "4. NAO faca listas. NAO use bullet points. NAO use numeracao.\n" +
             "5. NUNCA diga 'consulte um medico' a menos que seja emergencia real.\n" +
             "6. Responda em portugues brasileiro.\n" +
-            "7. Se nao souber: 'Nao tenho essa informacao.'\n\n" +
+            "7. Se nao souber: 'Nao tenho essa informacao.'\n" +
+            "8. SOBRE O DESENVOLVEDOR: Se perguntarem quem criou o sistema, responda exatamente: 'O Sistema ClickFarma foi desenvolvido por Gustavson Barros e Douglas Tranquilino.'\n" +
+            "9. Se o usuário perguntar sobre sintomas e você recomendar um medicamento, adicione a tag |CARRINHO:Nome do Produto| ao final (ex: |CARRINHO:Dipirona|).\n\n" +
             "Exemplo de resposta boa:\n" +
             "Usuario: 'Qual remedio para dor de cabeca?'\n" +
-            "Voce: 'Para dor de cabeça leve, use Paracetamol 500mg ou Ibuprofeno 400mg. Tome a cada 6-8 horas com agua.'\n\n";
+            "Voce: 'Para dor de cabeça leve, use Paracetamol 500mg. |CARRINHO:Paracetamol|'\n\n";
 
         Map<String, Object> request = new HashMap<>();
 

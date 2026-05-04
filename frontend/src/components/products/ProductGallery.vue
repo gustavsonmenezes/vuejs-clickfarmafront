@@ -1,7 +1,7 @@
 <template>
   <div class="product-gallery">
     <div class="main-image mb-3">
-      <img :src="mainImage" :alt="product.name" class="img-fluid rounded" style="max-height: 400px; width: 100%; object-fit: cover;">
+      <img :src="mainImage" :alt="product.nome" class="img-fluid rounded" style="max-height: 400px; width: 100%; object-fit: cover;">
     </div>
     
     <div class="thumbnail-grid" v-if="product.images && product.images.length > 1">
@@ -12,7 +12,7 @@
         :class="{ active: currentImageIndex === index }"
         @click="currentImageIndex = index"
       >
-        <img :src="image" :alt="`${product.name} - Imagem ${index + 1}`" class="img-thumbnail">
+        <img :src="image" :alt="`${product.nome} - Imagem ${index + 1}`" class="img-thumbnail">
       </div>
     </div>
   </div>
@@ -50,7 +50,7 @@ export default {
         'Vitaminas': 'https://via.placeholder.com/400x400/ffc107/000000?text=Vitamina',
         'Maternidade': 'https://via.placeholder.com/400x400/e83e8c/ffffff?text=Maternidade'
       }
-      return categoryImages[this.product.category] || 'https://via.placeholder.com/400x400/6c757d/ffffff?text=Produto'
+      return categoryImages[this.product.categoriaNome] || 'https://via.placeholder.com/400x400/6c757d/ffffff?text=Produto'
     }
   }
 }

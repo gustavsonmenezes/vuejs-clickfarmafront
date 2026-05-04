@@ -84,8 +84,12 @@ export default {
       try {
         const cartData = {
           items: this.cartItems.map(item => ({
-            id: item.id, name: item.name, description: item.description,
-            price: item.price, quantity: item.quantity, category: item.category
+            id: item.id,
+            name: item.name || item.nome || '',
+            description: item.description || item.descricao || '',
+            price: item.price || item.preco || 0,
+            quantity: item.quantity,
+            category: item.category || item.categoriaNome || ''
           })),
           totalPrice: this.cartTotal
         }

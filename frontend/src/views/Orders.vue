@@ -83,16 +83,16 @@
 
                 <!-- Itens do Pedido -->
                 <div class="mb-3">
-                  <div v-for="item in order.items" :key="item.id" class="d-flex justify-content-between align-items-center py-2 border-bottom">
-                    <div class="d-flex align-items-center">
-                      <img :src="getItemImage(item)" :alt="item.name" class="rounded me-3" width="40" height="40">
-                      <div>
-                        <h6 class="mb-0 small">{{ item.name }}</h6>
-                        <small class="text-muted">Qtd: {{ item.quantity }} × R$ {{ item.price.toFixed(2) }}</small>
-                      </div>
-                    </div>
-                    <span class="fw-bold">R$ {{ (item.price * item.quantity).toFixed(2) }}</span>
-                  </div>
+                   <div v-for="item in order.items" :key="item.id" class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                     <div class="d-flex align-items-center">
+                       <img :src="getItemImage(item)" :alt="item.name || item.nome" class="rounded me-3" width="40" height="40">
+                       <div>
+                         <h6 class="mb-0 small">{{ item.name || item.nome }}</h6>
+                         <small class="text-muted">Qtd: {{ item.quantity }} × R$ {{ getItemPrice(item).toFixed(2) }}</small>
+                       </div>
+                     </div>
+                     <span class="fw-bold">R$ {{ (getItemPrice(item) * item.quantity).toFixed(2) }}</span>
+                   </div>
                 </div>
 
                 <!-- Informações de Entrega -->
@@ -316,7 +316,7 @@ export default {
       
       if (order.items && order.items.length > 0) {
         return order.items.reduce((sum, item) => {
-          const price = parseFloat(item.price) || 0
+          const price = parseFloat(item.price || item.preco) || 0
           const quantity = parseInt(item.quantity) || 0
           return sum + (price * quantity)
         }, 0)
@@ -327,6 +327,10 @@ export default {
     
     getOrderTotal(order) {
       return this.calculateOrderTotal(order).toFixed(2)
+    },
+
+    getItemPrice(item) {
+      return parseFloat(item.price || item.preco) || 0
     },
     
     getItemImage(item) {

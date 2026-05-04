@@ -334,7 +334,7 @@ export default createStore({
     isAuthenticated: (state) => !!state.authToken,
     authChecked: (state) => state.authChecked,
     cartItemsCount: (state) => state.cart.reduce((total, item) => total + item.quantity, 0),
-    cartTotal: (state) => state.cart.reduce((total, item) => total + (item.price * item.quantity), 0),
+    cartTotal: (state) => state.cart.reduce((total, item) => total + ((item.preco || item.price || 0) * item.quantity), 0),
     cart: (state) => state.cart,
     products: (state) => state.products,
     categories: (state) => state.categories,
@@ -487,12 +487,12 @@ export default createStore({
     async fetchProducts({ commit }) {
       try {
         const mockProducts = [
-          { id: 1, name: 'Paracetamol 500mg', price: 12.90, category: 'Medicamentos', description: 'Analgésico e antitérmico', inStock: true },
-          { id: 2, name: 'Dipirona 500mg', price: 8.50, category: 'Medicamentos', description: 'Analgésico e antitérmico', inStock: true },
-          { id: 3, name: 'Shampoo Anti-Caspa', price: 24.90, category: 'Higiene', description: 'Shampoo para controle de caspa', inStock: true },
-          { id: 4, name: 'Vitamina C 1000mg', price: 45.00, category: 'Vitaminas', description: 'Suplemento de vitamina C', inStock: true },
-          { id: 5, name: 'Protetor Solar FPS 50', price: 32.90, category: 'Cosméticos', description: 'Protetor solar facial', inStock: false },
-          { id: 6, name: 'Fralda P - 30 unidades', price: 28.90, category: 'Maternidade', description: 'Fraldas para bebê', inStock: true }
+          { id: 1, nome: 'Paracetamol 500mg', preco: 12.90, categoriaNome: 'Medicamentos', descricao: 'Analgésico e antitérmico', estoque: 150 },
+          { id: 2, nome: 'Dipirona 500mg', preco: 8.50, categoriaNome: 'Medicamentos', descricao: 'Analgésico e antitérmico', estoque: 89 },
+          { id: 3, nome: 'Shampoo Anti-Caspa', preco: 24.90, categoriaNome: 'Higiene', descricao: 'Shampoo para controle de caspa', estoque: 45 },
+          { id: 4, nome: 'Vitamina C 1000mg', preco: 45.00, categoriaNome: 'Vitaminas', descricao: 'Suplemento de vitamina C', estoque: 23 },
+          { id: 5, nome: 'Protetor Solar FPS 50', preco: 32.90, categoriaNome: 'Cosméticos', descricao: 'Protetor solar facial', estoque: 0 },
+          { id: 6, nome: 'Fralda P - 30 unidades', preco: 28.90, categoriaNome: 'Maternidade', descricao: 'Fraldas para bebê', estoque: 67 }
         ];
 
         commit('SET_PRODUCTS', mockProducts);

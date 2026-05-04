@@ -1,18 +1,18 @@
 <template>
   <div class="product-info">
-    <h1 class="product-title">{{ product.name }}</h1>
+    <h1 class="product-title">{{ product.nome }}</h1>
     
     <div class="product-meta mb-3">
-      <span class="badge bg-secondary">{{ product.category }}</span>
-      <span class="ms-2" :class="product.inStock ? 'text-success' : 'text-danger'">
+      <span class="badge bg-secondary">{{ product.categoriaNome }}</span>
+      <span class="ms-2" :class="isInStock ? 'text-success' : 'text-danger'">
         <i class="fas fa-circle me-1" style="font-size: 0.5rem;"></i>
-        {{ product.inStock ? 'Em estoque' : 'Fora de estoque' }}
+        {{ isInStock ? 'Em estoque' : 'Fora de estoque' }}
       </span>
     </div>
 
     <div class="product-price mb-3">
-      <h2 class="text-primary">R$ {{ product.price.toFixed(2) }}</h2>
-      <small class="text-muted">ou 12x de R$ {{ (product.price / 12).toFixed(2) }} sem juros</small>
+      <h2 class="text-primary">R$ {{ (product.preco || 0).toFixed(2) }}</h2>
+      <small class="text-muted">ou 12x de R$ {{ ((product.preco || 0) / 12).toFixed(2) }} sem juros</small>
     </div>
 
     <div class="product-actions mb-4">
@@ -27,7 +27,7 @@
 
       <button 
         class="btn btn-primary btn-lg w-100 mb-2"
-        :disabled="!product.inStock || addingToCart"
+        :disabled="!isInStock || addingToCart"
         @click="handleAddToCart"
       >
         <span v-if="addingToCart" class="spinner-border spinner-border-sm me-1"></span>
@@ -70,6 +70,11 @@ export default {
       quantity: 1,
       addingToCart: false,
       maxQuantity: 10
+    }
+  },
+  computed: {
+    isInStock() {
+      return (this.product?.estoque || 0) > 0
     }
   },
   methods: {
