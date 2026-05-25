@@ -10,6 +10,7 @@ services:
       - "3307:3306"
     volumes:
       - mysql-data:/var/lib/mysql
+      - ./mysql-conf/my.cnf:/etc/mysql/conf.d/my.cnf
     networks:
       - app-network
     healthcheck:
@@ -29,12 +30,19 @@ services:
       - .env
     environment:
       - SPRING_PROFILES_ACTIVE=docker
-      - SPRING_DATASOURCE_URL=jdbc:mysql://db:3306/clickfarma?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+      - SPRING_DATASOURCE_URL=jdbc:mysql://db:3306/clickfarma?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true&characterEncoding=utf8&useUnicode=true
       - SPRING_DATASOURCE_USERNAME=root
       - SPRING_DATASOURCE_PASSWORD=guga1010@
       - SPRING_JPA_HIBERNATE_DDL_AUTO=update
       - JWT_SECRET=clickfarmaSecretKey2026VeryLongSecretKeyForJWTGeneration
       - JWT_EXPIRATION=86400000
+      - AI_PROVIDER=groq
+      - GROQ_API_KEY=GROQ_API_KEY_REPLACED
+      - GEMINI_API_KEY=GEMINI_KEY_REPLACED
+      - MERCADOPAGO_ACCESS_TOKEN=MERCADOPAGO_TOKEN_REPLACED
+      - TELEGRAM_BOT_TOKEN=TELEGRAM_TOKEN_REPLACED
+      - TELEGRAM_ENTREGADOR_CHAT_ID=TELEGRAM_CHAT_REPLACED
+      - JAVA_TOOL_OPTIONS=-Dfile.encoding=UTF-8
     depends_on:
       db:
         condition: service_healthy

@@ -139,12 +139,13 @@ export default {
   mounted() {
     this.scrollToBottom()
     this.initSpeechRecognition()
+    this.fetchProducts()
   },
   computed: {
-    ...mapState(['products']),
+    ...mapState(['products', 'weatherData']),
   },
   methods: {
-    ...mapActions(['addToCart']),
+    ...mapActions(['addToCart', 'fetchProducts']),
     getCurrentTime() {
       return new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
     },
@@ -282,8 +283,13 @@ export default {
       this.loading = true
 
       try {
+        const weatherContext = this.weatherData
+          ? `${this.weatherData.temp.toFixed(1)}°C em ${this.weatherData.city}, ${this.weatherData.conditionDescription}`
+          : null;
+
         const response = await api.post('/gemini/chat', {
-          message: message
+          message: message,
+          weatherContext: weatherContext
         })
 
         let responseContent = response.data.response

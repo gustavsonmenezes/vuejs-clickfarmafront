@@ -20,10 +20,14 @@ public class AiRouterService {
     private GroqService groqService;
 
     public Mono<String> chat(String mensagem) {
+        return chat(mensagem, null);
+    }
+
+    public Mono<String> chat(String mensagem, String weatherContext) {
         if ("gemini".equalsIgnoreCase(aiProvider) && geminiService != null) {
             return geminiService.chat(mensagem);
         } else if (groqService != null) {
-            return groqService.chat(mensagem);
+            return groqService.chat(mensagem, weatherContext);
         } else {
             return Mono.just("Nenhum servico de IA disponivel");
         }

@@ -326,7 +326,11 @@ export default createStore({
     adminOrders: [],
     adminPrescriptions: [],
     adminUsers: [],
-    orderTracking: {}
+    orderTracking: {},
+    weatherData: null,
+    weatherRecommendations: [],
+    weatherLoading: false,
+    weatherError: null
   },
 
   getters: {
@@ -365,6 +369,18 @@ export default createStore({
     },
     SET_PRODUCTS(state, products) {
       state.products = products;
+    },
+    SET_WEATHER_DATA(state, data) {
+      state.weatherData = data;
+    },
+    SET_WEATHER_RECOMMENDATIONS(state, recs) {
+      state.weatherRecommendations = recs;
+    },
+    SET_WEATHER_LOADING(state, loading) {
+      state.weatherLoading = loading;
+    },
+    SET_WEATHER_ERROR(state, error) {
+      state.weatherError = error;
     },
     ADD_TO_CART(state, product) {
       const existingItem = state.cart.find(item => item.id === product.id);
@@ -486,6 +502,14 @@ export default createStore({
 
     async fetchProducts({ commit }) {
       try {
+        const api = (await import('@/services/api')).default;
+        const response = await api.get('/produtos');
+        if (response.data && Array.isArray(response.data)) {
+          commit('SET_PRODUCTS', response.data);
+          console.log('✅ Produtos reais carregados:', response.data.length);
+        }
+      } catch (error) {
+        console.error('Erro ao buscar produtos do backend, usando mock:', error.message);
         const mockProducts = [
           { id: 1, nome: 'Paracetamol 500mg', preco: 12.90, categoriaNome: 'Medicamentos', descricao: 'Analgésico e antitérmico', estoque: 150 },
           { id: 2, nome: 'Dipirona 500mg', preco: 8.50, categoriaNome: 'Medicamentos', descricao: 'Analgésico e antitérmico', estoque: 89 },
@@ -494,10 +518,27 @@ export default createStore({
           { id: 5, nome: 'Protetor Solar FPS 50', preco: 32.90, categoriaNome: 'Cosméticos', descricao: 'Protetor solar facial', estoque: 0 },
           { id: 6, nome: 'Fralda P - 30 unidades', preco: 28.90, categoriaNome: 'Maternidade', descricao: 'Fraldas para bebê', estoque: 67 }
         ];
-
         commit('SET_PRODUCTS', mockProducts);
+      }
+    },
+
+    async fetchWeather({ commit }, { lat, lon }) {
+      commit('SET_WEATHER_LOADING', true);
+      commit('SET_WEATHER_ERROR', null);
+      try {
+        const weatherApi = (await import('@/services/weather')).weatherService;
+        const { data } = await weatherApi.getWeather(lat, lon);
+        commit('SET_WEATHER_DATA', {
+          temp: data.temp,
+          condition: data.condition,
+          conditionDescription: data.conditionDescription,
+          city: data.city
+        });
+        commit('SET_WEATHER_RECOMMENDATIONS', data.recommendedProducts || []);
       } catch (error) {
-        console.error('Erro ao buscar produtos:', error);
+        commit('SET_WEATHER_ERROR', error.response?.data || 'Falha ao carregar clima');
+      } finally {
+        commit('SET_WEATHER_LOADING', false);
       }
     },
 

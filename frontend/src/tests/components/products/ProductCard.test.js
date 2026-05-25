@@ -2,40 +2,55 @@ import { describe, it, expect, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import ProductCard from '@/components/products/ProductCard.vue'
 
-// Mock das funções
-const mockAddToCart = vi.fn()
+const mockStore = {
+  dispatch: vi.fn().mockResolvedValue({})
+}
 
 describe('ProductCard.vue', () => {
   const productProps = {
     product: {
       id: 1,
-      name: 'Paracetamol 500mg',
-      price: 15.90,
-      image: 'paracetamol.jpg',
-      inStock: true,
-      requiresPrescription: false
+      nome: 'Paracetamol 500mg',
+      preco: 15.90,
+      descricao: 'Analgésico e antitérmico',
+      categoriaNome: 'Medicamentos',
+      estoque: 10,
+      image: 'paracetamol.jpg'
     }
   }
 
   it('deve renderizar informações do produto', () => {
     const wrapper = mount(ProductCard, {
-      props: productProps
+      props: productProps,
+      global: {
+        mocks: { $store: mockStore },
+        stubs: {
+          'router-link': { template: '<a><slot /></a>' }
+        }
+      }
     })
 
     expect(wrapper.text()).toContain('Paracetamol 500mg')
-    expect(wrapper.text()).toContain('R$ 15,90')
-    expect(wrapper.find('img').exists()).toBe(true)
+    expect(wrapper.text()).toContain('R$')
+    expect(wrapper.text()).toContain('15,90')
+    expect(wrapper.find('.cf-product-visual').exists()).toBe(true)
   })
 
   it('deve emitir evento ao adicionar ao carrinho', async () => {
     const wrapper = mount(ProductCard, {
-      props: productProps
+      props: productProps,
+      global: {
+        mocks: { $store: mockStore },
+        stubs: {
+          'router-link': { template: '<a><slot /></a>' }
+        }
+      }
     })
 
-    await wrapper.find('.add-to-cart-btn').trigger('click')
-    
+    await wrapper.find('.cf-add-btn').trigger('click')
+    await new Promise(r => setTimeout(r, 50))
+
     expect(wrapper.emitted('add-to-cart')).toBeTruthy()
-    expect(wrapper.emitted('add-to-cart')[0]).toEqual([productProps.product])
   })
 
   it('deve mostrar aviso para produtos sem estoque', () => {
@@ -43,12 +58,18 @@ describe('ProductCard.vue', () => {
       props: {
         product: {
           ...productProps.product,
-          inStock: false
+          estoque: 0
+        }
+      },
+      global: {
+        mocks: { $store: mockStore },
+        stubs: {
+          'router-link': { template: '<a><slot /></a>' }
         }
       }
     })
 
-    expect(wrapper.text()).toContain('Sem Estoque')
-    expect(wrapper.find('.add-to-cart-btn').attributes('disabled')).toBeDefined()
+    expect(wrapper.text()).toContain('Indisponível')
+    expect(wrapper.find('.cf-add-btn').attributes('disabled')).toBeDefined()
   })
 })

@@ -31,16 +31,20 @@ public class GroqService {
     }
 
     public Mono<String> chat(String mensagem) {
-        return chat(mensagem, 0.3);
+        return chat(mensagem, 0.3, null);
+    }
+
+    public Mono<String> chat(String mensagem, String weatherContext) {
+        return chat(mensagem, 0.3, weatherContext);
     }
 
     public boolean isConfigured() {
         return apiKey != null && !apiKey.isBlank();
     }
 
-    public Mono<String> chat(String mensagem, double temperature) {
+    public Mono<String> chat(String mensagem, double temperature, String weatherContext) {
         if (apiKey == null || apiKey.isEmpty()) {
-            return Mono.error(new IllegalStateException("GROQ_API_KEY (ou groq.api.key) não configurada"));
+            return Mono.error(new IllegalStateException("GROQ_API_KEY (ou groq.api.key) nao configurada"));
         }
 
         String systemPrompt = "Voce e o chatbot da ClickFarma, uma farmacia online. " +
@@ -54,6 +58,10 @@ public class GroqService {
             "7. Se nao souber: 'Nao tenho essa informacao.'\n" +
             "8. SOBRE O DESENVOLVEDOR: Se perguntarem quem criou o sistema, responda exatamente: 'O Sistema ClickFarma foi desenvolvido por Gustavson Barros e Douglas Tranquilino.'\n" +
             "9. REGRA DE OURO: Quando o usuario perguntar sobre sintomas ou pedir recomendacao de remedio, voce DEVE incluir a tag |CARRINHO:NomeExatoProduto| no final da frase. Exemplo: 'Para dor de cabeca use Dipirona. |CARRINHO:Dipirona|'";
+
+        if (weatherContext != null && !weatherContext.isBlank()) {
+            systemPrompt += "\n10. CONTEXTO DE CLIMA: " + weatherContext + ". Use essa informacao para sugerir produtos relevantes ao clima quando apropriado.";
+        }
 
         Map<String, Object> requestBody = new HashMap<>();
         requestBody.put("model", "llama-3.3-70b-versatile");

@@ -15,7 +15,7 @@ describe('Testes Básicos - ClickFarma', () => {
       return new Intl.NumberFormat('pt-BR', {
         style: 'currency',
         currency: 'BRL'
-      }).format(price)
+      }).format(price).replace(/\u00a0/g, ' ')
     }
     
     // Use toEqual em vez de toBe para strings

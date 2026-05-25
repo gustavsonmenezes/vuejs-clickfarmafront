@@ -35,7 +35,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             "/api/telegram/webhook",
             "/api/email/teste/",
             "/swagger-ui/",
-            "/v3/api-docs/"
+            "/v3/api-docs/",
+            "/api/dashboard-saude/",
+            "/actuator/"
     );
 
     @Override

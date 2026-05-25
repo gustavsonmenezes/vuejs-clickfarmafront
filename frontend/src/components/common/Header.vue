@@ -59,6 +59,11 @@
               </router-link>
             </li>
             <li class="nav-item">
+              <a class="nav-link cf-nav-link" @click.prevent="goToSaude" style="cursor:pointer">
+                <i class="fas fa-heartbeat me-1"></i>Minha Saúde
+              </a>
+            </li>
+            <li class="nav-item">
               <router-link to="/about" class="nav-link cf-nav-link">Sobre</router-link>
             </li>
           </ul>
@@ -106,6 +111,7 @@
                 <li><hr class="cf-dd-divider"></li>
                 <li><router-link to="/profile" class="dropdown-item cf-dd-item">Meu Perfil</router-link></li>
                 <li><router-link to="/orders"  class="dropdown-item cf-dd-item">Meus Pedidos</router-link></li>
+                <li><a class="dropdown-item cf-dd-item" @click.prevent="goToSaude" style="cursor:pointer"><i class="fas fa-heartbeat me-1"></i>Minha Saúde</a></li>
                 <li><hr class="cf-dd-divider"></li>
                 <li>
                   <button class="dropdown-item cf-dd-item cf-dd-danger" @click="handleLogout">
@@ -134,7 +140,11 @@ export default {
   },
   methods: {
     ...mapActions(['logout']),
-    async handleLogout() { await this.logout(); this.$router.push('/') }
+    async handleLogout() { await this.logout(); this.$router.push('/') },
+    goToSaude() {
+      sessionStorage.setItem('profileSection', 'saude')
+      this.$router.push('/profile')
+    }
   }
 }
 </script>

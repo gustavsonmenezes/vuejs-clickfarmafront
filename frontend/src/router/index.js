@@ -136,6 +136,10 @@ const routes = [
     meta: { requiresAuth: true }
   },
   {
+    path: '/minha-saude',
+    redirect: '/profile'
+  },
+  {
     path: '/tracking/:orderId',
     name: 'OrderTracking',
     component: () => import('../views/OrderTracking.vue'),

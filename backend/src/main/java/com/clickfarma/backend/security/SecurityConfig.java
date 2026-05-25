@@ -29,30 +29,23 @@ public class SecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-                // Desabilita o CSRF de uma forma mais explícita
-                .csrf(csrf -> csrf.ignoringRequestMatchers("/api/**"))
+                .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(
-                                "/swagger-ui/**",
-                                "/swagger-ui.html",
-                                "/v3/api-docs/**",
-                                "/api-docs/**",
-                                "/swagger-resources/**",
-                                "/webjars/**"
-                        ).permitAll()
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/telegram/webhook").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/email/teste/*").permitAll()
                         .requestMatchers("/api/produtos/**").permitAll()
                         .requestMatchers("/api/categorias/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/pedidos").permitAll()
-                        // Para o fluxo academico/demo: permitir consulta de pedido e rastreio sem exigir login.
                         .requestMatchers(HttpMethod.GET, "/api/pedidos/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/rastreios/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/usuarios").permitAll()
                         .requestMatchers("/api/gemini/**").permitAll()
                         .requestMatchers("/api/receita/**").permitAll()
                         .requestMatchers("/actuator/**").permitAll()
+                        .requestMatchers("/api/dashboard-saude/**").permitAll()
+                        .requestMatchers("/api/weather").permitAll()
+                        .requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**", "/api-docs/**", "/swagger-resources/**", "/webjars/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session

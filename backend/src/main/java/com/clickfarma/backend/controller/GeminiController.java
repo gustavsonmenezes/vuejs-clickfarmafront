@@ -18,7 +18,8 @@ public class GeminiController {
     @PostMapping("/chat")
     public Mono<Map<String, String>> chat(@RequestBody Map<String, String> request) {
         String mensagem = request.get("message");
-        return aiRouterService.chat(mensagem)
+        String weatherContext = request.get("weatherContext");
+        return aiRouterService.chat(mensagem, weatherContext)
                 .map(resposta -> Map.of("response", resposta));
     }
 

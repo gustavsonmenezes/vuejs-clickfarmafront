@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { formatPrice, formatDate, capitalizeFirst } from '@/utils/formatters'
+import { formatPrice, formatDate, capitalizeFirst } from '../../utils/formatters'
+
 
 describe('Utilitários de Formatação', () => {
   describe('formatPrice', () => {

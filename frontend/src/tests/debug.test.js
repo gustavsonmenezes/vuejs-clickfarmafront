@@ -7,7 +7,7 @@ describe('Debug - Caracteres', () => {
       return new Intl.NumberFormat('pt-BR', {
         style: 'currency',
         currency: 'BRL'
-      }).format(price)
+      }).format(price).replace(/\u00a0/g, ' ')
     }
     
     const result = formatPrice(15.9)

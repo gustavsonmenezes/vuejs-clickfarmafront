@@ -1010,7 +1010,7 @@ public class GroqProcessadorReceitaService {
             String jsonContexto = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(contexto);
             String promptEnriquecimento = montarPromptEnriquecimentoCatalogo(jsonContexto);
 
-            return groqService.chat(promptEnriquecimento, 0.25)
+            return groqService.chat(promptEnriquecimento, 0.25, null)
                     .map(resp -> {
                         aplicarRespostaEnriquecimento(dto, resp);
                         if (dto.getMensagemOrientacao() == null || dto.getMensagemOrientacao().isBlank()) {

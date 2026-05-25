@@ -167,11 +167,11 @@ public class PedidoService {
     private void notificarEntregador(Pedido pedido) {
         try {
             StringBuilder msg = new StringBuilder();
-            msg.append("📦 *Novo Pedido para Entrega*\n\n");
-            msg.append("*Pedido:* #").append(pedido.getCodigoPedido()).append("\n");
-            msg.append("*Cliente:* ").append(pedido.getUsuario().getNome()).append("\n");
-            msg.append("*Endereço:* ").append(pedido.getEnderecoEntrega()).append("\n");
-            msg.append("*Valor:* R$ ").append(pedido.getValorTotal()).append("\n\n");
+            msg.append("Novo Pedido para Entrega!\n\n");
+            msg.append("Pedido: #").append(pedido.getCodigoPedido()).append("\n");
+            msg.append("Cliente: ").append(pedido.getUsuario().getNome()).append("\n");
+            msg.append("Endereço: ").append(pedido.getEnderecoEntrega()).append("\n");
+            msg.append("Valor: R$ ").append(pedido.getValorTotal()).append("\n\n");
             msg.append("✅ Prepare o pedido para entrega!");
 
             telegramService.enviarMensagem(entregadorChatId, msg.toString());

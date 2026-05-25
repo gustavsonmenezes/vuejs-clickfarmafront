@@ -85,12 +85,56 @@
           </div>
         </div>
       </section>
+
+      <!-- Weather Recommendations Section -->
+      <section class="weather-recommendations py-5">
+        <div class="container">
+          <div class="row text-center mb-4">
+            <div class="col-12">
+              <h2 class="section-title mb-2">
+                <i class="fas fa-cloud-sun me-2"></i>Recomendações para Hoje
+              </h2>
+              <div v-if="weatherLoading" class="text-muted">
+                <div class="spinner-border spinner-border-sm me-2" role="status"></div>
+                Carregando recomendações baseadas no clima...
+              </div>
+              <div v-else-if="weatherError" class="alert alert-warning d-inline-block">
+                <i class="fas fa-exclamation-triangle me-1"></i>{{ weatherError }}
+              </div>
+              <div v-else-if="weatherData" class="weather-badge">
+                <span class="weather-icon">{{ getWeatherIcon(weatherData.condition) }}</span>
+                <span class="weather-info">{{ weatherData.temp.toFixed(1) }}°C em {{ weatherData.city }} · {{ weatherData.conditionDescription }}</span>
+              </div>
+              <p v-else class="section-subtitle">Produtos selecionados para o clima da sua região</p>
+            </div>
+          </div>
+
+          <div v-if="weatherRecommendations.length" class="row g-4">
+            <div v-for="product in weatherRecommendations" :key="product.id" class="col-xl-2 col-lg-3 col-md-4 col-sm-6">
+              <div class="weather-product-card card border-0 h-100 text-center p-3" @click="goToProduct(product)">
+                <div class="product-icon mb-2">
+                  <i :class="getProductIcon(product)"></i>
+                </div>
+                <h6 class="product-name fw-semibold mb-1 small">{{ product.nome }}</h6>
+                <p class="product-price fw-bold mb-2">R$ {{ product.preco.toFixed(2).replace('.', ',') }}</p>
+                <button class="btn btn-sm btn-outline-success add-btn">
+                  <i class="fas fa-cart-plus me-1"></i>Adicionar
+                </button>
+              </div>
+            </div>
+          </div>
+          <div v-else-if="!weatherLoading && weatherData" class="text-center text-muted">
+            <i class="fas fa-box-open fa-2x mb-2"></i>
+            <p>Nenhuma recomendação específica para o clima atual.</p>
+          </div>
+        </div>
+      </section>
     </div>
   </div>
 </template>
 
 <script>
-import { mapGetters } from 'vuex'
+import { mapGetters, mapState, mapActions } from 'vuex'
 
 export default {
   name: 'Home',
@@ -104,11 +148,50 @@ export default {
       ]
     }
   },
-  computed: { ...mapGetters(['categories']) },
+  computed: {
+    ...mapGetters(['categories']),
+    ...mapState(['weatherData', 'weatherRecommendations', 'weatherLoading', 'weatherError'])
+  },
+  mounted() {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => this.fetchWeather({ lat: pos.coords.latitude, lon: pos.coords.longitude }),
+        (err) => {
+          console.warn('Geolocation denied:', err.message);
+          this.fetchWeather({ lat: -23.5505, lon: -46.6333 });
+        },
+        { timeout: 5000 }
+      );
+    } else {
+      this.fetchWeather({ lat: -23.5505, lon: -46.6333 });
+    }
+  },
   methods: {
+    ...mapActions(['fetchWeather']),
     getCategoryIcon(cat) {
       const icons = { 'Medicamentos': '💊', 'Cosméticos': '🧴', 'Higiene': '🚿', 'Vitaminas': '🌿', 'Maternidade': '👶', 'Bebês': '🍼' };
       return icons[cat] || '📦';
+    },
+    getWeatherIcon(condition) {
+      const icons = {
+        Clear: '☀️', Clouds: '☁️', Rain: '🌧️', Drizzle: '🌦️',
+        Thunderstorm: '⛈️', Snow: '❄️', Mist: '🌫️', Haze: '🌫️'
+      };
+      return icons[condition] || '🌤️';
+    },
+    getProductIcon(product) {
+      const cat = (product.categoriaNome || '').toLowerCase();
+      const nome = (product.nome || '').toLowerCase();
+      if (cat.includes('cosmetico') || nome.includes('protetor') || nome.includes('hidratante')) return 'fas fa-sun text-warning';
+      if (cat.includes('vitamina')) return 'fas fa-leaf text-success';
+      if (cat.includes('higiene')) return 'fas fa-pump-soap text-info';
+      return 'fas fa-pills text-primary';
+    },
+    goToProduct(product) {
+      this.$router.push({ path: '/products', query: { search: product.nome } });
+    },
+    addToCart(product) {
+      this.$store.dispatch('addToCart', product);
     }
   }
 }
@@ -313,5 +396,84 @@ export default {
 
 .spinner-border.text-primary {
   color: #0056A0 !important;
+}
+
+/* Weather Recommendations Styles */
+.weather-recommendations {
+  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+  border-radius: 24px;
+  margin: 0 1rem;
+}
+
+.weather-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: white;
+  padding: 0.5rem 1.25rem;
+  border-radius: 50px;
+  box-shadow: 0 2px 8px rgba(0, 86, 160, 0.1);
+  border: 1px solid #bae6fd;
+}
+
+.weather-icon {
+  font-size: 1.5rem;
+}
+
+.weather-info {
+  font-size: 0.95rem;
+  color: #0369a1;
+  font-weight: 500;
+}
+
+.weather-product-card {
+  transition: all 250ms ease-in-out;
+  border-radius: 16px;
+  border: 1px solid #e2e8f0;
+  background: white;
+  cursor: pointer;
+}
+
+.weather-product-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 8px 24px rgba(0, 86, 160, 0.15);
+  border-color: #0056A0;
+}
+
+.weather-product-card .product-icon {
+  font-size: 2rem;
+}
+
+.weather-product-card .product-name {
+  color: #1e293b;
+  min-height: 2.5rem;
+}
+
+.weather-product-card .product-price {
+  color: #059669;
+}
+
+.weather-product-card .add-btn {
+  border-radius: 10px;
+  font-size: 0.75rem;
+  transition: all 200ms;
+}
+
+.weather-product-card:hover .add-btn {
+  background: #198754;
+  color: white;
+  border-color: #198754;
+}
+
+@media (max-width: 768px) {
+  .weather-recommendations {
+    margin: 0;
+    border-radius: 0;
+  }
+  .weather-badge {
+    flex-direction: column;
+    text-align: center;
+    padding: 0.5rem;
+  }
 }
 </style>
