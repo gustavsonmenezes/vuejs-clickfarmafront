@@ -1,0 +1,473 @@
+<template>
+  <div class="health-dashboard">
+    <div class="container py-4">
+      <!-- Header -->
+      <div class="dashboard-header mb-4">
+        <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+          <div>
+            <h1 class="h3 mb-1 text-primary">
+              <i class="fas fa-heartbeat me-2"></i>Minha Saúde
+            </h1>
+            <p class="text-muted mb-0">Acompanhe seus gastos, medicamentos e reposições</p>
+          </div>
+          <div class="d-flex align-items-center gap-2">
+            <span class="badge bg-success-subtle text-success fs-6">
+              <i class="fas fa-shield-check me-1"></i>Dados reais
+            </span>
+            <button class="btn btn-outline-primary btn-sm" @click="carregarDados" :disabled="loading">
+              <i :class="loading ? 'fas fa-sync-alt spin' : 'fas fa-sync-alt'" class="me-1"></i>
+              Atualizar
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Loading State -->
+      <div v-if="loading && !dashboard" class="text-center py-5">
+        <div class="spinner-border text-primary mb-3" role="status"></div>
+        <p class="text-muted">Carregando dados da sua saúde...</p>
+      </div>
+
+      <!-- Error State -->
+      <div v-else-if="error" class="alert alert-danger">
+        <i class="fas fa-exclamation-triangle me-2"></i>{{ error }}
+        <button class="btn btn-sm btn-outline-danger ms-2" @click="carregarDados">Tentar novamente</button>
+      </div>
+
+      <!-- Dashboard Content -->
+      <div v-else-if="dashboard" class="dashboard-content">
+        <!-- Resumo Cards -->
+        <div class="row g-3 mb-4">
+          <div class="col-6 col-lg-3">
+            <div class="card stat-card border-0 shadow-sm h-100">
+              <div class="card-body">
+                <div class="stat-icon bg-primary-subtle text-primary rounded-circle d-flex align-items-center justify-content-center mb-2">
+                  <i class="fas fa-dollar-sign fs-4"></i>
+                </div>
+                <p class="text-muted mb-1 small">Total Gasto</p>
+                <h3 class="mb-0 fw-bold text-primary">{{ formatCurrency(dashboard.resumo.totalGasto) }}</h3>
+              </div>
+            </div>
+          </div>
+          <div class="col-6 col-lg-3">
+            <div class="card stat-card border-0 shadow-sm h-100">
+              <div class="card-body">
+                <div class="stat-icon bg-success-subtle text-success rounded-circle d-flex align-items-center justify-content-center mb-2">
+                  <i class="fas fa-shopping-bag fs-4"></i>
+                </div>
+                <p class="text-muted mb-1 small">Total Pedidos</p>
+                <h3 class="mb-0 fw-bold text-success">{{ dashboard.resumo.totalPedidos }}</h3>
+              </div>
+            </div>
+          </div>
+          <div class="col-6 col-lg-3">
+            <div class="card stat-card border-0 shadow-sm h-100">
+              <div class="card-body">
+                <div class="stat-icon bg-warning-subtle text-warning rounded-circle d-flex align-items-center justify-content-center mb-2">
+                  <i class="fas fa-capsules fs-4"></i>
+                </div>
+                <p class="text-muted mb-1 small">Mais Comprado</p>
+                <h6 class="mb-0 fw-bold text-warning text-truncate" :title="dashboard.resumo.medicamentoFrequente">{{ dashboard.resumo.medicamentoFrequente }}</h6>
+              </div>
+            </div>
+          </div>
+          <div class="col-6 col-lg-3">
+            <div class="card stat-card border-0 shadow-sm h-100">
+              <div class="card-body">
+                <div class="stat-icon bg-info-subtle text-info rounded-circle d-flex align-items-center justify-content-center mb-2">
+                  <i class="fas fa-piggy-bank fs-4"></i>
+                </div>
+                <p class="text-muted mb-1 small">Economia Est.</p>
+                <h3 class="mb-0 fw-bold text-info">{{ formatCurrency(dashboard.resumo.economiaEstimada) }}</h3>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Charts Row 1: Gastos Mensais + Categorias -->
+        <div class="row g-3 mb-4">
+          <div class="col-lg-8">
+            <div class="card border-0 shadow-sm h-100">
+              <div class="card-header bg-white border-0 py-3">
+                <h5 class="mb-0"><i class="fas fa-chart-line me-2 text-primary"></i>Gastos Mensais</h5>
+              </div>
+              <div class="card-body">
+                <canvas ref="gastosMensaisChart" height="120"></canvas>
+              </div>
+            </div>
+          </div>
+          <div class="col-lg-4">
+            <div class="card border-0 shadow-sm h-100">
+              <div class="card-header bg-white border-0 py-3">
+                <h5 class="mb-0"><i class="fas fa-chart-pie me-2 text-primary"></i>Por Categoria</h5>
+              </div>
+              <div class="card-body d-flex align-items-center justify-content-center">
+                <canvas ref="categoriaChart" height="200"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Charts Row 2: Top Medicamentos + Previsão Reposição -->
+        <div class="row g-3 mb-4">
+          <div class="col-lg-5">
+            <div class="card border-0 shadow-sm h-100">
+              <div class="card-header bg-white border-0 py-3">
+                <h5 class="mb-0"><i class="fas fa-trophy me-2 text-warning"></i>Top Medicamentos</h5>
+              </div>
+              <div class="card-body">
+                <canvas ref="topMedicamentosChart" height="180"></canvas>
+              </div>
+            </div>
+          </div>
+          <div class="col-lg-7">
+            <div class="card border-0 shadow-sm h-100">
+              <div class="card-header bg-white border-0 py-3">
+                <h5 class="mb-0"><i class="fas fa-clock me-2 text-danger"></i>Previsão de Reposição</h5>
+              </div>
+              <div class="card-body p-0">
+                <div class="table-responsive">
+                  <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                      <tr>
+                        <th class="ps-3">Produto</th>
+                        <th>Categoria</th>
+                        <th>Última Compra</th>
+                        <th>Dias Restantes</th>
+                        <th class="pe-3">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr v-for="(item, idx) in dashboard.previsaoReposicao" :key="idx">
+                        <td class="ps-3 fw-medium">{{ item.produto }}</td>
+                        <td><span class="badge bg-light text-dark">{{ item.categoria }}</span></td>
+                        <td>{{ item.ultimaCompra }}</td>
+                        <td>
+                          <div class="d-flex align-items-center gap-2">
+                            <div class="progress flex-grow-1" style="height: 6px; width: 60px;">
+                              <div class="progress-bar" :class="getStatusColor(item.status)" :style="{ width: getBarWidth(item.diasRestantes) + '%' }"></div>
+                            </div>
+                            <span class="small fw-bold" :class="getStatusTextColor(item.status)">{{ item.diasRestantes }}d</span>
+                          </div>
+                        </td>
+                        <td class="pe-3">
+                          <span class="badge" :class="getStatusBadge(item.status)">
+                            <i :class="getStatusIcon(item.status)" class="me-1"></i>{{ getStatusLabel(item.status) }}
+                          </span>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- CTA Card -->
+        <div class="card border-0 shadow-sm mb-4 cta-card">
+          <div class="card-body p-4 text-center">
+            <h4 class="mb-2"><i class="fas fa-magic text-warning me-2"></i>Plano Inteligente de Saúde</h4>
+            <p class="text-muted mb-3">Baseado no seu histórico, você pode economizar até <strong>{{ formatCurrency(dashboard.resumo.economiaEstimada) }}</strong> com compras programadas</p>
+            <router-link to="/products" class="btn btn-primary btn-lg">
+              <i class="fas fa-cart-plus me-2"></i>Repor Medicamentos
+            </router-link>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script>
+import api from '@/services/api'
+import { Chart, registerables } from 'chart.js'
+Chart.register(...registerables)
+
+export default {
+  name: 'HealthDashboard',
+  data() {
+    return {
+      dashboard: null,
+      loading: false,
+      error: null,
+      charts: {}
+    }
+  },
+  mounted() {
+    this.carregarDados()
+  },
+  beforeUnmount() {
+    Object.values(this.charts).forEach(chart => chart.destroy())
+  },
+  methods: {
+    async carregarDados() {
+      this.loading = true
+      this.error = null
+      try {
+        const response = await api.get('/dashboard-saude/usuario/1')
+        this.dashboard = response.data
+        this.$nextTick(() => {
+          this.renderCharts()
+        })
+      } catch (err) {
+        console.error('Erro ao carregar dashboard:', err)
+        this.error = 'Não foi possível carregar os dados. Tente novamente mais tarde.'
+      } finally {
+        this.loading = false
+      }
+    },
+    renderCharts() {
+      this.renderGastosMensais()
+      this.renderCategoria()
+      this.renderTopMedicamentos()
+    },
+    renderGastosMensais() {
+      if (this.charts.gastosMensais) this.charts.gastosMensais.destroy()
+      const ctx = this.$refs.gastosMensaisChart
+      if (!ctx || !this.dashboard.gastosMensais.length) return
+
+      const sorted = [...this.dashboard.gastosMensais].sort((a, b) => {
+        const meses = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez']
+        const [mA, yA] = a.mes.split('/')
+        const [mB, yB] = b.mes.split('/')
+        const dateA = meses.indexOf(mA.slice(0, 3)) + parseInt(yA) * 12
+        const dateB = meses.indexOf(mB.slice(0, 3)) + parseInt(yB) * 12
+        return dateA - dateB
+      })
+
+      this.charts.gastosMensais = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: sorted.map(g => g.mes),
+          datasets: [{
+            label: 'Gastos (R$)',
+            data: sorted.map(g => g.valor),
+            backgroundColor: 'rgba(13, 110, 253, 0.7)',
+            borderColor: 'rgba(13, 110, 253, 1)',
+            borderWidth: 1,
+            borderRadius: 6,
+            maxBarThickness: 50
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: (ctx) => `R$ ${ctx.parsed.y.toFixed(2)}`
+              }
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: {
+                callback: (val) => `R$ ${val}`
+              }
+            }
+          }
+        }
+      })
+    },
+    renderCategoria() {
+      if (this.charts.categoria) this.charts.categoria.destroy()
+      const ctx = this.$refs.categoriaChart
+      if (!ctx || !this.dashboard.distribuicaoCategoria.length) return
+
+      const cores = [
+        'rgba(13, 110, 253, 0.8)',
+        'rgba(25, 135, 84, 0.8)',
+        'rgba(255, 193, 7, 0.8)',
+        'rgba(220, 53, 69, 0.8)',
+        'rgba(111, 66, 193, 0.8)',
+        'rgba(13, 202, 240, 0.8)'
+      ]
+
+      this.charts.categoria = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: this.dashboard.distribuicaoCategoria.map(c => c.categoria),
+          datasets: [{
+            data: this.dashboard.distribuicaoCategoria.map(c => c.valor),
+            backgroundColor: cores.slice(0, this.dashboard.distribuicaoCategoria.length),
+            borderWidth: 2,
+            borderColor: '#fff'
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: {
+              position: 'bottom',
+              labels: { padding: 12, usePointStyle: true, font: { size: 11 } }
+            },
+            tooltip: {
+              callbacks: {
+                label: (ctx) => {
+                  const item = this.dashboard.distribuicaoCategoria[ctx.dataIndex]
+                  return ` ${item.categoria}: R$ ${item.valor.toFixed(2)} (${item.percentual}%)`
+                }
+              }
+            }
+          },
+          cutout: '65%'
+        }
+      })
+    },
+    renderTopMedicamentos() {
+      if (this.charts.topMedicamentos) this.charts.topMedicamentos.destroy()
+      const ctx = this.$refs.topMedicamentosChart
+      if (!ctx || !this.dashboard.topMedicamentos.length) return
+
+      const cores = [
+        'rgba(255, 193, 7, 0.8)',
+        'rgba(108, 117, 125, 0.8)',
+        'rgba(205, 133, 63, 0.8)',
+        'rgba(13, 110, 253, 0.7)',
+        'rgba(25, 135, 84, 0.7)'
+      ]
+
+      this.charts.topMedicamentos = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: this.dashboard.topMedicamentos.map(m => {
+            const nome = m.nome.length > 18 ? m.nome.substring(0, 18) + '...' : m.nome
+            return nome
+          }),
+          datasets: [{
+            label: 'Qtd Comprada',
+            data: this.dashboard.topMedicamentos.map(m => m.quantidadeComprada),
+            backgroundColor: cores.slice(0, this.dashboard.topMedicamentos.length),
+            borderRadius: 6,
+            maxBarThickness: 40
+          }]
+        },
+        options: {
+          indexAxis: 'y',
+          responsive: true,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                title: (items) => this.dashboard.topMedicamentos[items[0].dataIndex].nome,
+                label: (ctx) => [
+                  `Qtd: ${ctx.parsed.x} unidades`,
+                  `Gasto: R$ ${this.dashboard.topMedicamentos[ctx.dataIndex].totalGasto.toFixed(2)}`,
+                  `Última: ${this.dashboard.topMedicamentos[ctx.dataIndex].ultimaCompra}`
+                ]
+              }
+            }
+          },
+          scales: {
+            x: { beginAtZero: true }
+          }
+        }
+      })
+    },
+    formatCurrency(value) {
+      if (!value) return 'R$ 0,00'
+      return `R$ ${Number(value).toFixed(2).replace('.', ',')}`
+    },
+    getStatusBadge(status) {
+      return {
+        'bg-danger-subtle text-danger': status === 'critico',
+        'bg-warning-subtle text-warning': status === 'atencao',
+        'bg-success-subtle text-success': status === 'ok'
+      }
+    },
+    getStatusColor(status) {
+      return {
+        'bg-danger': status === 'critico',
+        'bg-warning': status === 'atencao',
+        'bg-success': status === 'ok'
+      }
+    },
+    getStatusTextColor(status) {
+      return {
+        'text-danger': status === 'critico',
+        'text-warning': status === 'atencao',
+        'text-success': status === 'ok'
+      }
+    },
+    getStatusLabel(status) {
+      return { critico: 'Crítico', atencao: 'Atenção', ok: 'OK' }[status] || status
+    },
+    getStatusIcon(status) {
+      return { critico: 'fas fa-times-circle', atencao: 'fas fa-exclamation-triangle', ok: 'fas fa-check-circle' }[status] || ''
+    },
+    getBarWidth(dias) {
+      return Math.min((dias / 30) * 100, 100)
+    }
+  }
+}
+</script>
+
+<style scoped>
+.health-dashboard {
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  min-height: 100vh;
+}
+
+.dashboard-header {
+  background: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+}
+
+.stat-card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  border-radius: 12px;
+}
+
+.stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.1) !important;
+}
+
+.stat-icon {
+  width: 48px;
+  height: 48px;
+}
+
+.card {
+  border-radius: 12px;
+}
+
+.card-header {
+  border-radius: 12px 12px 0 0 !important;
+}
+
+.cta-card {
+  background: linear-gradient(135deg, #f8f9fa 0%, #e7f1ff 100%);
+  border: 1px solid rgba(13, 110, 253, 0.15) !important;
+}
+
+.table tbody tr {
+  transition: background-color 0.15s ease;
+}
+
+.progress {
+  background-color: #e9ecef;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.spin {
+  animation: spin 1s linear infinite;
+}
+
+@media (max-width: 768px) {
+  .stat-card h3 {
+    font-size: 1.25rem;
+  }
+  .stat-card h6 {
+    font-size: 0.85rem;
+  }
+}
+</style>

@@ -1,0 +1,67 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master, develop]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  unit-tests:
+    name: Testes Unitários
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: ./frontend
+
+    steps:
+      - name: Baixar o código do repositório
+        uses: actions/checkout@v4
+
+      - name: Instalar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: './frontend/package-lock.json'
+
+      - name: Instalar dependências
+        run: npm ci
+
+      - name: Rodar testes unitários (vitest)
+        run: npm run test:run
+
+  e2e-tests:
+    name: Testes E2E (Cypress)
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: ./frontend
+
+    steps:
+      - name: Baixar o código do repositório
+        uses: actions/checkout@v4
+
+      - name: Instalar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: './frontend/package-lock.json'
+
+      - name: Instalar dependências
+        run: npm ci
+
+      - name: Build da aplicação (webpack)
+        run: npx webpack --mode production
+
+      - name: Rodar testes E2E (Cypress headless)
+        uses: cypress-io/github-action@v6
+        with:
+          working-directory: ./frontend
+          build: npx webpack --mode production
+          start: npx webpack serve --mode production --port 8081 --no-open
+          wait-on: 'http://localhost:8081'
+          browser: chrome
