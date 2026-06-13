@@ -32,6 +32,9 @@ public class TesseractOCRService {
     @Value("${receita.ocr.cropBottomFraction:0.78}")
     private float cropBottomFraction;
 
+    @Value("${receita.tesseract.datapath:/usr/share/tesseract-ocr/4.00/tessdata/}")
+    private String tessDataPath;
+
     /**
      * Lista de palavras para o Tesseract reconhecer melhor (sem "pós-correção" no output).
      * Pode ser desligado setando `receita.tesseract.useUserWords=false`.
@@ -108,7 +111,7 @@ public class TesseractOCRService {
     private Tesseract createTesseract(int pageSegMode) {
         Tesseract tesseract = new Tesseract();
         tesseract.setLanguage("por");
-        tesseract.setDatapath("/usr/share/tesseract-ocr/5/tessdata/");
+        tesseract.setDatapath(tessDataPath);
         tesseract.setPageSegMode(pageSegMode);
         tesseract.setOcrEngineMode(1);
         tesseract.setTessVariable("classify_bln_numeric_mode", "0");

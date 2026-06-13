@@ -7,14 +7,20 @@ public class LoginResponseDTO {
     private String nome;
     private String email;
     private String role;
+    private String avatarUrl;
 
     public LoginResponseDTO(String token, Long id, String nome, String email, String role) {
+        this(token, id, nome, email, role, null);
+    }
+
+    public LoginResponseDTO(String token, Long id, String nome, String email, String role, String avatarUrl) {
         this.token = token;
         this.tipo = "Bearer";
         this.id = id;
         this.nome = nome;
         this.email = email;
         this.role = role;
+        this.avatarUrl = avatarUrl;
     }
 
     // Getters e Setters
@@ -35,4 +41,7 @@ public class LoginResponseDTO {
 
     public String getRole() { return role; }
     public void setRole(String role) { this.role = role; }
+
+    public String getAvatarUrl() { return avatarUrl; }
+    public void setAvatarUrl(String avatarUrl) { this.avatarUrl = avatarUrl; }
 }

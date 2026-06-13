@@ -1,6 +1,26 @@
 const path = require('path');
+const fs = require('fs');
+const webpack = require('webpack');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const { VueLoaderPlugin } = require('vue-loader');
+
+function loadEnvVars(prefix = 'VUE_APP_') {
+  const envFile = path.resolve(__dirname, '.env');
+  if (!fs.existsSync(envFile)) return {};
+  const vars = {};
+  fs.readFileSync(envFile, 'utf-8').split('\n').forEach(line => {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith('#')) return;
+    const eqIdx = trimmed.indexOf('=');
+    if (eqIdx === -1) return;
+    const key = trimmed.substring(0, eqIdx).trim();
+    const value = trimmed.substring(eqIdx + 1).trim();
+    if (key.startsWith(prefix)) {
+      vars[`process.env.${key}`] = JSON.stringify(value);
+    }
+  });
+  return vars;
+}
 
 module.exports = {
   mode: 'development',
@@ -48,6 +68,10 @@ module.exports = {
     ]
   },
   plugins: [
+    new webpack.DefinePlugin({
+      ...loadEnvVars(),
+      'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'development'),
+    }),
     new VueLoaderPlugin(),
     new HtmlWebpackPlugin({
       template: './public/index.html',

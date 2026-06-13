@@ -137,7 +137,9 @@ const routes = [
   },
   {
     path: '/minha-saude',
-    redirect: '/profile'
+    name: 'HealthDashboard',
+    component: () => import('../views/HealthDashboard.vue'),
+    meta: { requiresAuth: true }
   },
   {
     path: '/tracking/:orderId',
@@ -152,6 +154,18 @@ const routes = [
     component: BackendOrderTracking,
     props: true,
     meta: { requiresAuth: true }
+  },
+
+  {
+    path: '/rastrear',
+    name: 'Rastrear',
+    component: () => import('../views/DeliveryTracking.vue')
+  },
+  {
+    path: '/rastrear/:codigoPedido',
+    name: 'RastrearComCodigo',
+    component: () => import('../views/DeliveryTracking.vue'),
+    props: true
   },
 
   // Rotas existentes de rastreamento (mantidas para compatibilidade)

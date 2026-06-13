@@ -1,120 +1,164 @@
-[file name]: LiveTrackingMap.vue
-[file content begin]
 <template>
-  <div class="live-tracking-map">
-    <!-- Status Principal -->
-    <div class="status-card mb-4">
-      <div class="status-header">
-        <h5 class="mb-2">Status da Entrega</h5>
-        <span :class="statusClass" class="status-badge">{{ deliveryStatus }}</span>
+  <div class="ltm-wrap">
+    <!-- Status Card -->
+    <div class="ltm-card ltm-card-status">
+      <div class="ltm-status-head">
+        <div class="ltm-status-left">
+          <svg class="ltm-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+          </svg>
+          <span class="ltm-status-label">Status da Entrega</span>
+        </div>
+        <span class="ltm-badge" :class="statusBadgeClass">{{ deliveryStatus }}</span>
       </div>
-      <div class="progress-container">
-        <div class="progress-bar" :style="progressStyle"></div>
+      <div class="ltm-progress">
+        <div class="ltm-progress-track">
+          <div class="ltm-progress-bar" :style="progressStyle" />
+        </div>
+        <span class="ltm-progress-text">{{ progress }}%</span>
       </div>
-      <div class="progress-text">{{ progress }}% concluído</div>
     </div>
 
-    <!-- Mapa Real -->
-    <div class="card mb-4">
-      <div class="card-header d-flex justify-content-between align-items-center">
-        <h6 class="mb-0">🗺️ Mapa de Rastreamento</h6>
-        <button class="btn btn-sm btn-outline-primary" @click="refreshLocation" :disabled="refreshing">
-          <i class="fas fa-sync-alt" :class="{ 'fa-spin': refreshing }"></i>
+    <!-- Map Card -->
+    <div class="ltm-card ltm-card-map">
+      <div class="ltm-map-head">
+        <svg class="ltm-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+          <circle cx="12" cy="10" r="3"/>
+        </svg>
+        <span class="ltm-map-title">Mapa de Rastreamento</span>
+        <button class="ltm-refresh" @click="refreshLocation" :disabled="refreshing" :title="'Atualizar'">
+          <svg class="ltm-icon-sm" :class="{ spin: refreshing }" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 12a9 9 0 1 1-6.2-8.6"/>
+            <path d="M21 3v6h-6"/>
+          </svg>
         </button>
       </div>
-      <div class="card-body p-0">
-        <div id="tracking-map" class="tracking-map"></div>
-        <div class="map-overlay">
-          <div class="location-info">
-            <div class="location-address">
-              <i class="fas fa-map-marker-alt text-danger me-2"></i>
-              <strong>{{ currentLocation }}</strong>
-            </div>
-            <div class="location-update">
-              <small class="text-muted">
-                <i class="fas fa-clock me-1"></i>
-                Atualizado {{ lastUpdateTime }}
-              </small>
-            </div>
+      <div class="ltm-map-body">
+        <div id="tracking-map" class="ltm-map-el" />
+        <div class="ltm-map-overlay">
+          <div class="ltm-overlay-row">
+            <svg class="ltm-icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+              <circle cx="12" cy="10" r="3"/>
+            </svg>
+            <strong class="ltm-overlay-text">{{ currentLocation }}</strong>
+          </div>
+          <div class="ltm-overlay-meta">
+            <svg class="ltm-icon-xxs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/>
+              <polyline points="12 6 12 12 16 14"/>
+            </svg>
+            Atualizado {{ lastUpdateTime }}
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Informações do Entregador -->
-    <div class="card mb-4">
-      <div class="card-header">
-        <h6 class="mb-0">👤 Entregador</h6>
+    <!-- Driver Card -->
+    <div class="ltm-card ltm-card-driver">
+      <div class="ltm-driver-head">
+        <svg class="ltm-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <circle cx="12" cy="8" r="4"/>
+          <path d="M4 21v-2a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v2"/>
+        </svg>
+        <span class="ltm-driver-title">Entregador</span>
       </div>
-      <div class="card-body">
-        <div class="driver-info">
-          <div class="driver-avatar">
-            <i class="fas fa-user"></i>
+      <div class="ltm-driver-body">
+        <div class="ltm-driver-main">
+          <div class="ltm-driver-avatar">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <circle cx="12" cy="8" r="4"/>
+              <path d="M4 21v-2a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v2"/>
+            </svg>
           </div>
-          <div class="driver-details">
-            <div class="driver-name">{{ driverInfo.name }}</div>
-            <div class="driver-rating">
-              <i class="fas fa-star text-warning"></i>
-              <i class="fas fa-star text-warning"></i>
-              <i class="fas fa-star text-warning"></i>
-              <i class="fas fa-star text-warning"></i>
-              <i class="fas fa-star-half-alt text-warning"></i>
-              <span class="rating-text">4.7</span>
+          <div class="ltm-driver-info">
+            <span class="ltm-driver-name">{{ driverInfo.name }}</span>
+            <div class="ltm-driver-rating">
+              <svg v-for="s in 5" :key="s" class="ltm-star" :class="{ full: s <= 4, half: s === 5 }" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+              </svg>
+              <span class="ltm-rating-text">4.7</span>
             </div>
           </div>
         </div>
-        <div class="driver-contact mt-3">
-          <div class="contact-item">
-            <i class="fas fa-motorcycle me-2"></i>
-            {{ driverInfo.vehicle }}
+        <div class="ltm-driver-contact">
+          <div class="ltm-contact-row">
+            <svg class="ltm-icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M5 17h14M5 17a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2M5 17l-2 4M19 17l2 4"/>
+              <path d="M12 11v4"/>
+              <circle cx="12" cy="8" r="1.5" fill="currentColor"/>
+            </svg>
+            <span>{{ driverInfo.vehicle }}</span>
           </div>
-          <div class="contact-item">
-            <i class="fas fa-phone me-2"></i>
-            {{ driverInfo.phone }}
+          <div class="ltm-contact-row">
+            <svg class="ltm-icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.362 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.338 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/>
+            </svg>
+            <span>{{ driverInfo.phone }}</span>
           </div>
         </div>
-        <button class="btn btn-primary w-100 mt-3" @click="contactDriver">
-          <i class="fas fa-phone me-2"></i>
+        <button class="ltm-call-btn" @click="contactDriver">
+          <svg class="ltm-icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.362 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.338 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/>
+          </svg>
           Falar com Entregador
         </button>
       </div>
     </div>
 
-    <!-- Detalhes da Entrega -->
-    <div class="card">
-      <div class="card-header">
-        <h6 class="mb-0">📊 Detalhes da Entrega</h6>
+    <!-- Details Card -->
+    <div class="ltm-card ltm-card-details">
+      <div class="ltm-details-head">
+        <svg class="ltm-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+          <polyline points="14 2 14 8 20 8"/>
+          <line x1="16" y1="13" x2="8" y2="13"/>
+          <line x1="16" y1="17" x2="8" y2="17"/>
+          <polyline points="10 9 9 9 8 9"/>
+        </svg>
+        <span class="ltm-details-title">Detalhes da Entrega</span>
       </div>
-      <div class="card-body">
-        <div class="delivery-details">
-          <div class="detail-item">
-            <div class="detail-label">
-              <i class="fas fa-clock me-2"></i>
-              Previsão
-            </div>
-            <div class="detail-value">{{ estimatedTime }}</div>
+      <div class="ltm-details-body">
+        <div class="ltm-detail-item">
+          <div class="ltm-detail-label">
+            <svg class="ltm-icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <circle cx="12" cy="12" r="10"/>
+              <polyline points="12 6 12 12 16 14"/>
+            </svg>
+            Previsão
           </div>
-          <div class="detail-item">
-            <div class="detail-label">
-              <i class="fas fa-road me-2"></i>
-              Distância
-            </div>
-            <div class="detail-value">{{ estimatedDistance }}</div>
+          <span class="ltm-detail-value">{{ estimatedTime }}</span>
+        </div>
+        <div class="ltm-detail-item">
+          <div class="ltm-detail-label">
+            <svg class="ltm-icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <circle cx="12" cy="12" r="10"/>
+              <path d="M12 2a10 10 0 0 0 0 20c4.4 0 8-3 8-7a5.5 5.5 0 0 0-5-5.5c-2 0-3.5 1.5-3.5 3.5S9 16 12 16s3-2 3-3.5"/>
+            </svg>
+            Distância
           </div>
-          <div class="detail-item">
-            <div class="detail-label">
-              <i class="fas fa-hourglass-half me-2"></i>
-              Tempo
-            </div>
-            <div class="detail-value">{{ travelTime }}</div>
+          <span class="ltm-detail-value">{{ estimatedDistance }}</span>
+        </div>
+        <div class="ltm-detail-item">
+          <div class="ltm-detail-label">
+            <svg class="ltm-icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <circle cx="12" cy="12" r="10"/>
+              <polyline points="12 6 12 12 16 14"/>
+            </svg>
+            Tempo
           </div>
-          <div class="detail-item">
-            <div class="detail-label">
-              <i class="fas fa-tachometer-alt me-2"></i>
-              Velocidade
-            </div>
-            <div class="detail-value">{{ averageSpeed }}</div>
+          <span class="ltm-detail-value">{{ travelTime }}</span>
+        </div>
+        <div class="ltm-detail-item">
+          <div class="ltm-detail-label">
+            <svg class="ltm-icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M12 2v4M12 18v4M2 12h4M18 12h4"/>
+              <circle cx="12" cy="12" r="6"/>
+            </svg>
+            Velocidade
           </div>
+          <span class="ltm-detail-value">{{ averageSpeed }}</span>
         </div>
       </div>
     </div>
@@ -126,7 +170,6 @@ import { mapActions, mapGetters } from 'vuex'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 
-// Corrigir ícones do Leaflet no Webpack
 delete L.Icon.Default.prototype._getIconUrl
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
@@ -137,10 +180,7 @@ L.Icon.Default.mergeOptions({
 export default {
   name: 'LiveTrackingMap',
   props: {
-    orderId: {
-      type: String,
-      required: true
-    }
+    orderId: { type: String, required: true }
   },
   data() {
     return {
@@ -154,554 +194,549 @@ export default {
   },
   computed: {
     ...mapGetters(['getOrderTracking']),
-    
     trackingInfo() {
       return this.getOrderTracking(this.orderId)
     },
-    
     currentLocation() {
       if (!this.trackingInfo) return 'Centro de Distribuição ClickFarma - Recife'
       return this.trackingInfo.currentLocation || 'Centro de Distribuição ClickFarma - Recife'
     },
-    
     driverInfo() {
       const defaultDriver = {
         name: 'Carlos Silva',
         vehicle: 'Honda CG 160 Titan',
         phone: '(81) 99818-9999'
       }
-      
       if (!this.trackingInfo) return defaultDriver
-      
       return {
         name: this.trackingInfo.driver?.name || defaultDriver.name,
         vehicle: this.trackingInfo.driver?.vehicle || defaultDriver.vehicle,
         phone: this.trackingInfo.driver?.phone || this.trackingInfo.contact || defaultDriver.phone
       }
     },
-    
     deliveryStatus() {
       if (!this.trackingInfo) return 'PROCESSANDO'
-      
-      const statusMap = {
+      const m = {
         'confirmed': 'CONFIRMADO',
         'processing': 'EM PREPARAÇÃO',
         'shipped': 'EM TRÂNSITO',
         'out_for_delivery': 'SAIU PARA ENTREGA',
         'delivered': 'ENTREGUE'
       }
-      return statusMap[this.trackingInfo.status] || 'PROCESSANDO'
+      return m[this.trackingInfo.status] || 'PROCESSANDO'
     },
-    
-    statusClass() {
-      if (!this.trackingInfo) return 'status-processing'
-      
-      const classes = {
-        'confirmed': 'status-confirmed',
-        'processing': 'status-processing',
-        'shipped': 'status-shipped',
-        'out_for_delivery': 'status-delivery',
-        'delivered': 'status-delivered'
+    statusBadgeClass() {
+      if (!this.trackingInfo) return 'badge-processing'
+      const c = {
+        'confirmed': 'badge-confirmed',
+        'processing': 'badge-processing',
+        'shipped': 'badge-transit',
+        'out_for_delivery': 'badge-near',
+        'delivered': 'badge-done'
       }
-      return classes[this.trackingInfo.status] || 'status-processing'
+      return c[this.trackingInfo.status] || 'badge-processing'
     },
-    
     progress() {
       if (!this.trackingInfo) return 25
-      
-      const progressMap = {
-        'confirmed': 25,
-        'processing': 45,
-        'shipped': 65,
-        'out_for_delivery': 85,
-        'delivered': 100
-      }
-      return progressMap[this.trackingInfo.status] || 25
+      const m = { 'confirmed': 25, 'processing': 45, 'shipped': 65, 'out_for_delivery': 85, 'delivered': 100 }
+      return m[this.trackingInfo.status] || 25
     },
-    
     progressStyle() {
-      return {
-        width: `${this.progress}%`
-      }
+      return { width: `${this.progress}%` }
     },
-    
     estimatedTime() {
       if (!this.trackingInfo?.estimatedDelivery) return 'Calculando...'
-      
       try {
-        const deliveryTime = new Date(this.trackingInfo.estimatedDelivery)
-        return deliveryTime.toLocaleTimeString('pt-BR', {
-          hour: '2-digit',
-          minute: '2-digit'
+        return new Date(this.trackingInfo.estimatedDelivery).toLocaleTimeString('pt-BR', {
+          hour: '2-digit', minute: '2-digit'
         })
-      } catch (error) {
-        return 'Em breve'
-      }
+      } catch { return 'Em breve' }
     },
-    
     estimatedDistance() {
       if (!this.trackingInfo) return 'Calculando...'
-      
-      const statusDistances = {
-        'confirmed': '12.5 km',
-        'processing': '11.2 km', 
-        'shipped': '8.7 km',
-        'out_for_delivery': '3.2 km',
-        'delivered': '0.0 km'
-      }
-      
-      return statusDistances[this.trackingInfo.status] || '10.0 km'
+      const d = { 'confirmed': '12.5 km', 'processing': '11.2 km', 'shipped': '8.7 km', 'out_for_delivery': '3.2 km', 'delivered': '0.0 km' }
+      return d[this.trackingInfo.status] || '10.0 km'
     },
-    
     travelTime() {
       if (!this.trackingInfo) return '--:--'
-      
-      const statusTimes = {
-        'confirmed': '45-60 min',
-        'processing': '35-50 min', 
-        'shipped': '25-40 min',
-        'out_for_delivery': '10-20 min',
-        'delivered': '0 min'
-      }
-      
-      return statusTimes[this.trackingInfo.status] || '30-45 min'
+      const t = { 'confirmed': '45-60 min', 'processing': '35-50 min', 'shipped': '25-40 min', 'out_for_delivery': '10-20 min', 'delivered': '0 min' }
+      return t[this.trackingInfo.status] || '30-45 min'
     },
-    
     averageSpeed() {
       return '38 km/h'
     },
-    
     lastUpdateTime() {
       if (!this.trackingInfo?.lastUpdate) return 'agora mesmo'
       return this.formatRelativeTime(this.trackingInfo.lastUpdate)
     },
-    
-    // Coordenadas baseadas no status (simulação realista)
     currentCoordinates() {
-      if (this.trackingInfo?.coordinates) {
-        return this.trackingInfo.coordinates
-      }
-      
-      // Coordenadas de Recife como fallback
-      const baseCoords = { lat: -8.047562, lng: -34.877003 }
-      
-      // Simula movimento baseado no status
-      const statusOffsets = {
-        'confirmed': { lat: 0, lng: 0 },
-        'processing': { lat: 0.01, lng: 0.01 },
-        'shipped': { lat: 0.02, lng: 0.03 },
-        'out_for_delivery': { lat: 0.03, lng: 0.05 },
+      if (this.trackingInfo?.coordinates) return this.trackingInfo.coordinates
+      const base = { lat: -8.047562, lng: -34.877003 }
+      const off = {
+        'confirmed': { lat: 0, lng: 0 }, 'processing': { lat: 0.01, lng: 0.01 },
+        'shipped': { lat: 0.02, lng: 0.03 }, 'out_for_delivery': { lat: 0.03, lng: 0.05 },
         'delivered': { lat: 0.035, lng: 0.055 }
       }
-      
-      const offset = statusOffsets[this.trackingInfo?.status] || { lat: 0, lng: 0 }
-      
-      return {
-        lat: baseCoords.lat + offset.lat,
-        lng: baseCoords.lng + offset.lng
-      }
+      const o = off[this.trackingInfo?.status] || { lat: 0, lng: 0 }
+      return { lat: base.lat + o.lat, lng: base.lng + o.lng }
     },
-    
     destinationCoordinates() {
-      // Destino fixo em Recife (pode ser personalizado)
       return { lat: -8.061373, lng: -34.871141 }
     }
   },
   methods: {
     ...mapActions(['fetchRealTimeTracking']),
-    
     async refreshLocation() {
       this.refreshing = true
       try {
         await this.fetchRealTimeTracking(this.orderId)
         this.updateMap()
-      } catch (error) {
-        console.error('Erro ao atualizar localização:', error)
-      } finally {
-        this.refreshing = false
-      }
+      } catch (e) { console.error('Erro ao atualizar localização:', e) }
+      finally { this.refreshing = false }
     },
-    
     contactDriver() {
-      const phone = this.driverInfo.phone
-      if (phone) {
-        window.open(`tel:${phone}`, '_self')
-      }
+      if (this.driverInfo.phone) window.open(`tel:${this.driverInfo.phone}`, '_self')
     },
-    
-    formatRelativeTime(timestamp) {
-      if (!timestamp) return 'agora mesmo'
-      
+    formatRelativeTime(ts) {
+      if (!ts) return 'agora mesmo'
       try {
-        const date = new Date(timestamp)
-        const now = new Date()
-        const diffMs = now - date
-        const diffMins = Math.round(diffMs / 60000)
-        
-        if (diffMins < 1) return 'agora mesmo'
-        if (diffMins === 1) return 'há 1 minuto'
-        if (diffMins < 60) return `há ${diffMins} minutos`
-        if (diffMins < 120) return 'há 1 hora'
-        return `há ${Math.round(diffMins / 60)} horas`
-      } catch (error) {
-        return 'recentemente'
-      }
+        const d = new Date(ts)
+        const diff = Math.round((Date.now() - d) / 60000)
+        if (diff < 1) return 'agora mesmo'
+        if (diff === 1) return 'há 1 minuto'
+        if (diff < 60) return `há ${diff} minutos`
+        if (diff < 120) return 'há 1 hora'
+        return `há ${Math.round(diff / 60)} horas`
+      } catch { return 'recentemente' }
     },
-    
     initMap() {
-      // Inicializa o mapa
       this.map = L.map('tracking-map').setView([-8.047562, -34.877003], 13)
-      
-      // Adiciona tile layer do OpenStreetMap
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© OpenStreetMap contributors',
-        maxZoom: 18
+        attribution: '© OpenStreetMap contributors', maxZoom: 18
       }).addTo(this.map)
-      
-      // Ícone personalizado para o entregador
-      const driverIcon = L.divIcon({
-        html: '<div class="driver-marker"><i class="fas fa-motorcycle"></i></div>',
-        className: 'driver-icon',
-        iconSize: [30, 30],
-        iconAnchor: [15, 15]
-      })
-      
-      // Ícone para o destino
-      const destinationIcon = L.divIcon({
-        html: '<div class="destination-marker"><i class="fas fa-home"></i></div>',
-        className: 'destination-icon',
-        iconSize: [25, 25],
-        iconAnchor: [12, 12]
-      })
-      
-      // Adiciona marcador do destino
-      this.destinationMarker = L.marker(this.destinationCoordinates, { icon: destinationIcon })
-        .addTo(this.map)
-        .bindPopup('📍 Destino da Entrega')
-        .openPopup()
-      
-      // Adiciona marcador do entregador
+
+      this.destinationMarker = L.marker(this.destinationCoordinates, {
+        icon: L.divIcon({
+          html: '<div class="ltm-marker-dest"><svg viewBox="0 0 24 24" fill="var(--cf-green)" stroke="white" stroke-width="1.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3" fill="white"/></svg></div>',
+          className: 'ltm-marker-wrap', iconSize: [32, 32], iconAnchor: [16, 32]
+        })
+      }).addTo(this.map).bindPopup('📍 Destino da Entrega')
+
       this.updateDriverMarker()
-      
-      // Adiciona linha da rota
       this.updateRoute()
+      this.fitMap()
     },
-    
     updateDriverMarker() {
-      const driverIcon = L.divIcon({
-        html: '<div class="driver-marker"><i class="fas fa-motorcycle"></i></div>',
-        className: 'driver-icon',
-        iconSize: [30, 30],
-        iconAnchor: [15, 15]
-      })
-      
-      if (this.driverMarker) {
-        this.map.removeLayer(this.driverMarker)
-      }
-      
-      this.driverMarker = L.marker(this.currentCoordinates, { icon: driverIcon })
-        .addTo(this.map)
-        .bindPopup(`🚚 ${this.driverInfo.name}<br>${this.currentLocation}`)
+      if (this.driverMarker) this.map.removeLayer(this.driverMarker)
+      this.driverMarker = L.marker(this.currentCoordinates, {
+        icon: L.divIcon({
+          html: `<div class="ltm-pulse"><div class="ltm-pulse-core"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 1 1-14 0 7 7 0 0 1 14 0z"/></svg></div></div>`,
+          className: 'ltm-marker-wrap', iconSize: [44, 44], iconAnchor: [22, 22]
+        })
+      }).addTo(this.map).bindPopup(`🚚 ${this.driverInfo.name}<br>${this.currentLocation}`)
     },
-    
     updateRoute() {
-      if (this.routeLine) {
-        this.map.removeLayer(this.routeLine)
-      }
-      
-      // Cria uma rota simulada entre as coordenadas
-      const routeCoordinates = [
+      if (this.routeLine) this.map.removeLayer(this.routeLine)
+      const ghost = [
         this.currentCoordinates,
+        ...Array.from({ length: 20 }, (_, i) => {
+          const t = (i + 1) / 21
+          return L.latLng(
+            this.currentCoordinates.lat + (this.destinationCoordinates.lat - this.currentCoordinates.lat) * t + (Math.random() - 0.5) * 0.0015,
+            this.currentCoordinates.lng + (this.destinationCoordinates.lng - this.currentCoordinates.lng) * t + (Math.random() - 0.5) * 0.0015
+          )
+        }),
         this.destinationCoordinates
       ]
-      
-      this.routeLine = L.polyline(routeCoordinates, {
-        color: '#007bff',
-        weight: 4,
-        opacity: 0.7,
-        dashArray: '10, 10'
-      }).addTo(this.map)
+      this.routeLine = L.polyline(ghost, { color: '#B0AFA9', weight: 2, opacity: 0.25, dashArray: '6 8' }).addTo(this.map)
     },
-    
+    fitMap() {
+      if (!this.map || !this.driverMarker) return
+      this.map.fitBounds(L.latLngBounds([
+        this.driverMarker.getLatLng(), this.destinationCoordinates
+      ]), { padding: [50, 50], maxZoom: 15, animate: true })
+    },
     updateMap() {
       if (!this.map) return
-      
       this.updateDriverMarker()
       this.updateRoute()
-      
-      // Ajusta a visualização para mostrar ambos os marcadores
-      const bounds = L.latLngBounds([
-        this.currentCoordinates,
-        this.destinationCoordinates
-      ])
-      this.map.fitBounds(bounds, { padding: [20, 20] })
+      this.fitMap()
     },
-    
-    startMapAutoRefresh() {
-      // Atualiza o mapa a cada 30 segundos
+    startAutoRefresh() {
       this.mapInterval = setInterval(() => {
-        if (this.trackingInfo && this.trackingInfo.status !== 'delivered') {
-          this.refreshLocation()
-        }
+        if (this.trackingInfo && this.trackingInfo.status !== 'delivered') this.refreshLocation()
       }, 30000)
     },
-    
-    stopMapAutoRefresh() {
-      if (this.mapInterval) {
-        clearInterval(this.mapInterval)
-        this.mapInterval = null
-      }
+    stopAutoRefresh() {
+      if (this.mapInterval) { clearInterval(this.mapInterval); this.mapInterval = null }
     }
   },
-  
   watch: {
-    trackingInfo: {
-      handler() {
-        this.updateMap()
-      },
-      deep: true
-    }
+    trackingInfo: { handler() { this.updateMap() }, deep: true }
   },
-  
   async mounted() {
-    // Aguarda o DOM estar pronto
-    this.$nextTick(() => {
-      this.initMap()
-    })
-    
-    // Busca dados iniciais
-    if (!this.trackingInfo) {
-      await this.refreshLocation()
-    } else {
-      this.updateMap()
-    }
-    
-    // Inicia atualização automática
-    this.startMapAutoRefresh()
+    this.$nextTick(() => this.initMap())
+    if (!this.trackingInfo) await this.refreshLocation()
+    else this.updateMap()
+    this.startAutoRefresh()
   },
-  
   beforeUnmount() {
-    this.stopMapAutoRefresh()
-    if (this.map) {
-      this.map.remove(); this.map = null
-
-    }
+    this.stopAutoRefresh()
+    if (this.map) { this.map.remove(); this.map = null }
   }
 }
 </script>
 
 <style scoped>
-.live-tracking-map {
-  margin-bottom: 2rem;
-}
-
-.status-card {
-  background: white;
-  padding: 1.5rem;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
-
-.status-header {
+/* ── CONTAINER ── */
+.ltm-wrap {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1rem;
+  flex-direction: column;
+  gap: 16px;
+  font-family: var(--cf-sans, 'DM Sans', system-ui, sans-serif);
 }
 
-.status-badge {
-  padding: 0.4rem 0.8rem;
-  border-radius: 20px;
-  font-size: 0.8rem;
-  font-weight: bold;
-}
-
-.status-confirmed { background: #17a2b8; color: white; }
-.status-processing { background: #ffc107; color: #000; }
-.status-shipped { background: #fd7e14; color: white; }
-.status-delivery { background: #007bff; color: white; }
-.status-delivered { background: #28a745; color: white; }
-
-.progress-container {
-  height: 8px;
-  background: #e9ecef;
-  border-radius: 4px;
+/* ── CARDS ── */
+.ltm-card {
+  background: rgba(255,255,255,0.92);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--cf-border, rgba(28,28,26,0.10));
+  border-radius: var(--cf-r-lg, 12px);
+  box-shadow: var(--cf-shadow-sm, 0 2px 8px rgba(0,0,0,0.07));
   overflow: hidden;
-  margin-bottom: 0.5rem;
+  transition: box-shadow 0.25s var(--cf-ease, ease);
+}
+.ltm-card:hover {
+  box-shadow: var(--cf-shadow-md, 0 6px 24px rgba(0,0,0,0.09));
 }
 
-.progress-bar {
-  height: 100%;
-  background: linear-gradient(90deg, #28a745, #007bff);
-  border-radius: 4px;
-  transition: width 0.5s ease;
-}
+/* ── ICONS ── */
+.ltm-icon { width: 20px; height: 20px; color: var(--cf-green, #2A5C45); flex-shrink: 0; }
+.ltm-icon-sm { width: 16px; height: 16px; flex-shrink: 0; }
+.ltm-icon-xs { width: 15px; height: 15px; color: var(--cf-green, #2A5C45); flex-shrink: 0; }
+.ltm-icon-xxs { width: 12px; height: 12px; margin-right: 4px; }
 
-.progress-text {
-  font-size: 0.9rem;
-  color: #6c757d;
-  text-align: center;
-}
-
-.card {
+/* ── STATUS CARD ── */
+.ltm-card-status {
+  background: linear-gradient(135deg, var(--cf-green-dark, #1C3D2E) 0%, var(--cf-green, #2A5C45) 100%);
   border: none;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  box-shadow: 0 4px 20px rgba(42,92,69,0.25);
+}
+.ltm-status-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px 12px;
+}
+.ltm-status-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.ltm-status-left .ltm-icon { color: rgba(255,255,255,0.8); }
+.ltm-status-label {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: rgba(255,255,255,0.9);
+  letter-spacing: 0.02em;
+}
+.ltm-badge {
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.badge-confirmed { background: rgba(255,255,255,0.2); color: white; }
+.badge-processing { background: rgba(255,255,255,0.2); color: white; }
+.badge-transit { background: var(--cf-gold-light, #F8F0DC); color: var(--cf-gold, #B89550); }
+.badge-near { background: var(--cf-gold-light, #F8F0DC); color: var(--cf-gold, #B89550); }
+.badge-done { background: rgba(255,255,255,0.25); color: white; }
+
+.ltm-progress {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 20px 16px;
+}
+.ltm-progress-track {
+  flex: 1;
+  height: 6px;
+  background: rgba(255,255,255,0.15);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.ltm-progress-bar {
+  height: 100%;
+  background: var(--cf-gold, #B89550);
+  border-radius: 3px;
+  transition: width 0.6s cubic-bezier(0.16,1,0.3,1);
+}
+.ltm-progress-text {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: rgba(255,255,255,0.8);
+  min-width: 32px;
+  text-align: right;
 }
 
-.tracking-map {
-  height: 300px;
+/* ── MAP CARD ── */
+.ltm-map-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--cf-border, rgba(28,28,26,0.10));
+}
+.ltm-map-title {
+  flex: 1;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--cf-text-dark, #1C1C1A);
+}
+.ltm-refresh {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: none;
+  background: var(--cf-cream, #F4F1EB);
+  color: var(--cf-green, #2A5C45);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+.ltm-refresh:hover { background: var(--cf-green-light, #E8F2EC); }
+.ltm-refresh:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.ltm-map-body {
+  position: relative;
+}
+.ltm-map-el {
+  height: 280px;
   width: 100%;
-  border-radius: 0 0 8px 8px;
 }
 
-.map-overlay {
+.ltm-map-overlay {
   position: absolute;
   top: 10px;
   left: 10px;
   right: 10px;
-  background: rgba(255, 255, 255, 0.95);
-  padding: 10px;
-  border-radius: 6px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-  z-index: 1000;
+  background: rgba(255,255,255,0.94);
+  backdrop-filter: blur(8px);
+  padding: 10px 14px;
+  border-radius: 10px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.12);
 }
-
-.location-address {
-  font-size: 0.9rem;
-  margin-bottom: 0.25rem;
-}
-
-.location-update {
-  font-size: 0.75rem;
-}
-
-.driver-info {
+.ltm-overlay-row {
   display: flex;
   align-items: center;
-  gap: 1rem;
-  margin-bottom: 1rem;
+  gap: 6px;
+  margin-bottom: 2px;
+}
+.ltm-overlay-row .ltm-icon-xs { color: var(--cf-green, #2A5C45); }
+.ltm-overlay-text {
+  font-size: 0.78rem;
+  color: var(--cf-text-dark, #1C1C1A);
+  line-height: 1.3;
+}
+.ltm-overlay-meta {
+  font-size: 0.7rem;
+  color: var(--cf-text-muted, #868680);
+  display: flex;
+  align-items: center;
+  margin-top: 2px;
 }
 
-.driver-avatar {
-  width: 50px;
-  height: 50px;
+/* ── DRIVER CARD ── */
+.ltm-driver-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--cf-border, rgba(28,28,26,0.10));
+  background: var(--cf-ivory, #FAF9F6);
+}
+.ltm-driver-title {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--cf-text-dark, #1C1C1A);
+}
+.ltm-driver-body {
+  padding: 16px;
+}
+.ltm-driver-main {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+.ltm-driver-avatar {
+  width: 52px;
+  height: 52px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, var(--cf-green, #2A5C45), var(--cf-green-mid, #3D7A5E));
   display: flex;
   align-items: center;
   justify-content: center;
   color: white;
-  font-size: 1.2rem;
+  flex-shrink: 0;
 }
-
-.driver-details {
-  flex: 1;
+.ltm-driver-avatar svg { width: 26px; height: 26px; }
+.ltm-driver-info { flex: 1; }
+.ltm-driver-name {
+  display: block;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--cf-text-dark, #1C1C1A);
+  margin-bottom: 2px;
 }
-
-.driver-name {
-  font-weight: bold;
-  margin-bottom: 0.25rem;
-}
-
-.driver-rating {
-  font-size: 0.8rem;
-}
-
-.rating-text {
-  margin-left: 0.5rem;
-  color: #6c757d;
-}
-
-.driver-contact {
-  font-size: 0.9rem;
-}
-
-.contact-item {
+.ltm-driver-rating {
   display: flex;
   align-items: center;
-  margin-bottom: 0.5rem;
+  gap: 2px;
 }
+.ltm-star {
+  width: 14px;
+  height: 14px;
+  color: var(--cf-text-faint, #B0AFA9);
+}
+.ltm-star.full {
+  fill: var(--cf-gold, #B89550);
+  color: var(--cf-gold, #B89550);
+}
+.ltm-star.half {
+  fill: var(--cf-gold, #B89550);
+  color: var(--cf-gold, #B89550);
+  opacity: 0.5;
+}
+.ltm-rating-text {
+  margin-left: 4px;
+  font-size: 0.75rem;
+  color: var(--cf-text-muted, #868680);
+  font-weight: 600;
+}
+.ltm-driver-contact {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 14px;
+  padding: 12px;
+  background: var(--cf-ivory, #FAF9F6);
+  border-radius: var(--cf-r-md, 8px);
+}
+.ltm-contact-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  color: var(--cf-text-mid, #4A4A47);
+}
+.ltm-call-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 12px;
+  border: none;
+  border-radius: var(--cf-r-md, 8px);
+  background: var(--cf-green, #2A5C45);
+  color: white;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: var(--cf-sans, 'DM Sans', system-ui, sans-serif);
+}
+.ltm-call-btn:hover {
+  background: var(--cf-green-dark, #1C3D2E);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(42,92,69,0.25);
+}
+.ltm-call-btn .ltm-icon-sm { color: white; }
 
-.delivery-details {
+/* ── DETAILS CARD ── */
+.ltm-details-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--cf-border, rgba(28,28,26,0.10));
+  background: var(--cf-ivory, #FAF9F6);
+}
+.ltm-details-title {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--cf-text-dark, #1C1C1A);
+}
+.ltm-details-body {
+  padding: 8px 16px;
   display: grid;
-  gap: 0.75rem;
+  gap: 0;
 }
-
-.detail-item {
+.ltm-detail-item {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0.5rem 0;
-  border-bottom: 1px solid #f8f9fa;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--cf-border, rgba(28,28,26,0.10));
 }
-
-.detail-item:last-child {
-  border-bottom: none;
-}
-
-.detail-label {
-  color: #6c757d;
-  font-size: 0.9rem;
+.ltm-detail-item:last-child { border-bottom: none; }
+.ltm-detail-label {
   display: flex;
   align-items: center;
+  gap: 8px;
+  font-size: 0.82rem;
+  color: var(--cf-text-muted, #868680);
+}
+.ltm-detail-value {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--cf-text-dark, #1C1C1A);
 }
 
-.detail-value {
-  font-weight: 600;
-  color: #2c3e50;
+/* ── MAP MARKERS ── */
+.ltm-marker-wrap { background: none !important; border: none !important; }
+.ltm-marker-dest { filter: drop-shadow(0 2px 8px rgba(42,92,69,0.4)); }
+.ltm-marker-dest svg { display: block; }
+.ltm-pulse {
+  width: 44px; height: 44px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
-
-.btn {
-  padding: 0.75rem;
-}
-
-/* Estilos para os marcadores do mapa */
-.driver-marker {
-  background: #007bff;
-  border: 3px solid white;
+.ltm-pulse-core {
+  width: 36px; height: 36px;
   border-radius: 50%;
-  width: 30px;
-  height: 30px;
+  background: linear-gradient(135deg, var(--cf-green, #2A5C45), var(--cf-green-mid, #3D7A5E));
   display: flex;
   align-items: center;
   justify-content: center;
   color: white;
-  font-size: 0.8rem;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
-  animation: pulse 2s infinite;
+  box-shadow: 0 0 0 4px rgba(42,92,69,0.25);
+  animation: ltm-pulse 2s ease-in-out infinite;
+}
+.ltm-pulse-core svg { width: 18px; height: 18px; }
+@keyframes ltm-pulse {
+  0%, 100% { box-shadow: 0 0 0 4px rgba(42,92,69,0.25); }
+  50% { box-shadow: 0 0 0 14px rgba(42,92,69,0.08); }
 }
 
-.destination-marker {
-  background: #28a745;
-  border: 3px solid white;
-  border-radius: 50%;
-  width: 25px;
-  height: 25px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-  font-size: 0.7rem;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
-}
+/* ── ANIMATIONS ── */
+.spin { animation: ltm-spin 0.8s linear infinite; }
+@keyframes ltm-spin { to { transform: rotate(360deg); } }
 
-@keyframes pulse {
-  0% { transform: scale(1); }
-  50% { transform: scale(1.1); }
-  100% { transform: scale(1); }
-}
-
-/* Responsividade */
+/* ── RESPONSIVE ── */
 @media (max-width: 768px) {
-  .tracking-map {
-    height: 250px;
-  }
-  
-  .status-header {
-    flex-direction: column;
-    gap: 0.5rem;
-    text-align: center;
-  }
+  .ltm-map-el { height: 220px; }
+  .ltm-card-status { border-radius: var(--cf-r-md, 8px); }
+  .ltm-marker-dest { filter: drop-shadow(0 1px 4px rgba(42,92,69,0.3)); }
+  .ltm-pulse-core { width: 30px; height: 30px; }
+  .ltm-pulse-core svg { width: 14px; height: 14px; }
 }
 </style>
-[file content end]

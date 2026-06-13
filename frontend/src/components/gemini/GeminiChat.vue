@@ -287,9 +287,12 @@ export default {
           ? `${this.weatherData.temp.toFixed(1)}°C em ${this.weatherData.city}, ${this.weatherData.conditionDescription}`
           : null;
 
+        const userId = localStorage.getItem('userId')
+
         const response = await api.post('/gemini/chat', {
           message: message,
-          weatherContext: weatherContext
+          weatherContext: weatherContext,
+          usuarioId: userId ? parseInt(userId) : null
         })
 
         let responseContent = response.data.response

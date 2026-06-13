@@ -10,6 +10,7 @@ public class ProdutoResponseDTO {
     private String descricao;
     private BigDecimal preco;
     private Integer estoque;
+    private String imagem;
     private Long categoriaId;
     private String categoriaNome;
     private LocalDateTime dataCriacao;
@@ -21,6 +22,7 @@ public class ProdutoResponseDTO {
         this.descricao = produto.getDescricao();
         this.preco = produto.getPreco();
         this.estoque = produto.getEstoque();
+        this.imagem = produto.getImagem();
         this.dataCriacao = produto.getDataCriacao();
         this.dataAtualizacao = produto.getDataAtualizacao();
 
@@ -45,6 +47,9 @@ public class ProdutoResponseDTO {
 
     public Integer getEstoque() { return estoque; }
     public void setEstoque(Integer estoque) { this.estoque = estoque; }
+
+    public String getImagem() { return imagem; }
+    public void setImagem(String imagem) { this.imagem = imagem; }
 
     public Long getCategoriaId() { return categoriaId; }
     public void setCategoriaId(Long categoriaId) { this.categoriaId = categoriaId; }

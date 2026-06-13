@@ -14,17 +14,22 @@ public interface PedidoRepository extends JpaRepository<Pedido, Long> {
 
     List<Pedido> findByUsuarioId(Long usuarioId);
 
+    List<Pedido> findByUsuarioIdOrderByDataPedidoDesc(Long usuarioId);
+
+    Pedido findByCodigoPedido(String codigoPedido);
+
     List<Pedido> findByStatus(StatusPedido status);
 
     List<Pedido> findByDataPedidoBetween(LocalDateTime inicio, LocalDateTime fim);
 
     List<Pedido> findTop10ByOrderByDataPedidoDesc();
 
-    @Query("SELECT p FROM Pedido p LEFT JOIN FETCH p.itens WHERE p.usuario.id = :usuarioId")
+    @Query("SELECT DISTINCT p FROM Pedido p LEFT JOIN FETCH p.itens WHERE p.usuario.id = :usuarioId")
     List<Pedido> findPedidosComItensByUsuario(@Param("usuarioId") Long usuarioId);
 
     @Query("SELECT p FROM Pedido p LEFT JOIN FETCH p.rastreio WHERE p.codigoPedido = :codigo")
     Pedido findByCodigoPedidoWithRastreio(@Param("codigo") String codigo);
+
 
     @Query("SELECT ip.produto.id, SUM(ip.quantidade), SUM(ip.subtotal) FROM ItemPedido ip GROUP BY ip.produto.id ORDER BY SUM(ip.quantidade) DESC")
     List<Object[]> findTopProdutos();

@@ -19,4 +19,9 @@ describe('Login', () => {
     cy.get('form').submit()
     cy.contains('Email inválido').should('be.visible')
   })
+
+  it('deve mostrar botão de login com Google', () => {
+    cy.get('.google-login-wrapper').should('be.visible')
+    cy.contains('ou').should('be.visible')
+  })
 })

@@ -49,7 +49,7 @@
                 </span>
               </td>
               <td class="text-end fw-semibold">R$ {{ formatValue(order.valorTotal) }}</td>
-              <td class="text-end pe-4">
+              <td class="text-end pe-4 d-flex gap-1 justify-content-end">
                 <button @click="openStatusModal(order)" class="cf-btn cf-btn-secondary cf-btn-sm">
                   <i class="fas fa-arrow-right-arrow-left me-1"></i>
                   Status
@@ -74,7 +74,7 @@
         </div>
         <div class="modal-body">
           <p class="mb-3">
-            Pedido <strong>#{{ selectedOrder?.codigoPedido }}</strong> - 
+            Pedido <strong>#{{ selectedOrder?.codigoPedido }}</strong> -
             <span class="cf-text-muted">{{ selectedOrder?.usuarioNome }}</span>
           </p>
           <label class="form-label">Novo Status</label>
@@ -87,6 +87,10 @@
             <option value="ENTREGUE">Entregue</option>
             <option value="CANCELADO">Cancelado</option>
           </select>
+          <div v-if="whatsappFeedback" :class="['alert', whatsappFeedback.success ? 'alert-success' : 'alert-info', 'd-flex', 'align-items-center', 'gap-2', 'py-2', 'px-3', 'mb-3']">
+            <i :class="whatsappFeedback.success ? 'fas fa-check-circle' : 'fas fa-info-circle'"></i>
+            <span>{{ whatsappFeedback.message }}</span>
+          </div>
           <div class="d-flex gap-2 justify-content-end">
             <button class="cf-btn cf-btn-secondary" @click="closeStatusModal">Cancelar</button>
             <button class="cf-btn cf-btn-primary" @click="updateStatus">Confirmar</button>
@@ -94,6 +98,7 @@
         </div>
       </div>
     </div>
+
   </div>
 </template>
 
@@ -118,8 +123,9 @@ export default {
       },
       showStatusModal: false,
       selectedOrder: null,
-      newStatus: 'PAGO'
-    }
+      newStatus: '',
+      whatsappFeedback: null
+    };
   },
   computed: {
     filteredOrders() {
@@ -139,7 +145,7 @@ export default {
         const res = await adminService.getOrders();
         this.orders = (res.data || []).map(o => ({
           ...o,
-          usuarioNome: o.usuario?.nome || 'Desconhecido'
+          usuarioNome: o.usuario?.nome || 'Desconhecido',
         }));
       } catch (e) {
         console.error('Erro ao buscar pedidos:', e);
@@ -159,18 +165,29 @@ export default {
     openStatusModal(order) {
       this.selectedOrder = order;
       this.newStatus = order.status;
+      this.whatsappFeedback = null;
       this.showStatusModal = true;
     },
     closeStatusModal() {
       this.showStatusModal = false;
       this.selectedOrder = null;
+      this.whatsappFeedback = null;
     },
     async updateStatus() {
       if (!this.selectedOrder) return;
       try {
-        await adminService.updateOrderStatus(this.selectedOrder.id, this.newStatus);
+        this.whatsappFeedback = null;
+        const resp = await adminService.updateOrderStatus(this.selectedOrder.id, this.newStatus);
         await this.fetchOrders();
-        this.closeStatusModal();
+        const dados = resp.data?.dados;
+        if (dados?.whatsappMensagem) {
+          this.whatsappFeedback = {
+            success: dados.whatsappEnviado,
+            message: dados.whatsappMensagem
+          };
+        } else {
+          this.closeStatusModal();
+        }
       } catch (e) {
         alert('Erro ao atualizar: ' + (e.response?.data?.message || e.message));
       }
@@ -244,4 +261,5 @@ export default {
 .modal-body { padding: 24px; }
 
 .form-label { display: block; font-size: 0.8125rem; font-weight: 500; color: var(--cf-slate-700); margin-bottom: 6px; }
+
 </style>

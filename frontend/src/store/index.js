@@ -473,6 +473,22 @@ export default createStore({
       }
     },
 
+    async loginWithGoogle({ commit }, credential) {
+      try {
+        const response = await authService.googleLogin(credential);
+        const user = response.data;
+        commit('SET_USER', user);
+        commit('SET_AUTH_TOKEN', user.token);
+        localStorage.setItem('user', JSON.stringify(user));
+        localStorage.setItem('authToken', user.token);
+        console.log('✅ Login Google realizado com sucesso:', user);
+        return user;
+      } catch (error) {
+        console.error('❌ Erro no login Google:', error.response?.data || error.message);
+        throw error.response?.data || { message: 'Erro na autenticação com Google' };
+      }
+    },
+
     // ⬇️⬇️⬇️ ACTION REGISTER CORRIGIDA ⬇️⬇️⬇️
     async register({ commit }, userData) {
       try {
@@ -511,12 +527,12 @@ export default createStore({
       } catch (error) {
         console.error('Erro ao buscar produtos do backend, usando mock:', error.message);
         const mockProducts = [
-          { id: 1, nome: 'Paracetamol 500mg', preco: 12.90, categoriaNome: 'Medicamentos', descricao: 'Analgésico e antitérmico', estoque: 150 },
-          { id: 2, nome: 'Dipirona 500mg', preco: 8.50, categoriaNome: 'Medicamentos', descricao: 'Analgésico e antitérmico', estoque: 89 },
-          { id: 3, nome: 'Shampoo Anti-Caspa', preco: 24.90, categoriaNome: 'Higiene', descricao: 'Shampoo para controle de caspa', estoque: 45 },
-          { id: 4, nome: 'Vitamina C 1000mg', preco: 45.00, categoriaNome: 'Vitaminas', descricao: 'Suplemento de vitamina C', estoque: 23 },
-          { id: 5, nome: 'Protetor Solar FPS 50', preco: 32.90, categoriaNome: 'Cosméticos', descricao: 'Protetor solar facial', estoque: 0 },
-          { id: 6, nome: 'Fralda P - 30 unidades', preco: 28.90, categoriaNome: 'Maternidade', descricao: 'Fraldas para bebê', estoque: 67 }
+          { id: 1, nome: 'Paracetamol 500mg', preco: 12.90, categoriaNome: 'Medicamentos', descricao: 'Analgésico e antitérmico', estoque: 150, imagem: 'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=300&h=300&fit=crop&auto=format' },
+          { id: 2, nome: 'Dipirona 500mg', preco: 8.50, categoriaNome: 'Medicamentos', descricao: 'Analgésico e antitérmico', estoque: 89, imagem: 'https://images.unsplash.com/photo-1631549916768-4119b2e5f926?w=300&h=300&fit=crop&auto=format' },
+          { id: 3, nome: 'Shampoo Anti-Caspa', preco: 24.90, categoriaNome: 'Higiene', descricao: 'Shampoo para controle de caspa', estoque: 45, imagem: 'https://images.unsplash.com/photo-1625504615927-c14f9f2b0ddb?w=300&h=300&fit=crop&auto=format' },
+          { id: 4, nome: 'Vitamina C 1000mg', preco: 45.00, categoriaNome: 'Vitaminas', descricao: 'Suplemento de vitamina C', estoque: 23, imagem: 'https://images.unsplash.com/photo-1620916566398-39f1143ab7be?w=300&h=300&fit=crop&auto=format' },
+          { id: 5, nome: 'Protetor Solar FPS 50', preco: 32.90, categoriaNome: 'Cosméticos', descricao: 'Protetor solar facial', estoque: 0, imagem: 'https://images.unsplash.com/photo-1611930022073-b7a4ba5fcccd?w=300&h=300&fit=crop&auto=format' },
+          { id: 6, nome: 'Fralda P - 30 unidades', preco: 28.90, categoriaNome: 'Maternidade', descricao: 'Fraldas para bebê', estoque: 67, imagem: 'https://images.unsplash.com/photo-1622286342621-4bd786c2447c?w=300&h=300&fit=crop&auto=format' }
         ];
         commit('SET_PRODUCTS', mockProducts);
       }
@@ -536,7 +552,28 @@ export default createStore({
         });
         commit('SET_WEATHER_RECOMMENDATIONS', data.recommendedProducts || []);
       } catch (error) {
-        commit('SET_WEATHER_ERROR', error.response?.data || 'Falha ao carregar clima');
+        console.error('Erro ao buscar clima do backend, usando mock:', error.message);
+        const mockData = {
+          temp: 26.5,
+          condition: 'Clear',
+          conditionDescription: 'ceu limpo',
+          city: 'Sua regiao',
+          recommendedProducts: [
+            { id: 1, nome: 'Protetor Solar FPS 50', preco: 32.90, categoriaNome: 'Cosmeticos' },
+            { id: 2, nome: 'Hidratante Corporal', preco: 25.90, categoriaNome: 'Cosmeticos' },
+            { id: 3, nome: 'Agua Termal 300ml', preco: 18.50, categoriaNome: 'Cosmeticos' },
+            { id: 4, nome: 'Vitamina C 1000mg', preco: 45.00, categoriaNome: 'Vitaminas' },
+            { id: 5, nome: 'Shampoo Antiqueda', preco: 32.90, categoriaNome: 'Higiene' },
+            { id: 6, nome: 'Sabonete Liquido', preco: 12.90, categoriaNome: 'Higiene' }
+          ]
+        };
+        commit('SET_WEATHER_DATA', {
+          temp: mockData.temp,
+          condition: mockData.condition,
+          conditionDescription: mockData.conditionDescription,
+          city: mockData.city
+        });
+        commit('SET_WEATHER_RECOMMENDATIONS', mockData.recommendedProducts);
       } finally {
         commit('SET_WEATHER_LOADING', false);
       }

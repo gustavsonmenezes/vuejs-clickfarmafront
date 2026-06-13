@@ -40,6 +40,7 @@ public class ProdutoService {
         produto.setDescricao(produtoDTO.getDescricao());
         produto.setPreco(produtoDTO.getPreco());
         produto.setEstoque(produtoDTO.getEstoque());
+        produto.setImagem(produtoDTO.getImagem());
 
         if (produtoDTO.getCategoriaId() != null) {
             Categoria categoria = categoriaRepository.findById(produtoDTO.getCategoriaId())
@@ -114,6 +115,7 @@ public class ProdutoService {
         produto.setDescricao(produtoDTO.getDescricao());
         produto.setPreco(produtoDTO.getPreco());
         produto.setEstoque(produtoDTO.getEstoque());
+        produto.setImagem(produtoDTO.getImagem());
 
         if (produtoDTO.getCategoriaId() != null) {
             Categoria categoria = categoriaRepository.findById(produtoDTO.getCategoriaId())

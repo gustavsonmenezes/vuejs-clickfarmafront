@@ -31,6 +31,10 @@ export const authService = {
 
   async getProfile() {
     return api.get('/profile')
+  },
+
+  async googleLogin(credential) {
+    return api.post('/auth/google', { credential })
   }
 }
 

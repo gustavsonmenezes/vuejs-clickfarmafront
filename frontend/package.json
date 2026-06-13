@@ -15,7 +15,9 @@
     "cypress:open": "cypress open",
     "cypress:run": "cypress run --headless",
     "test:e2e": "cypress run",
-    "test:e2e:open": "cypress open"
+    "test:e2e:open": "cypress open",
+    "lint": "eslint src/ --ext .js,.vue --max-warnings=30",
+    "lint:fix": "eslint src/ --ext .js,.vue --fix"
   },
   "dependencies": {
     "axios": "^1.4.0",
@@ -40,6 +42,7 @@
     "babel-loader": "^9.1.0",
     "css-loader": "^6.8.1",
     "cypress": "^15.15.0",
+    "eslint": "^8.56.0",
     "html-webpack-plugin": "^5.5.3",
     "jest": "^27.5.1",
     "jsdom": "^24.1.3",

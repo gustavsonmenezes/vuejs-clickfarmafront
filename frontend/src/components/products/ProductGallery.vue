@@ -34,6 +34,9 @@ export default {
   },
   computed: {
     mainImage() {
+      if (this.product.imagem) {
+        return this.product.imagem
+      }
       if (this.product.images && this.product.images.length > 0) {
         return this.product.images[this.currentImageIndex]
       }

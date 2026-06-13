@@ -4,13 +4,17 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.HashMap;
 
 @Service
 public class GroqService {
@@ -23,6 +27,9 @@ public class GroqService {
     private final WebClient webClient;
     private final ObjectMapper objectMapper;
 
+    @Autowired
+    private ChatToolService chatToolService;
+
     public GroqService() {
         this.webClient = WebClient.builder()
                 .baseUrl("https://api.groq.com/openai/v1")
@@ -31,46 +38,61 @@ public class GroqService {
     }
 
     public Mono<String> chat(String mensagem) {
-        return chat(mensagem, 0.3, null);
+        return chat(mensagem, 0.3, null, null);
     }
 
     public Mono<String> chat(String mensagem, String weatherContext) {
-        return chat(mensagem, 0.3, weatherContext);
+        return chat(mensagem, 0.3, weatherContext, null);
+    }
+
+    public Mono<String> chat(String mensagem, Long usuarioId) {
+        return chat(mensagem, 0.3, null, usuarioId);
     }
 
     public boolean isConfigured() {
         return apiKey != null && !apiKey.isBlank();
     }
 
+    public Mono<String> chat(String mensagem, String weatherContext, Long usuarioId) {
+        return chat(mensagem, 0.3, weatherContext, usuarioId);
+    }
+
     public Mono<String> chat(String mensagem, double temperature, String weatherContext) {
+        return chat(mensagem, temperature, weatherContext, null);
+    }
+
+    public Mono<String> chat(String mensagem, double temperature, String weatherContext, Long usuarioId) {
         if (apiKey == null || apiKey.isEmpty()) {
             return Mono.error(new IllegalStateException("GROQ_API_KEY (ou groq.api.key) nao configurada"));
         }
 
-        String systemPrompt = "Voce e o chatbot da ClickFarma, uma farmacia online. " +
-            "REGRAS ABSOLUTAS — NAO QUEBRE NENHUMA:\n" +
-            "1. MAXIMO 2-3 frases. NUNCA mais que 3 linhas.\n" +
-            "2. VAI DIRETO AO PONTO. Sem saudacoes, sem 'claro', sem 'existem varios'.\n" +
-            "3. Cite apenas 1-2 nomes de remedios com dosagem.\n" +
-            "4. NAO faca listas. NAO use bullet points. NAO use numeracao.\n" +
-            "5. NUNCA diga 'consulte um medico' a menos que seja emergencia real.\n" +
-            "6. Responda em portugues brasileiro.\n" +
-            "7. Se nao souber: 'Nao tenho essa informacao.'\n" +
-            "8. SOBRE O DESENVOLVEDOR: Se perguntarem quem criou o sistema, responda exatamente: 'O Sistema ClickFarma foi desenvolvido por Gustavson Barros e Douglas Tranquilino.'\n" +
-            "9. REGRA DE OURO: Quando o usuario perguntar sobre sintomas ou pedir recomendacao de remedio, voce DEVE incluir a tag |CARRINHO:NomeExatoProduto| no final da frase. Exemplo: 'Para dor de cabeca use Dipirona. |CARRINHO:Dipirona|'";
+        String systemPrompt = buildSystemPrompt(weatherContext, usuarioId);
 
-        if (weatherContext != null && !weatherContext.isBlank()) {
-            systemPrompt += "\n10. CONTEXTO DE CLIMA: " + weatherContext + ". Use essa informacao para sugerir produtos relevantes ao clima quando apropriado.";
+        List<Map<String, Object>> messages = new ArrayList<>();
+        messages.add(Map.of("role", "system", "content", systemPrompt));
+        messages.add(Map.of("role", "user", "content", mensagem));
+
+        List<Map<String, Object>> tools = chatToolService.getToolDefinitions();
+
+        return chatWithTools(messages, tools, usuarioId, 0, temperature);
+    }
+
+    private Mono<String> chatWithTools(List<Map<String, Object>> messages, List<Map<String, Object>> tools,
+                                        Long usuarioId, int depth, double temperature) {
+        if (depth > 5) {
+            return Mono.just("Limite de consultas atingido. Tente perguntar de forma mais direta.");
         }
 
         Map<String, Object> requestBody = new HashMap<>();
         requestBody.put("model", "llama-3.3-70b-versatile");
-        requestBody.put("messages", List.of(
-            Map.of("role", "system", "content", systemPrompt),
-            Map.of("role", "user", "content", mensagem)
-        ));
+        requestBody.put("messages", messages);
         requestBody.put("temperature", temperature);
-        requestBody.put("max_tokens", 150);
+        requestBody.put("max_tokens", 500);
+
+        if (tools != null && !tools.isEmpty()) {
+            requestBody.put("tools", tools);
+            requestBody.put("tool_choice", "auto");
+        }
 
         return webClient.post()
                 .uri("/chat/completions")
@@ -79,14 +101,113 @@ public class GroqService {
                 .bodyValue(requestBody)
                 .retrieve()
                 .bodyToMono(String.class)
-                .map(responseBody -> {
-                    try {
-                        JsonNode root = objectMapper.readTree(responseBody);
-                        return root.path("choices").get(0).path("message").path("content").asText();
-                    } catch (Exception e) {
-                        return "Erro ao processar resposta: " + e.getMessage();
-                    }
+                .flatMap(responseBody -> processResponse(responseBody, messages, tools, usuarioId, depth, temperature))
+                .onErrorResume(e -> {
+                    log.error("Erro na chamada Groq: {}", e.getMessage());
+                    return Mono.just("Desculpe, ocorreu um erro ao processar sua solicitação. Tente novamente.");
                 });
+    }
+
+    private Mono<String> processResponse(String responseBody, List<Map<String, Object>> messages,
+                                          List<Map<String, Object>> tools, Long usuarioId,
+                                          int depth, double temperature) {
+        try {
+            JsonNode root = objectMapper.readTree(responseBody);
+            JsonNode messageNode = root.path("choices").get(0).path("message");
+            JsonNode toolCalls = messageNode.path("tool_calls");
+
+            if (toolCalls.isMissingNode() || toolCalls.isEmpty()) {
+                String content = messageNode.path("content").asText("");
+                if (content.isBlank()) {
+                    content = "Nao entendi. Pode reformular?";
+                }
+                return Mono.just(content);
+            }
+
+            List<Map<String, Object>> updatedMessages = new ArrayList<>(messages);
+            updatedMessages.add(jsonNodeToMessageMap(messageNode));
+
+            for (int i = 0; i < toolCalls.size(); i++) {
+                JsonNode tc = toolCalls.get(i);
+                String toolName = tc.path("function").path("name").asText();
+                String args = tc.path("function").path("arguments").asText();
+                String toolCallId = tc.path("id").asText();
+
+                log.info("Tool call #{}: {} (args: {})", i, toolName, args);
+                String result = chatToolService.executeTool(toolName, args, usuarioId);
+                log.info("Tool result #{}: {} chars", i, result.length());
+
+                Map<String, Object> toolMessage = new LinkedHashMap<>();
+                toolMessage.put("role", "tool");
+                toolMessage.put("tool_call_id", toolCallId);
+                toolMessage.put("content", result);
+                updatedMessages.add(toolMessage);
+            }
+
+            return chatWithTools(updatedMessages, tools, usuarioId, depth + 1, temperature);
+        } catch (Exception e) {
+            log.error("Erro ao processar resposta Groq: {}", e.getMessage());
+            return Mono.just("Desculpe, tive um problema ao processar a resposta.");
+        }
+    }
+
+    private String buildSystemPrompt(String weatherContext, Long usuarioId) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("Voce e o chatbot da ClickFarma, uma farmacia online. ");
+        sb.append("REGRAS ABSOLUTAS — NAO QUEBRE NENHUMA:\n");
+        sb.append("1. MAXIMO 2-3 frases. NUNCA mais que 3 linhas.\n");
+        sb.append("2. VAI DIRETO AO PONTO. Sem saudacoes, sem 'claro', sem 'existem varios'.\n");
+        sb.append("3. Cite apenas 1-2 nomes de remedios com dosagem.\n");
+        sb.append("4. NAO faca listas. NAO use bullet points. NAO use numeracao.\n");
+        sb.append("5. NUNCA diga 'consulte um medico' a menos que seja emergencia real.\n");
+        sb.append("6. Responda em portugues brasileiro.\n");
+        sb.append("7. Se nao souber: 'Nao tenho essa informacao.'\n");
+        sb.append("8. SOBRE O DESENVOLVEDOR: Se perguntarem quem criou o sistema, responda exatamente: 'O Sistema ClickFarma foi desenvolvido por Gustavson Barros e Douglas Tranquilino.'\n");
+        sb.append("9. REGRA DE OURO: Quando o usuario perguntar sobre sintomas ou pedir recomendacao de remedio, voce DEVE incluir a tag |CARRINHO:NomeExatoProduto| no final da frase. Exemplo: 'Para dor de cabeca use Dipirona. |CARRINHO:Dipirona|'\n");
+        sb.append("10. FUNCIONAMENTO DAS FERRAMENTAS: Quando o usuario perguntar sobre dados pessoais (meus pedidos, meus medicamentos, rastrear entrega, consultar estoque), voce DEVE chamar a ferramenta correspondente. NAO tente adivinhar ou inventar dados.\n");
+        sb.append("11. Exiba os dados retornados pelas ferramentas de forma amigavel e resumida. Se a ferramenta retornar dados em JSON, interprete e formate como texto natural.\n");
+        sb.append("12. Se pedirem para agendar recompra, cadastrar algo ou fazer acao, explique que voce pode ajudar e oriente o usuario a usar a interface.\n");
+        sb.append("13. Exemplo de uso correto: Usuario: 'Quero ver meus pedidos' → Voce chama buscarPedidos() → retorna JSON → voce formata: 'Voce tem 5 pedidos. O mais recente foi em 15/06 no valor de R$89,90.'");
+
+        if (weatherContext != null && !weatherContext.isBlank()) {
+            sb.append("\n13. CONTEXTO DE CLIMA: ").append(weatherContext)
+              .append(". Use essa informacao para sugerir produtos relevantes ao clima quando apropriado.");
+        }
+
+        return sb.toString();
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> jsonNodeToMessageMap(JsonNode node) {
+        Map<String, Object> map = new LinkedHashMap<>();
+        map.put("role", node.path("role").asText());
+
+        JsonNode content = node.path("content");
+        if (content.isNull() || content.isMissingNode()) {
+            map.put("content", null);
+        } else {
+            map.put("content", content.asText());
+        }
+
+        JsonNode toolCalls = node.path("tool_calls");
+        if (!toolCalls.isMissingNode() && !toolCalls.isEmpty()) {
+            List<Map<String, Object>> tcList = new ArrayList<>();
+            for (JsonNode tc : toolCalls) {
+                Map<String, Object> tcMap = new LinkedHashMap<>();
+                tcMap.put("id", tc.path("id").asText());
+                tcMap.put("type", tc.path("type").asText("function"));
+
+                Map<String, Object> funcMap = new LinkedHashMap<>();
+                funcMap.put("name", tc.path("function").path("name").asText());
+                funcMap.put("arguments", tc.path("function").path("arguments").asText());
+                tcMap.put("function", funcMap);
+
+                tcList.add(tcMap);
+            }
+            map.put("tool_calls", tcList);
+        }
+
+        return map;
     }
 
     public Mono<String> analyzeCart(List<Map<String, Object>> cartItems, Double totalPrice) {
@@ -241,7 +362,7 @@ public class GroqService {
 
             JsonNode node = objectMapper.readTree(jsonStr);
             if (node.isArray()) {
-                List<String> nomes = new java.util.ArrayList<>();
+                List<String> nomes = new ArrayList<>();
                 for (JsonNode item : node) {
                     if (item.isTextual() && !item.asText().isBlank()) {
                         nomes.add(item.asText());

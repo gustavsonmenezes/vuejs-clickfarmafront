@@ -19,6 +19,8 @@ public class RastreioResponseDTO {
     private BigDecimal valorTotal;
     private String metodoPagamento;
     private String enderecoEntrega;
+    private Double latitude;
+    private Double longitude;
 
     public RastreioResponseDTO(Rastreio rastreio) {
         this.id = rastreio.getId();
@@ -30,6 +32,8 @@ public class RastreioResponseDTO {
         this.status = rastreio.getStatus();
         this.ultimaLocalizacao = rastreio.getUltimaLocalizacao();
         this.ultimaAtualizacao = rastreio.getUltimaAtualizacao();
+        this.latitude = rastreio.getLatitude();
+        this.longitude = rastreio.getLongitude();
 
         if (rastreio.getPedido() != null) {
             this.pedidoId = rastreio.getPedido().getId();
@@ -82,4 +86,10 @@ public class RastreioResponseDTO {
 
     public String getEnderecoEntrega() { return enderecoEntrega; }
     public void setEnderecoEntrega(String enderecoEntrega) { this.enderecoEntrega = enderecoEntrega; }
+
+    public Double getLatitude() { return latitude; }
+    public void setLatitude(Double latitude) { this.latitude = latitude; }
+
+    public Double getLongitude() { return longitude; }
+    public void setLongitude(Double longitude) { this.longitude = longitude; }
 }

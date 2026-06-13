@@ -4,16 +4,20 @@ import com.clickfarma.backend.dto.*;
 import com.clickfarma.backend.model.Usuario;
 import com.clickfarma.backend.repository.UsuarioRepository;
 import com.clickfarma.backend.security.JwtUtil;
+import com.clickfarma.backend.service.GoogleAuthService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 import jakarta.validation.Valid;
+import java.util.ArrayList;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -31,6 +35,9 @@ public class AuthController {
 
     @Autowired
     private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private GoogleAuthService googleAuthService;
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@Valid @RequestBody LoginRequestDTO loginRequest) {
@@ -87,10 +94,51 @@ public class AuthController {
         }
     }
 
+    @PostMapping("/google")
+    public ResponseEntity<?> googleLogin(@Valid @RequestBody GoogleLoginRequestDTO request) {
+        try {
+            GoogleAuthService.GoogleUserInfo googleUser = googleAuthService.verifyToken(request.getCredential());
+
+            Usuario usuario = usuarioRepository.findByGoogleId(googleUser.getGoogleId())
+                    .orElseGet(() -> {
+                        Usuario existing = usuarioRepository.findByEmail(googleUser.getEmail())
+                                .map(u -> {
+                                    u.setGoogleId(googleUser.getGoogleId());
+                                    u.setAvatarUrl(googleUser.getAvatarUrl());
+                                    return usuarioRepository.save(u);
+                                })
+                                .orElseGet(() -> {
+                                    Usuario novo = new Usuario();
+                                    novo.setNome(googleUser.getName());
+                                    novo.setEmail(googleUser.getEmail());
+                                    novo.setGoogleId(googleUser.getGoogleId());
+                                    novo.setAvatarUrl(googleUser.getAvatarUrl());
+                                    novo.setSenha(passwordEncoder.encode(UUID.randomUUID().toString()));
+                                    return usuarioRepository.save(novo);
+                                });
+                        return existing;
+                    });
+
+            UserDetails userDetails = new User(usuario.getEmail(), usuario.getSenha(), new ArrayList<>());
+            String token = jwtUtil.generateToken(userDetails);
+
+            return ResponseEntity.ok(new LoginResponseDTO(
+                    token,
+                    usuario.getId(),
+                    usuario.getNome(),
+                    usuario.getEmail(),
+                    usuario.getRole(),
+                    usuario.getAvatarUrl()
+            ));
+
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(new MensagemResponseDTO("Erro na autenticação com Google: " + e.getMessage(), false));
+        }
+    }
+
     @PostMapping("/logout")
     public ResponseEntity<?> logout() {
-        // Como estamos usando JWT, o logout é feito no cliente
-        // Mas podemos retornar uma mensagem de sucesso
         return ResponseEntity.ok(new MensagemResponseDTO("Logout realizado com sucesso!", true));
     }
 }

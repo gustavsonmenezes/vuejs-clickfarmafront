@@ -13,6 +13,9 @@ public class AtualizacaoRastreioDTO {
 
     private String observacao;
 
+    private Double latitude;
+    private Double longitude;
+
     // Getters e Setters
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
@@ -22,5 +25,11 @@ public class AtualizacaoRastreioDTO {
 
     public String getObservacao() { return observacao; }
     public void setObservacao(String observacao) { this.observacao = observacao; }
+
+    public Double getLatitude() { return latitude; }
+    public void setLatitude(Double latitude) { this.latitude = latitude; }
+
+    public Double getLongitude() { return longitude; }
+    public void setLongitude(Double longitude) { this.longitude = longitude; }
 }
 

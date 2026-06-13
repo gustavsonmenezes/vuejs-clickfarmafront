@@ -16,6 +16,9 @@ public class ProdutoRequestDTO {
     @Size(max = 500, message = "Descrição deve ter no máximo 500 caracteres")
     private String descricao;
 
+    @Size(max = 500, message = "URL da imagem deve ter no máximo 500 caracteres")
+    private String imagem;
+
     @NotNull(message = "Preço é obrigatório")
     @Positive(message = "Preço deve ser maior que zero")
     private BigDecimal preco;
@@ -32,6 +35,9 @@ public class ProdutoRequestDTO {
 
     public String getDescricao() { return descricao; }
     public void setDescricao(String descricao) { this.descricao = descricao; }
+
+    public String getImagem() { return imagem; }
+    public void setImagem(String imagem) { this.imagem = imagem; }
 
     public BigDecimal getPreco() { return preco; }
     public void setPreco(BigDecimal preco) { this.preco = preco; }

@@ -120,6 +120,12 @@
             <div v-if="errors.description" class="invalid-feedback">{{ errors.description }}</div>
           </div>
           
+          <div class="form-group mb-3">
+            <label class="form-label">URL da Imagem</label>
+            <input v-model="productForm.imagem" class="cf-input" placeholder="https://exemplo.com/foto.jpg" />
+            <small class="cf-text-muted">Link público da foto do produto (opcional)</small>
+          </div>
+
           <div class="form-group mb-4">
             <label class="form-label">Requer Receita?</label>
             <select v-model="productForm.requiresPrescription" class="cf-select">
@@ -167,7 +173,7 @@ export default {
     return {
       products: [],
       search: '',
-      productForm: { id: null, name: '', price: 0, description: '', requiresPrescription: false, stock: 0 },
+      productForm: { id: null, name: '', price: 0, description: '', imagem: '', requiresPrescription: false, stock: 0 },
       errors: {},
       notification: { show: false, message: '', type: 'success' },
       isEditing: false,
@@ -215,6 +221,7 @@ export default {
         name: product.nome,
         price: product.preco,
         description: product.descricao,
+        imagem: product.imagem || '',
         stock: product.estoque,
         requiresPrescription: product.receita
       };
@@ -240,6 +247,7 @@ export default {
           nome: this.productForm.name,
           preco: parseFloat(this.productForm.price),
           descricao: this.productForm.description,
+          imagem: this.productForm.imagem || null,
           estoque: parseInt(this.productForm.stock) || 0
         };
         if (this.isEditing) {

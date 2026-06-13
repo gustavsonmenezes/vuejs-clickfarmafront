@@ -52,6 +52,8 @@
                 {{ loading ? 'Entrando...' : 'Entrar na Minha Conta' }}
               </button>
             </form>
+
+            <GoogleLoginButton :client-id="googleClientId" />
             
             <div class="text-center mt-4">
               <p class="mb-2">Ainda não tem conta? 
@@ -73,11 +75,14 @@
 
 <script>
 import { mapActions } from 'vuex'
+import GoogleLoginButton from '@/components/auth/GoogleLoginButton.vue'
 
 export default {
   name: 'Login',
+  components: { GoogleLoginButton },
   data() {
     return {
+      googleClientId: process.env.VUE_APP_GOOGLE_CLIENT_ID || 'SEU_GOOGLE_CLIENT_ID.apps.googleusercontent.com',
       credentials: {
         email: '',
         password: ''

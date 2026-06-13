@@ -92,6 +92,8 @@ public class RastreioService {
         rastreio.setStatus(atualizacao.getStatus());
         rastreio.setUltimaLocalizacao(atualizacao.getLocalizacao());
         rastreio.setUltimaAtualizacao(LocalDateTime.now());
+        if (atualizacao.getLatitude() != null) rastreio.setLatitude(atualizacao.getLatitude());
+        if (atualizacao.getLongitude() != null) rastreio.setLongitude(atualizacao.getLongitude());
 
         // Se status for ENTREGUE, atualizar data de entrega
         if ("ENTREGUE".equalsIgnoreCase(atualizacao.getStatus())) {

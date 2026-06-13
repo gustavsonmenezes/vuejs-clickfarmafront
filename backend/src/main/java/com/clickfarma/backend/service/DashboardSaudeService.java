@@ -23,7 +23,7 @@ public class DashboardSaudeService {
     @Autowired
     private PedidoRepository pedidoRepository;
 
-    private static final int DIAS_DURACAO_ESTOQUE_PADRAO = 30;
+    private static final double UNIDADE_PADRAO_POR_DIA = 1.0 / 30.0;
     private static final DateTimeFormatter MES_FORMATTER = DateTimeFormatter.ofPattern("MMM/yy");
 
     public DashboardSaudeResponseDTO getDashboardSaude(Long usuarioId) {
@@ -157,44 +157,87 @@ public class DashboardSaudeService {
     }
 
     private List<DashboardSaudeResponseDTO.PrevisaoReposicao> calcularPrevisaoReposicao(List<Pedido> pedidos) {
-        Map<String, LocalDate> ultimaCompraPorProduto = new LinkedHashMap<>();
-        Map<String, String> categoriaPorProduto = new LinkedHashMap<>();
-
-        List<Pedido> pedidosOrdenados = pedidos.stream()
-                .sorted(Comparator.comparing(Pedido::getDataPedido))
-                .collect(Collectors.toList());
-
-        for (Pedido p : pedidosOrdenados) {
-            LocalDate data = p.getDataPedido() != null ? p.getDataPedido().toLocalDate() : LocalDate.now();
+        Map<Long, List<ItemPedido>> itemsPorProduto = new LinkedHashMap<>();
+        for (Pedido p : pedidos) {
             for (ItemPedido item : p.getItens()) {
-                String nome = item.getProduto().getNome();
-                ultimaCompraPorProduto.put(nome, data);
-                Produto prod = item.getProduto();
-                categoriaPorProduto.put(nome, prod.getCategoria() != null ? prod.getCategoria().getNome() : "Outros");
+                itemsPorProduto.computeIfAbsent(item.getProduto().getId(), k -> new ArrayList<>()).add(item);
             }
         }
 
         LocalDate hoje = LocalDate.now();
-        return ultimaCompraPorProduto.entrySet().stream()
-                .map(e -> {
-                    String produto = e.getKey();
-                    LocalDate ultima = e.getValue();
-                    long diasDesdeCompra = ChronoUnit.DAYS.between(ultima, hoje);
-                    int diasRestantes = Math.max(0, DIAS_DURACAO_ESTOQUE_PADRAO - (int) diasDesdeCompra);
-                    String status;
-                    if (diasRestantes <= 3) status = "critico";
-                    else if (diasRestantes <= 10) status = "atencao";
-                    else status = "ok";
+        List<DashboardSaudeResponseDTO.PrevisaoReposicao> previsoes = new ArrayList<>();
 
-                    return new DashboardSaudeResponseDTO.PrevisaoReposicao(
-                            produto,
-                            categoriaPorProduto.getOrDefault(produto, "Outros"),
-                            ultima.format(DateTimeFormatter.ofPattern("dd/MM/yyyy")),
-                            diasRestantes,
-                            status
-                    );
-                })
-                .sorted(Comparator.comparingInt(DashboardSaudeResponseDTO.PrevisaoReposicao::getDiasRestantes))
-                .collect(Collectors.toList());
+        for (Map.Entry<Long, List<ItemPedido>> entry : itemsPorProduto.entrySet()) {
+            List<ItemPedido> itens = entry.getValue();
+            if (itens.isEmpty()) continue;
+
+            ItemPedido primeiro = itens.get(0);
+            String nome = primeiro.getProduto().getNome();
+            String categoria = primeiro.getProduto().getCategoria() != null
+                    ? primeiro.getProduto().getCategoria().getNome() : "Outros";
+
+            List<ItemPedido> ordenados = itens.stream()
+                    .sorted(Comparator.comparing(i -> i.getPedido().getDataPedido()))
+                    .collect(Collectors.toList());
+
+            int totalUnidades = 0;
+            LocalDate primeiraCompra = null;
+            LocalDate ultimaCompra = null;
+
+            for (ItemPedido item : ordenados) {
+                LocalDate data = item.getPedido().getDataPedido() != null
+                        ? item.getPedido().getDataPedido().toLocalDate() : hoje;
+                int qtd = item.getQuantidade() != null ? item.getQuantidade() : 0;
+                totalUnidades += qtd;
+                if (primeiraCompra == null) primeiraCompra = data;
+                ultimaCompra = data;
+            }
+
+            int totalHistorico = ordenados.size();
+            int ultimaQtd = ordenados.get(ordenados.size() - 1).getQuantidade() != null
+                    ? ordenados.get(ordenados.size() - 1).getQuantidade() : 0;
+
+            double consumoDiario;
+            if (totalHistorico <= 1) {
+                consumoDiario = ultimaQtd * UNIDADE_PADRAO_POR_DIA;
+            } else {
+                long diasSpan = ChronoUnit.DAYS.between(primeiraCompra, ultimaCompra);
+                if (diasSpan <= 0) {
+                    consumoDiario = ultimaQtd * UNIDADE_PADRAO_POR_DIA;
+                } else {
+                    int unidadesConsumidas = totalUnidades - ultimaQtd;
+                    consumoDiario = (double) unidadesConsumidas / diasSpan;
+                }
+            }
+
+            if (consumoDiario <= 0) {
+                consumoDiario = ultimaQtd * UNIDADE_PADRAO_POR_DIA;
+            }
+
+            long diasDesdeUltimaCompra = ChronoUnit.DAYS.between(ultimaCompra, hoje);
+            double estoqueAtual = Math.max(0, ultimaQtd - (consumoDiario * diasDesdeUltimaCompra));
+
+            int diasRestantes;
+            if (consumoDiario > 0) {
+                diasRestantes = (int) Math.floor(estoqueAtual / consumoDiario);
+            } else {
+                diasRestantes = 365;
+            }
+            diasRestantes = Math.max(0, diasRestantes);
+
+            String status;
+            if (diasRestantes <= 3) status = "critico";
+            else if (diasRestantes <= 10) status = "atencao";
+            else status = "ok";
+
+            previsoes.add(new DashboardSaudeResponseDTO.PrevisaoReposicao(
+                    nome, categoria,
+                    ultimaCompra.format(DateTimeFormatter.ofPattern("dd/MM/yyyy")),
+                    diasRestantes, status
+            ));
+        }
+
+        previsoes.sort(Comparator.comparingInt(DashboardSaudeResponseDTO.PrevisaoReposicao::getDiasRestantes));
+        return previsoes;
     }
 }

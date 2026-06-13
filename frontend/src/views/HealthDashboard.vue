@@ -164,6 +164,118 @@
           </div>
         </div>
 
+        <!-- Timeline Preditiva Section -->
+        <div class="card border-0 shadow-sm mb-4">
+          <div class="card-header bg-white border-0 py-3 d-flex align-items-center justify-content-between flex-wrap gap-2">
+            <h5 class="mb-0"><i class="fas fa-chart-bar me-2 text-primary"></i>Linha do Tempo Preditiva</h5>
+            <div class="d-flex align-items-center gap-3">
+              <span class="small text-muted">
+                <i class="fas fa-circle text-danger me-1"></i>Crítico
+                <i class="fas fa-circle text-warning ms-2 me-1"></i>Atenção
+                <i class="fas fa-circle text-success ms-2 me-1"></i>OK
+              </span>
+              <button class="btn btn-sm btn-outline-primary" @click="carregarTimeline" :disabled="timelineLoading">
+                <i :class="timelineLoading ? 'fas fa-sync-alt spin' : 'fas fa-sync-alt'" class="me-1"></i>Recalcular
+              </button>
+            </div>
+          </div>
+          <div class="card-body">
+            <div v-if="timelineLoading && !timeline" class="text-center py-4">
+              <div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div>
+              <span class="text-muted">Calculando timeline preditiva...</span>
+            </div>
+            <div v-else-if="timelineError" class="alert alert-warning py-2">
+              <i class="fas fa-exclamation-triangle me-1"></i>{{ timelineError }}
+            </div>
+            <div v-else-if="timeline && timeline.medicamentos.length === 0" class="text-center py-4">
+              <i class="fas fa-inbox fa-2x text-muted mb-2"></i>
+              <p class="text-muted mb-0">Nenhum medicamento no histórico para análise preditiva.</p>
+            </div>
+            <div v-else-if="timeline" class="timeline-container">
+              <div class="row g-3 mb-4">
+                <div class="col-4 col-md-3">
+                  <div class="timeline-stat">
+                    <span class="timeline-stat-number">{{ timeline.resumo.totalMedicamentos }}</span>
+                    <span class="timeline-stat-label">Total</span>
+                  </div>
+                </div>
+                <div class="col-4 col-md-3">
+                  <div class="timeline-stat">
+                    <span class="timeline-stat-number text-danger">{{ timeline.resumo.criticos }}</span>
+                    <span class="timeline-stat-label">Críticos</span>
+                  </div>
+                </div>
+                <div class="col-4 col-md-3">
+                  <div class="timeline-stat">
+                    <span class="timeline-stat-number text-warning">{{ timeline.resumo.atencao }}</span>
+                    <span class="timeline-stat-label">Atenção</span>
+                  </div>
+                </div>
+                <div class="col-4 col-md-3">
+                  <div class="timeline-stat">
+                    <span class="timeline-stat-number text-success">{{ timeline.resumo.ok }}</span>
+                    <span class="timeline-stat-label">OK</span>
+                  </div>
+                </div>
+              </div>
+
+              <div v-for="(med, idx) in timeline.medicamentos" :key="idx" class="timeline-item mb-3">
+                <div class="timeline-item-header d-flex align-items-center justify-content-between flex-wrap gap-2">
+                  <div class="d-flex align-items-center gap-2">
+                    <span class="badge" :class="getTimelineBadge(med.status)" style="width: 10px; height: 10px; padding: 0; border-radius: 50%;"></span>
+                    <strong class="text-truncate" :title="med.produtoNome">{{ med.produtoNome }}</strong>
+                    <span class="badge bg-light text-dark small">{{ med.categoria }}</span>
+                  </div>
+                  <div class="d-flex align-items-center gap-2">
+                    <small class="text-muted">
+                      <i class="fas fa-pills me-1"></i>{{ med.estoqueRestanteEstimado }} und.
+                    </small>
+                    <small class="text-muted">
+                      <i class="fas fa-tachometer-alt me-1"></i>{{ med.consumoDiarioEstimado }}/dia
+                    </small>
+                    <span class="badge" :class="getStatusBadge(med.status)">
+                      <i :class="getStatusIcon(med.status)" class="me-1"></i>{{ getStatusLabel(med.status) }}
+                    </span>
+                    <button v-if="!med.temAgendamentoAtivo && med.status !== 'ok'" class="btn btn-sm btn-outline-primary" @click="agendarRecompra(med)">
+                      <i class="fas fa-calendar-plus me-1"></i>Agendar
+                    </button>
+                    <span v-else-if="med.temAgendamentoAtivo" class="badge bg-info-subtle text-info">
+                      <i class="fas fa-check-circle me-1"></i>Agendado
+                    </span>
+                  </div>
+                </div>
+
+                <div class="timeline-bar-wrapper mt-2">
+                  <div class="timeline-bar">
+                    <div v-for="evt in med.historicoCompras" class="timeline-dot purchase-dot"
+                      :style="{ left: getTimelineDotPosition(evt, med) + '%' }"
+                      :title="evt.data + ' - ' + evt.quantidade + ' un. (R$ ' + evt.valor?.toFixed(2) + ')'">
+                    </div>
+                    <div class="timeline-fill" :class="'timeline-fill-' + med.status"
+                      :style="{ width: getTimelineFillWidth(med) + '%' }"></div>
+                    <div class="timeline-dot depletion-dot"
+                      :class="'depletion-' + med.status"
+                      :style="{ left: getDepletionDotPosition(med) + '%' }"
+                      :title="'Previsão de esgotamento: ' + med.dataPrevisaoEsgotamento">
+                      <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                  </div>
+                  <div class="timeline-labels d-flex justify-content-between mt-1">
+                    <small class="text-muted">{{ med.ultimaCompra }}</small>
+                    <small class="fw-bold" :class="getStatusTextColor(med.status)">{{ med.dataPrevisaoEsgotamento }}</small>
+                  </div>
+                </div>
+
+                <div v-if="med.recomendacao" class="timeline-recomendacao mt-1">
+                  <small class="text-muted">
+                    <i class="fas fa-lightbulb text-warning me-1"></i>{{ med.recomendacao }}
+                  </small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- CTA Card -->
         <div class="card border-0 shadow-sm mb-4 cta-card">
           <div class="card-body p-4 text-center">
@@ -182,6 +294,7 @@
 <script>
 import api from '@/services/api'
 import { Chart, registerables } from 'chart.js'
+import { mapState } from 'vuex'
 Chart.register(...registerables)
 
 export default {
@@ -191,7 +304,16 @@ export default {
       dashboard: null,
       loading: false,
       error: null,
-      charts: {}
+      charts: {},
+      timeline: null,
+      timelineLoading: false,
+      timelineError: null
+    }
+  },
+  computed: {
+    ...mapState(['user']),
+    usuarioId() {
+      return this.user?.id || 1
     }
   },
   mounted() {
@@ -205,8 +327,12 @@ export default {
       this.loading = true
       this.error = null
       try {
-        const response = await api.get('/dashboard-saude/usuario/1')
-        this.dashboard = response.data
+        const [dashboardResp, timelineResp] = await Promise.all([
+          api.get(`/dashboard-saude/usuario/${this.usuarioId}`),
+          api.get(`/dashboard-saude/timeline/${this.usuarioId}`)
+        ])
+        this.dashboard = dashboardResp.data
+        this.timeline = timelineResp.data
         this.$nextTick(() => {
           this.renderCharts()
         })
@@ -399,6 +525,57 @@ export default {
     },
     getBarWidth(dias) {
       return Math.min((dias / 30) * 100, 100)
+    },
+    async carregarTimeline() {
+      this.timelineLoading = true
+      this.timelineError = null
+      try {
+        const response = await api.get(`/dashboard-saude/timeline/${this.usuarioId}`)
+        this.timeline = response.data
+      } catch (err) {
+        console.error('Erro ao carregar timeline:', err)
+        this.timelineError = 'Não foi possível calcular a timeline preditiva.'
+      } finally {
+        this.timelineLoading = false
+      }
+    },
+    async agendarRecompra(med) {
+      if (!med || !med.produtoId) return
+      try {
+        await api.post('/recompra', {
+          usuarioId: this.usuarioId,
+          produtoId: med.produtoId,
+          posologiaTexto: 'Uso contínuo - 1 unidade por dia (estimado)',
+          diasDuracao: 30,
+          status: 'PENDENTE'
+        })
+        med.temAgendamentoAtivo = true
+      } catch (err) {
+        console.error('Erro ao agendar recompra:', err)
+        this.timelineError = 'Erro ao agendar recompra. Tente novamente.'
+      }
+    },
+    getTimelineBadge(status) {
+      return { critico: 'bg-danger', atencao: 'bg-warning', ok: 'bg-success' }[status] || 'bg-secondary'
+    },
+    getTimelineDotPosition(evt, med) {
+      if (!med.historicoCompras || med.historicoCompras.length < 2) return 10
+      const dates = med.historicoCompras.map(e => new Date(e.data.split('/').reverse().join('-')))
+      const min = new Date(Math.min(...dates))
+      const max = new Date(Math.max(...dates))
+      const range = max - min || 1
+      const evtDate = new Date(evt.data.split('/').reverse().join('-'))
+      return ((evtDate - min) / range) * 80 + 10
+    },
+    getTimelineFillWidth(med) {
+      const total = med.diasAteEsgotar + (med.historicoCompras ? med.historicoCompras.length * 5 : 30)
+      const maxWidth = 80
+      const fill = total > 0 ? (med.diasAteEsgotar / Math.max(total, 30)) * maxWidth : 0
+      return Math.min(fill, maxWidth)
+    },
+    getDepletionDotPosition(med) {
+      const timelineEnd = med.diasAteEsgotar + 90
+      return timelineEnd > 0 ? (med.diasAteEsgotar / Math.max(timelineEnd, 30)) * 90 + 10 : 90
     }
   }
 }
@@ -462,12 +639,142 @@ export default {
   animation: spin 1s linear infinite;
 }
 
+.timeline-stat {
+  text-align: center;
+  padding: 0.75rem;
+  background: #f8f9fa;
+  border-radius: 8px;
+}
+
+.timeline-stat-number {
+  display: block;
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.timeline-stat-label {
+  display: block;
+  font-size: 0.75rem;
+  color: #6c757d;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.timeline-item {
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  border: 1px solid #e9ecef;
+  transition: box-shadow 0.15s ease;
+}
+
+.timeline-item:hover {
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+
+.timeline-bar-wrapper {
+  position: relative;
+}
+
+.timeline-bar {
+  position: relative;
+  height: 8px;
+  background: #e9ecef;
+  border-radius: 4px;
+  overflow: visible;
+}
+
+.timeline-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.timeline-fill-critico {
+  background: linear-gradient(90deg, #dc3545, #ff6b6b);
+}
+
+.timeline-fill-atencao {
+  background: linear-gradient(90deg, #ffc107, #ffd43b);
+}
+
+.timeline-fill-ok {
+  background: linear-gradient(90deg, #198754, #51cf66);
+}
+
+.timeline-dot {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 2;
+  border-radius: 50%;
+}
+
+.purchase-dot {
+  width: 12px;
+  height: 12px;
+  background: #fff;
+  border: 2px solid #0d6efd;
+  cursor: help;
+  transition: transform 0.15s ease;
+}
+
+.purchase-dot:hover {
+  transform: translate(-50%, -50%) scale(1.5);
+}
+
+.depletion-dot {
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.6rem;
+  cursor: help;
+}
+
+.depletion-critico {
+  background: #dc3545;
+  color: #fff;
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 2px #dc3545;
+}
+
+.depletion-atencao {
+  background: #ffc107;
+  color: #000;
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 2px #ffc107;
+}
+
+.depletion-ok {
+  background: #198754;
+  color: #fff;
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 2px #198754;
+}
+
+.timeline-labels {
+  padding: 0 2px;
+}
+
+.timeline-recomendacao {
+  background: #fff;
+  border-radius: 4px;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.8rem;
+}
+
 @media (max-width: 768px) {
   .stat-card h3 {
     font-size: 1.25rem;
   }
   .stat-card h6 {
     font-size: 0.85rem;
+  }
+  .timeline-stat-number {
+    font-size: 1.1rem;
   }
 }
 </style>

@@ -18,6 +18,9 @@ public class Produto {
     @Column(length = 500)
     private String descricao;
 
+    @Column(name = "imagem", length = 500)
+    private String imagem;
+
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal preco;
 
@@ -57,6 +60,9 @@ public class Produto {
 
     public String getDescricao() { return descricao; }
     public void setDescricao(String descricao) { this.descricao = descricao; }
+
+    public String getImagem() { return imagem; }
+    public void setImagem(String imagem) { this.imagem = imagem; }
 
     public BigDecimal getPreco() { return preco; }
     public void setPreco(BigDecimal preco) { this.preco = preco; }

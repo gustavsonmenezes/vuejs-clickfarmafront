@@ -23,6 +23,12 @@ venv/
 .DS_Store
 Thumbs.db
 
+# Arquivos de ambiente
+.env
+
+# PID files
+*.pid
+
 # Testes e relatórios
 .coverage
 htmlcov/

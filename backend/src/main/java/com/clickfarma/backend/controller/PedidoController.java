@@ -171,9 +171,11 @@ public class PedidoController {
     public ResponseEntity<?> atualizarRastreio(
             @PathVariable Long pedidoId,
             @RequestParam String localizacao,
-            @RequestParam String status) {
+            @RequestParam String status,
+            @RequestParam(required = false) Double latitude,
+            @RequestParam(required = false) Double longitude) {
         try {
-            RastreioResponseDTO rastreio = pedidoService.atualizarRastreio(pedidoId, localizacao, status);
+            RastreioResponseDTO rastreio = pedidoService.atualizarRastreio(pedidoId, localizacao, status, latitude, longitude);
             return ResponseEntity.ok(new MensagemResponseDTO(
                     "Rastreio atualizado com sucesso!",
                     true,

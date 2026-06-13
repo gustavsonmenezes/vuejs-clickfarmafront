@@ -13,6 +13,8 @@ public class UsuarioResponseDTO {
     private LocalDateTime dataCadastro;
     private Integer quantidadePedidos;
     private String role;
+    private String avatarUrl;
+    private String googleId;
 
     public UsuarioResponseDTO(Usuario usuario) {
         this.id = usuario.getId();
@@ -25,6 +27,8 @@ public class UsuarioResponseDTO {
         this.quantidadePedidos = usuario.getPedidos() != null ?
                 usuario.getPedidos().size() : 0;
         this.role = usuario.getRole();
+        this.avatarUrl = usuario.getAvatarUrl();
+        this.googleId = usuario.getGoogleId();
     }
 
     // Getters e Setters
@@ -56,4 +60,10 @@ public class UsuarioResponseDTO {
 
     public String getRole() { return role; }
     public void setRole(String role) { this.role = role; }
+
+    public String getAvatarUrl() { return avatarUrl; }
+    public void setAvatarUrl(String avatarUrl) { this.avatarUrl = avatarUrl; }
+
+    public String getGoogleId() { return googleId; }
+    public void setGoogleId(String googleId) { this.googleId = googleId; }
 }

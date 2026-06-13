@@ -1,6 +1,7 @@
 package com.clickfarma.backend.controller;
 
 import com.clickfarma.backend.dto.CartAnalysisRequestDTO;
+import com.clickfarma.backend.dto.ChatRequestDTO;
 import com.clickfarma.backend.service.AiRouterService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -16,10 +17,11 @@ public class GeminiController {
     private AiRouterService aiRouterService;
 
     @PostMapping("/chat")
-    public Mono<Map<String, String>> chat(@RequestBody Map<String, String> request) {
-        String mensagem = request.get("message");
-        String weatherContext = request.get("weatherContext");
-        return aiRouterService.chat(mensagem, weatherContext)
+    public Mono<Map<String, String>> chat(@RequestBody ChatRequestDTO request) {
+        String mensagem = request.getMessage();
+        String weatherContext = request.getWeatherContext();
+        Long usuarioId = request.getUsuarioId();
+        return aiRouterService.chat(mensagem, weatherContext, usuarioId)
                 .map(resposta -> Map.of("response", resposta));
     }
 

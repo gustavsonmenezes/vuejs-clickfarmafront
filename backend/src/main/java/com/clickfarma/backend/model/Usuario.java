@@ -40,6 +40,12 @@ public class Usuario {
     @Column(name = "data_cadastro")
     private LocalDateTime dataCadastro;
 
+    @Column(name = "google_id", unique = true)
+    private String googleId;
+
+    @Column(name = "avatar_url")
+    private String avatarUrl;
+
     @Column(nullable = false)
     private String role = "USER";
 
@@ -88,6 +94,12 @@ public class Usuario {
 
     public LocalDateTime getDataCadastro() { return dataCadastro; }
     public void setDataCadastro(LocalDateTime dataCadastro) { this.dataCadastro = dataCadastro; }
+
+    public String getGoogleId() { return googleId; }
+    public void setGoogleId(String googleId) { this.googleId = googleId; }
+
+    public String getAvatarUrl() { return avatarUrl; }
+    public void setAvatarUrl(String avatarUrl) { this.avatarUrl = avatarUrl; }
 
     public String getRole() { return role; }
     public void setRole(String role) { this.role = role; }

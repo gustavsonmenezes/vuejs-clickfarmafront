@@ -32,7 +32,7 @@
 
 		<!-- Opções de build -->
 		<maven.javadoc.skip>true</maven.javadoc.skip>
-		<maven.test.skip>true</maven.test.skip>
+		<maven.test.skip>false</maven.test.skip>
 	</properties>
 
 	<repositories>
@@ -152,6 +152,13 @@
 			<groupId>org.apache.httpcomponents</groupId>
 			<artifactId>httpclient</artifactId>
 			<version>4.5.14</version>
+		</dependency>
+
+		<!-- Google API Client (verificação de token OAuth2) -->
+		<dependency>
+			<groupId>com.google.api-client</groupId>
+			<artifactId>google-api-client</artifactId>
+			<version>2.2.0</version>
 		</dependency>
 
 		<!-- SDK Oficial do Mercado Pago -->

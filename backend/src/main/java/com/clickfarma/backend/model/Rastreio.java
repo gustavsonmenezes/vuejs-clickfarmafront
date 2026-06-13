@@ -42,6 +42,12 @@ public class Rastreio {
     @Column(length = 500)
     private String historico; // Armazenar histórico em JSON
 
+    @Column(nullable = true)
+    private Double latitude;
+
+    @Column(nullable = true)
+    private Double longitude;
+
     // Construtores
     public Rastreio() {}
 
@@ -87,6 +93,12 @@ public class Rastreio {
     public String getHistorico() { return historico; }
     public void setHistorico(String historico) { this.historico = historico; }
 
+    public Double getLatitude() { return latitude; }
+    public void setLatitude(Double latitude) { this.latitude = latitude; }
+
+    public Double getLongitude() { return longitude; }
+    public void setLongitude(Double longitude) { this.longitude = longitude; }
+
     // Métodos auxiliares
     private String gerarCodigoRastreio() {
         return "CLF" + System.currentTimeMillis() +
@@ -94,8 +106,14 @@ public class Rastreio {
     }
 
     public void adicionarEvento(String localizacao, String descricao) {
-        // Implementar lógica para adicionar evento ao histórico
         this.ultimaLocalizacao = localizacao;
+        this.ultimaAtualizacao = LocalDateTime.now();
+    }
+
+    public void atualizarLocalizacao(Double latitude, Double longitude, String endereco) {
+        this.latitude = latitude;
+        this.longitude = longitude;
+        if (endereco != null) this.ultimaLocalizacao = endereco;
         this.ultimaAtualizacao = LocalDateTime.now();
     }
 }

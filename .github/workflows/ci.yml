@@ -1,4 +1,4 @@
-name: CI
+name: CI Pipeline
 
 on:
   push:
@@ -6,18 +6,19 @@ on:
   pull_request:
     branches: [main, master]
 
+env:
+  DOCKER_IMAGE: clickfarma-backend
+
 jobs:
-  unit-tests:
-    name: Testes Unitários
+  lint:
+    name: 🔍 Lint & Qualidade
     runs-on: ubuntu-latest
-
     defaults:
       run:
         working-directory: ./frontend
 
     steps:
-      - name: Baixar o código do repositório
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Instalar Node.js
         uses: actions/setup-node@v4
@@ -27,22 +28,40 @@ jobs:
           cache-dependency-path: './frontend/package-lock.json'
 
       - name: Instalar dependências
-        run: npm ci
+        run: npm install
 
-      - name: Rodar testes unitários (vitest)
-        run: npm run test:run
+      - name: ESLint
+        run: npm run lint
 
-  e2e-tests:
-    name: Testes E2E (Cypress)
+  test-backend:
+    name: 🧪 Backend - Testes
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./backend
 
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Instalar JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: 17
+          distribution: temurin
+          cache: maven
+
+      - name: Testes unitários
+        run: ./mvnw test --batch-mode
+
+  test-frontend:
+    name: 🧪 Frontend - Testes
+    runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: ./frontend
 
     steps:
-      - name: Baixar o código do repositório
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Instalar Node.js
         uses: actions/setup-node@v4
@@ -52,16 +71,98 @@ jobs:
           cache-dependency-path: './frontend/package-lock.json'
 
       - name: Instalar dependências
-        run: npm ci
+        run: npm install
 
-      - name: Build da aplicação (webpack)
-        run: npx webpack --mode production
+      - name: Testes unitários (Vitest)
+        run: npx vitest run --coverage
 
-      - name: Rodar testes E2E (Cypress headless)
-        uses: cypress-io/github-action@v6
+      - name: Upload coverage
+        uses: actions/upload-artifact@v4
         with:
-          working-directory: ./frontend
-          build: npx webpack --mode production
-          start: npx webpack serve --mode production --port 8081 --no-open
-          wait-on: 'http://localhost:8081'
-          browser: chrome
+          name: coverage-frontend
+          path: frontend/coverage/
+          retention-days: 7
+
+  security:
+    name: 🛡️ Segurança (Trivy)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build JAR para scan
+        working-directory: ./backend
+        run: ./mvnw package -DskipTests --batch-mode
+
+      - name: Build imagem Docker
+        run: |
+          docker build -t ${{ env.DOCKER_IMAGE }}:${{ github.sha }} \
+            --build-arg JAR_FILE=backend/target/backend-0.0.1-SNAPSHOT.jar \
+            -f Dockerfile.backend .
+
+      - name: Trivy - Scan da imagem
+        uses: aquasecurity/trivy-action@0.29.0
+        with:
+          image-ref: ${{ env.DOCKER_IMAGE }}:${{ github.sha }}
+          format: table
+          exit-code: 1
+          severity: HIGH,CRITICAL
+          skip-dirs: /usr/share/tesseract-ocr
+
+      - name: Trivy - Scan de dependências (backend)
+        uses: aquasecurity/trivy-action@0.29.0
+        with:
+          scan-type: fs
+          scan-dir: backend/
+          format: table
+          exit-code: 1
+          severity: CRITICAL
+
+      - name: Trivy - Scan de dependências (frontend)
+        uses: aquasecurity/trivy-action@0.29.0
+        with:
+          scan-type: fs
+          scan-dir: frontend/
+          format: table
+          exit-code: 1
+          severity: CRITICAL
+
+  build:
+    name: 📦 Build + Package
+    if: github.event_name == 'push'
+    needs: [lint, test-backend, test-frontend, security]
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Instalar JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: 17
+          distribution: temurin
+          cache: maven
+
+      - name: Build JAR
+        working-directory: ./backend
+        run: ./mvnw package -DskipTests --batch-mode
+
+      - name: Build Docker images
+        run: |
+          docker compose build
+
+      - name: Trivy - Scan imagem final
+        uses: aquasecurity/trivy-action@0.29.0
+        with:
+          image-ref: ${{ env.DOCKER_IMAGE }}:${{ github.sha }}
+          format: table
+          exit-code: 1
+          severity: HIGH,CRITICAL
+          skip-dirs: /usr/share/tesseract-ocr
+
+      - name: Salvar JAR como artefato
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-jar
+          path: backend/target/backend-0.0.1-SNAPSHOT.jar
+          retention-days: 15

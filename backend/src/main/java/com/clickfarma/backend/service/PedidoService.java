@@ -33,6 +33,8 @@ import java.util.stream.Collectors;
 @Service
 public class PedidoService {
 
+    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(PedidoService.class);
+
     @Autowired
     private PedidoRepository pedidoRepository;
 
@@ -65,6 +67,9 @@ public class PedidoService {
 
     @Autowired
     private TelegramService telegramService;
+
+    @Autowired
+    private WhatsAppCloudService whatsAppCloudService;
 
     @Value("${telegram.entregador.chat-id}")
     private String entregadorChatId;
@@ -176,7 +181,6 @@ public class PedidoService {
 
             telegramService.enviarMensagem(entregadorChatId, msg.toString());
         } catch (Exception e) {
-            // Falha silenciosa - não deve impedir o fluxo do pedido
             org.slf4j.LoggerFactory.getLogger(PedidoService.class).warn("Erro ao notificar entregador via Telegram", e);
         }
     }
@@ -287,6 +291,9 @@ public class PedidoService {
             rastreio.setDataEnvio(LocalDateTime.now());
             rastreio.setDataPrevisaoEntrega(LocalDateTime.now().plusDays(5));
             rastreio.setStatus("EM_TRANSITO");
+            rastreio.setLatitude(-8.047562);
+            rastreio.setLongitude(-34.877003);
+            rastreio.setUltimaLocalizacao("Centro de Distribuição ClickFarma - Recife");
 
             Rastreio rastreioSalvo = rastreioRepository.save(rastreio);
             rastreioStreamService.publish(new RastreioResponseDTO(rastreioSalvo));
@@ -296,6 +303,21 @@ public class PedidoService {
         emailNotificationService.enviarAtualizacaoStatusPedido(pedidoAtualizado.getUsuario(), pedidoAtualizado);
 
         PedidoResponseDTO responseDTO = new PedidoResponseDTO(pedidoAtualizado);
+
+        try {
+            WhatsAppCloudService.EnvioResult whatsResult = whatsAppCloudService
+                .enviarNotificacaoStatus(pedidoAtualizado);
+            if (whatsResult.isSucesso()) {
+                log.info("WhatsApp status enviado para {}", pedidoAtualizado.getUsuario().getTelefone());
+            }
+            responseDTO.setWhatsappEnviado(whatsResult.isSucesso());
+            responseDTO.setWhatsappMensagem(whatsResult.getMensagem());
+        } catch (Exception e) {
+            log.warn("Erro ao enviar WhatsApp status: {}", e.getMessage());
+            responseDTO.setWhatsappEnviado(false);
+            responseDTO.setWhatsappMensagem("Erro: " + e.getMessage());
+        }
+
         responseDTO.setWhatsappLink(whatsAppService.gerarLinkStatusPedido(pedidoAtualizado));
         return responseDTO;
     }
@@ -315,7 +337,8 @@ public class PedidoService {
     }
 
     @Transactional
-    public RastreioResponseDTO atualizarRastreio(Long pedidoId, String localizacao, String status) {
+    public RastreioResponseDTO atualizarRastreio(Long pedidoId, String localizacao, String status,
+                                                  Double latitude, Double longitude) {
         Pedido pedido = pedidoRepository.findById(pedidoId)
                 .orElseThrow(() -> new RuntimeException("Pedido não encontrado"));
 
@@ -327,6 +350,8 @@ public class PedidoService {
         rastreio.setUltimaLocalizacao(localizacao);
         rastreio.setStatus(status);
         rastreio.setUltimaAtualizacao(LocalDateTime.now());
+        if (latitude != null) rastreio.setLatitude(latitude);
+        if (longitude != null) rastreio.setLongitude(longitude);
 
         if (status.equals("ENTREGUE")) {
             rastreio.setDataEntregaReal(LocalDateTime.now());

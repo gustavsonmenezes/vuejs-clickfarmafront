@@ -30,7 +30,7 @@ public class AgendamentoRecompra {
     private Produto produto;
 
     @ManyToOne
-    @JoinColumn(name = "pedido_id", nullable = false)
+    @JoinColumn(name = "pedido_id", nullable = true)
     @JsonIgnoreProperties({"usuario", "itens", "rastreio", "observacoes", "enderecoEntrega", "metodoPagamento", "dataAtualizacao"})
     private Pedido pedido;
 

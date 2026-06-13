@@ -22,6 +22,8 @@ public class PedidoResponseDTO {
     private Double totalFinal;
     private String linkPagamento;
     private String whatsappLink;
+    private Boolean whatsappEnviado;
+    private String whatsappMensagem;
 
     // Construtor padrão
     public PedidoResponseDTO() {}
@@ -91,4 +93,10 @@ public class PedidoResponseDTO {
 
     public String getWhatsappLink() { return whatsappLink; }
     public void setWhatsappLink(String whatsappLink) { this.whatsappLink = whatsappLink; }
+
+    public Boolean getWhatsappEnviado() { return whatsappEnviado; }
+    public void setWhatsappEnviado(Boolean whatsappEnviado) { this.whatsappEnviado = whatsappEnviado; }
+
+    public String getWhatsappMensagem() { return whatsappMensagem; }
+    public void setWhatsappMensagem(String whatsappMensagem) { this.whatsappMensagem = whatsappMensagem; }
 }

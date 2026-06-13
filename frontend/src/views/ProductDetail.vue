@@ -2,7 +2,7 @@
   <div class="container mt-4">
     <div v-if="product" class="row">
       <div class="col-md-6">
-        <img src="https://via.placeholder.com/400" alt="Product Image" class="img-fluid rounded">
+        <img :src="product.imagem || 'https://via.placeholder.com/400?text=Sem+Imagem'" :alt="product.nome" class="img-fluid rounded" style="width:100%;max-height:400px;object-fit:cover;">
       </div>
       <div class="col-md-6">
         <h2>{{ product.nome }}</h2>

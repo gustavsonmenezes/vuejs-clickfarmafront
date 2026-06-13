@@ -4,8 +4,11 @@
       <!-- Área visual do produto -->
       <router-link :to="`/products/${product.id}`" class="cf-card-image" tabindex="-1">
 
-        <!-- Fundo sage com ícone de categoria -->
-        <div class="cf-product-visual">
+        <!-- Imagem real (se existir) -->
+        <img v-if="hasImage" :src="product.imagem" :alt="product.nome" class="cf-product-img" @error="onImgError" loading="lazy" />
+
+        <!-- Fallback: fundo sage com ícone de categoria -->
+        <div v-else class="cf-product-visual">
           <span class="cf-product-icon">{{ getCategoryIcon(product.categoriaNome) }}</span>
         </div>
 
@@ -69,9 +72,12 @@ export default {
     product: { type: Object, required: true }
   },
   data() {
-    return { addingToCart: false, addedToCart: false }
+    return { addingToCart: false, addedToCart: false, imgFailed: false }
   },
   computed: {
+    hasImage() {
+      return this.product.imagem && !this.imgFailed
+    },
     isInStock() {
       return (this.product.estoque || 0) > 0
     },
@@ -91,6 +97,9 @@ export default {
     }
   },
   methods: {
+    onImgError() {
+      this.imgFailed = true
+    },
     getCategoryIcon(cat) {
       return { 'Medicamentos':'💊','Cosméticos':'🧴','Higiene':'🚿','Vitaminas':'🌿','Maternidade':'👶' }[cat] || '📦'
     },
@@ -140,6 +149,16 @@ export default {
   aspect-ratio: 1 / 1;
   overflow: hidden;
   text-decoration: none;
+}
+
+.cf-product-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 350ms var(--cf-ease);
+}
+.cf-product-card:hover .cf-product-img {
+  transform: scale(1.07);
 }
 
 .cf-product-visual {

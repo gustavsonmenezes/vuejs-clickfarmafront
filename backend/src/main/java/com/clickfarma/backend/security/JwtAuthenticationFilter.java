@@ -25,18 +25,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private CustomUserDetailsService userDetailsService;
 
     private static final List<String> PUBLIC_PATHS = Arrays.asList(
-            "/api/auth/",
+            "/api/auth/login",
+            "/api/auth/register",
             "/api/gemini/",
-            "/api/produtos/",
-            "/api/categorias/",
-            "/api/pedidos",
-            "/api/rastreios/",
-            "/api/receita/",
             "/api/telegram/webhook",
-            "/api/email/teste/",
             "/swagger-ui/",
             "/v3/api-docs/",
-            "/api/dashboard-saude/",
             "/actuator/"
     );
 

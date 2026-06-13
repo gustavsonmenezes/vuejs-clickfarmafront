@@ -178,7 +178,7 @@ export default {
         status: t.status || 'processing', date: t.dataEnvio || new Date().toISOString(),
         items: t.itens || [], total: t.valorTotal || 0, valorTotal: t.valorTotal,
         enderecoEntrega: t.enderecoEntrega || '',
-        metodoPagamento: t.metodoPagamento || 'pix'
+        metodoPagamento: t.metodoPagamento || 'pix',
       }
     },
     async refreshTracking() {
