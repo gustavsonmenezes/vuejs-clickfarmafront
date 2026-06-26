@@ -168,6 +168,18 @@
 			<version>${mercadopago.version}</version>
 		</dependency>
 
+		<!-- ZXing para gerar QR Code do PIX simulado -->
+		<dependency>
+			<groupId>com.google.zxing</groupId>
+			<artifactId>core</artifactId>
+			<version>3.5.3</version>
+		</dependency>
+		<dependency>
+			<groupId>com.google.zxing</groupId>
+			<artifactId>javase</artifactId>
+			<version>3.5.3</version>
+		</dependency>
+
 		<!-- Spring Boot Actuator (Health & Metrics) -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>

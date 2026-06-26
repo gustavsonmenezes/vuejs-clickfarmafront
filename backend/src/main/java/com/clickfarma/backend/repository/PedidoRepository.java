@@ -33,4 +33,6 @@ public interface PedidoRepository extends JpaRepository<Pedido, Long> {
 
     @Query("SELECT ip.produto.id, SUM(ip.quantidade), SUM(ip.subtotal) FROM ItemPedido ip GROUP BY ip.produto.id ORDER BY SUM(ip.quantidade) DESC")
     List<Object[]> findTopProdutos();
+
+    Pedido findByPagamentoMpId(Long pagamentoMpId);
 }

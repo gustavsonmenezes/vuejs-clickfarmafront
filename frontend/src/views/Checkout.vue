@@ -86,11 +86,112 @@
                 v-model.trim="enderecoForm.cep"
                 class="form-control bg-light"
                 placeholder="Ex: 50000-000"
+                @blur="buscarCep"
               >
               <small class="text-muted">Campos com * são obrigatórios.</small>
             </div>
           </div>
         </div>
+        <!-- Opção de Entrega -->
+        <div class="card shadow-sm border-0 p-4 mb-4">
+          <h4 class="mb-4 font-weight-bold">🚚 Opção de Entrega</h4>
+          <div class="row g-3">
+            <div class="col-md-6">
+              <div
+                class="delivery-type-card"
+                :class="{ 'selected': deliveryType === 'standard' }"
+                @click="deliveryType = 'standard'"
+              >
+                <div class="form-check">
+                  <input
+                    type="radio"
+                    id="delivery-standard"
+                    value="standard"
+                    v-model="deliveryType"
+                    class="form-check-input"
+                  >
+                  <label class="form-check-label" for="delivery-standard">
+                    <h6 class="mb-1">Entrega Padrão</h6>
+                    <p class="mb-0 text-muted small">2-3 dias úteis · Grátis acima de R$ 300</p>
+                  </label>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div
+                class="delivery-type-card"
+                :class="{ 'selected': deliveryType === 'uber_direct' }"
+                @click="deliveryType = 'uber_direct'"
+              >
+                <div class="form-check">
+                  <input
+                    type="radio"
+                    id="delivery-uber"
+                    value="uber_direct"
+                    v-model="deliveryType"
+                    class="form-check-input"
+                  >
+                  <label class="form-check-label" for="delivery-uber">
+                    <h6 class="mb-1">
+                      Entrega Rápida
+                      <span class="badge bg-dark ms-1" style="font-size: 0.6rem;">UBER DIRECT</span>
+                    </h6>
+                    <p class="mb-0 text-muted small">Entregue por parceiros Uber · Rastreio em tempo real</p>
+                  </label>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Calcular Frete Uber Direct -->
+          <div v-if="deliveryType === 'uber_direct'" class="mt-3 p-3 bg-light rounded">
+            <div class="d-flex align-items-center justify-content-between">
+              <div>
+                <strong>Frete via Uber Direct</strong>
+                <p class="mb-0 text-muted small">Saiba o valor e tempo estimado para entrega</p>
+              </div>
+              <button
+                class="btn btn-dark"
+                :disabled="!enderecoValido || uberLoading"
+                @click="calcularFreteUber"
+              >
+                <span v-if="uberLoading" class="spinner-border spinner-border-sm me-1"></span>
+                {{ uberLoading ? 'Calculando...' : 'Calcular Frete' }}
+              </button>
+            </div>
+
+            <!-- Resultado da cotação -->
+            <div v-if="uberQuote" class="mt-3 p-3 bg-white rounded border">
+              <div class="row text-center">
+                <div class="col-6 border-end">
+                  <small class="text-muted d-block">Valor do Frete</small>
+                  <strong class="text-primary fs-5">
+                    R$ {{ uberQuote.delivery_fee.toFixed(2) }}
+                  </strong>
+                </div>
+                <div class="col-6">
+                  <small class="text-muted d-block">Previsão de Entrega</small>
+                  <strong class="text-success fs-5">
+                    <i class="fas fa-clock me-1"></i>{{ uberQuote.estimated_time }}
+                  </strong>
+                </div>
+              </div>
+              <div class="mt-2 text-center">
+                <small class="text-muted">
+                  <i class="fas fa-info-circle me-1"></i>
+                  Entregador vai até a farmácia retirar o medicamento e leva até você
+                </small>
+              </div>
+            </div>
+
+            <div v-if="!enderecoValido && deliveryType === 'uber_direct'" class="mt-2">
+              <small class="text-danger">
+                Preencha o endereço de entrega acima para calcular o frete
+              </small>
+            </div>
+          </div>
+        </div>
+
         <!-- Pagamento (Componente Filho) -->
         <div class="card shadow-sm border-0 p-4">
           <PaymentMethod @update-method="setMetodo" />
@@ -100,9 +201,22 @@
       <div class="col-md-4">
         <div class="card shadow-sm border-0 p-4 sticky-top" style="top: 20px;">
           <h4 class="mb-4 font-weight-bold">Resumo</h4>
+          <div class="d-flex justify-content-between mb-2">
+            <span>Subtotal</span>
+            <span>R$ {{ cartTotal.toFixed(2) }}</span>
+          </div>
+          <div v-if="deliveryType === 'uber_direct' && uberQuote" class="d-flex justify-content-between mb-2">
+            <span>Frete (Uber Direct)</span>
+            <span class="text-primary">R$ {{ uberQuote.delivery_fee.toFixed(2) }}</span>
+          </div>
+          <div v-else class="d-flex justify-content-between mb-2">
+            <span>Frete</span>
+            <span class="text-success">Grátis</span>
+          </div>
+          <hr>
           <div class="d-flex justify-content-between mb-4 h5 font-weight-bold">
             <span>Total</span>
-            <span class="text-primary">R$ {{ cartTotal.toFixed(2) }}</span>
+            <span class="text-primary">R$ {{ totalComFrete.toFixed(2) }}</span>
           </div>
           <button
             @click="finalizar"
@@ -124,7 +238,9 @@
 <script>
 import { mapState, mapGetters } from 'vuex';
 import { OrderService } from '@/services/orderService.js';
+import { UberDirectService } from '@/services/uberDirectService';
 import PaymentMethod from '@/components/checkout/PaymentMethod.vue';
+import cepService from '@/services/cepService';
 
 export default {
   components: { PaymentMethod },
@@ -140,7 +256,11 @@ export default {
         uf: '',
         cep: ''
       },
-      metodo: 'MERCADO_PAGO'
+      metodo: 'MERCADO_PAGO',
+      deliveryType: 'standard',
+      uberQuote: null,
+      uberLoading: false,
+      uberDeliveryId: null
     };
   },
   computed: {
@@ -165,6 +285,19 @@ export default {
       return Boolean(
         f.rua && f.numero && f.bairro && f.cidade && f.uf && f.cep
       );
+    },
+    enderecoCompleto() {
+      const f = this.enderecoForm;
+      return `${f.rua}, ${f.numero}${f.complemento ? ` - ${f.complemento}` : ''}, ${f.bairro}, ${f.cidade} - ${f.uf}, CEP ${f.cep}`;
+    },
+    valorFrete() {
+      if (this.deliveryType === 'uber_direct' && this.uberQuote) {
+        return this.uberQuote.delivery_fee || 0;
+      }
+      return 0;
+    },
+    totalComFrete() {
+      return this.cartTotal + this.valorFrete;
     }
   },
   created() {
@@ -178,8 +311,67 @@ export default {
     } catch (e) {}
   },
   methods: {
+    async buscarCep() {
+      const cep = this.enderecoForm.cep.replace(/\D/g, '');
+      if (cep.length !== 8) return;
+      try {
+        const res = await cepService.buscar(cep);
+        const data = res.data;
+        if (data.erro) return;
+        if (data.logradouro) this.enderecoForm.rua = data.logradouro;
+        if (data.bairro) this.enderecoForm.bairro = data.bairro;
+        if (data.cidade) this.enderecoForm.cidade = data.cidade;
+        if (data.estado) this.enderecoForm.uf = data.estado;
+      } catch (e) {
+        console.error('Erro ao buscar CEP:', e);
+      }
+    },
     setMetodo(m) {
       this.metodo = m;
+    },
+
+    async calcularFreteUber() {
+      if (!this.enderecoValido) return;
+      this.uberLoading = true;
+      this.uberQuote = null;
+      try {
+        const quote = await UberDirectService.getQuote(this.enderecoCompleto);
+        this.uberQuote = quote;
+      } catch (e) {
+        console.error('Erro ao calcular frete Uber Direct:', e);
+        alert('Não foi possível calcular o frete no momento. Tente novamente.');
+      } finally {
+        this.uberLoading = false;
+      }
+    },
+
+    async criarEntregaUber(pedidoId, codigoPedido) {
+      try {
+        const manifestItems = this.cart.map(item => ({
+          name: item.name || item.nome,
+          quantity: item.quantity || 1,
+          size: 'small'
+        }));
+
+        const delivery = await UberDirectService.createDelivery(
+          this.uberQuote.quote_id,
+          {
+            name: this.user?.name || this.user?.nome || 'Cliente',
+            address: this.enderecoCompleto,
+            phone: this.user?.telefone || this.user?.phone || ''
+          },
+          manifestItems,
+          String(pedidoId)
+        );
+
+        this.uberDeliveryId = delivery.id;
+
+        console.log('Entrega Uber Direct criada com sucesso:', delivery.id);
+        return delivery;
+      } catch (e) {
+        console.error('Erro ao criar entrega Uber Direct:', e);
+        throw e;
+      }
     },
 
     async finalizar() {
@@ -204,13 +396,28 @@ export default {
           enderecoEntrega: this.enderecoEntrega,
           observacoes: '',
           subtotal: this.cartTotal,
-          valorFrete: 0.0,
-          totalFinal: this.cartTotal
+          valorFrete: this.valorFrete,
+          totalFinal: this.totalComFrete,
+          tipoEntrega: this.deliveryType,
+          uberQuoteId: this.uberQuote?.quote_id || null
         };
 
         const res = await OrderService.createOrder(pedidoRequest);
 
-        // Salva o identificador do pedido para a tela de sucesso (Mercado Pago redireciona de volta).
+        if (this.deliveryType === 'uber_direct' && this.uberQuote && res?.id) {
+          try {
+            const delivery = await this.criarEntregaUber(res.id, res.codigoPedido);
+            if (delivery) {
+              localStorage.setItem('ultimoUberDeliveryId', delivery.id);
+              if (delivery.tracking_url) {
+                localStorage.setItem('ultimoUberTrackingUrl', delivery.tracking_url);
+              }
+            }
+          } catch (err) {
+            console.error('Erro ao criar entrega Uber Direct:', err);
+          }
+        }
+
         try {
           if (res && res.id) localStorage.setItem('ultimoPedidoId', String(res.id));
           if (res && res.codigoPedido) localStorage.setItem('ultimoCodigoPedido', String(res.codigoPedido));
@@ -218,10 +425,27 @@ export default {
           // best-effort; nao deve impedir o checkout
         }
 
-        if (res.linkPagamento) {
+        if (res.pixQrCodeBase64) {
+          localStorage.setItem('ultimoPixData', JSON.stringify({
+            pedidoId: res.id,
+            codigoPedido: res.codigoPedido,
+            qrCodeBase64: res.pixQrCodeBase64,
+            copiaECola: res.pixCopiaECola,
+            expiracao: res.pixExpiracao
+          }));
+          this.$router.push({
+            name: 'PixPayment',
+            params: {
+              pedidoId: String(res.id),
+              codigoPedido: res.codigoPedido || '',
+              qrCodeBase64: res.pixQrCodeBase64 || '',
+              copiaECola: res.pixCopiaECola || '',
+              expiracao: res.pixExpiracao || ''
+            }
+          });
+        } else if (res.linkPagamento) {
           window.location.href = res.linkPagamento;
         } else {
-          // Fluxo simulado: segue dentro do sistema.
           if (this.$router) {
             this.$router.push('/sucesso-pagamento');
           } else {
@@ -239,3 +463,28 @@ export default {
   }
 }
 </script>
+
+<style scoped>
+.delivery-type-card {
+  border: 2px solid #e9ecef;
+  border-radius: 10px;
+  padding: 15px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.delivery-type-card:hover {
+  border-color: #0d6efd;
+  background: #f8f9fa;
+}
+
+.delivery-type-card.selected {
+  border-color: #0d6efd;
+  background: #f0f5ff;
+}
+
+.delivery-type-card .form-check-input:checked {
+  background-color: #0d6efd;
+  border-color: #0d6efd;
+}
+</style>

@@ -48,6 +48,9 @@ public class Pedido {
     @OneToOne(mappedBy = "pedido", cascade = CascadeType.ALL)
     private Rastreio rastreio;
 
+    @Column(name = "pagamento_mp_id")
+    private Long pagamentoMpId;
+
     // Enum para status
     public enum StatusPedido {
         AGUARDANDO_PAGAMENTO,
@@ -110,6 +113,9 @@ public class Pedido {
 
     public Rastreio getRastreio() { return rastreio; }
     public void setRastreio(Rastreio rastreio) { this.rastreio = rastreio; }
+
+    public Long getPagamentoMpId() { return pagamentoMpId; }
+    public void setPagamentoMpId(Long pagamentoMpId) { this.pagamentoMpId = pagamentoMpId; }
 
     // Métodos auxiliares
     public void adicionarItem(ItemPedido item) {

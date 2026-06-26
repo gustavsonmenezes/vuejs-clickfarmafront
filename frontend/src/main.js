@@ -36,3 +36,14 @@ app.use(store)
 store.dispatch('checkAuthStatus').then(() => {
   app.mount('#app')
 })
+
+// Registra Service Worker do PWA (desativado em dev para evitar loop de refresh)
+if ('serviceWorker' in navigator && process.env.NODE_ENV !== 'development') {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').then(reg => {
+      console.log('✅ PWA: Service Worker registrado', reg.scope)
+    }).catch(err => {
+      console.warn('⚠️ PWA: Falha ao registrar SW', err)
+    })
+  })
+}

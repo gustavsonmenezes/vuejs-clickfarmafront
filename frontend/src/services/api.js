@@ -20,9 +20,12 @@ api.interceptors.request.use(
     (config) => {
         // O projeto usa 'authToken' em varios pontos (store/login). Mantemos compatibilidade com 'access_token'.
         const token = localStorage.getItem('authToken') || localStorage.getItem('access_token');
+        // Token específico do entregador (app motoboy)
+        const entregadorToken = localStorage.getItem('entregador_token');
         // Só anexa se parecer um JWT real (3 partes separadas por '.').
-        if (token && token.split('.').length === 3) {
-            config.headers.Authorization = `Bearer ${token}`;
+        const tokenToUse = entregadorToken || token;
+        if (tokenToUse && tokenToUse.split('.').length === 3) {
+            config.headers.Authorization = `Bearer ${tokenToUse}`;
         }
         return config;
     },

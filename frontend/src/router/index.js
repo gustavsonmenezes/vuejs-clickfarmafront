@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import entregadorService from '@/services/entregadorService'
 import Home from '../views/Home.vue'
 import Products from '../views/Products.vue'
 import Login from '../views/Login.vue'
@@ -157,6 +158,13 @@ const routes = [
   },
 
   {
+    path: '/pix-payment/:pedidoId?/:codigoPedido?/:qrCodeBase64?/:copiaECola?/:expiracao?',
+    name: 'PixPayment',
+    component: () => import('../views/PixPayment.vue'),
+    props: true,
+    meta: { requiresAuth: true }
+  },
+  {
     path: '/rastrear',
     name: 'Rastrear',
     component: () => import('../views/DeliveryTracking.vue')
@@ -239,6 +247,53 @@ const routes = [
         component: UserManagement
       }
     ]
+  },
+  {
+    path: '/entregador',
+    redirect: '/entregador/corridas'
+  },
+  {
+    path: '/entregador/login',
+    name: 'EntregadorLogin',
+    component: () => import('../views/entregador/EntregadorLogin.vue')
+  },
+  {
+    path: '/entregador/cadastro',
+    name: 'EntregadorCadastro',
+    component: () => import('../views/entregador/EntregadorCadastro.vue')
+  },
+  {
+    path: '/entregador',
+    component: () => import('../views/entregador/EntregadorLayout.vue'),
+    meta: { requiresEntregadorAuth: true },
+    children: [
+      {
+        path: 'corridas',
+        name: 'EntregadorCorridas',
+        component: () => import('../views/entregador/EntregadorCorridas.vue')
+      },
+      {
+        path: 'corridas/:id',
+        name: 'EntregadorCorridaDetalhe',
+        component: () => import('../views/entregador/EntregadorCorridaDetalhe.vue'),
+        props: true
+      },
+      {
+        path: 'historico',
+        name: 'EntregadorHistorico',
+        component: () => import('../views/entregador/EntregadorHistorico.vue')
+      },
+      {
+        path: 'saldo',
+        name: 'EntregadorSaldo',
+        component: () => import('../views/entregador/EntregadorSaldo.vue')
+      },
+      {
+        path: 'perfil',
+        name: 'EntregadorPerfil',
+        component: () => import('../views/entregador/EntregadorPerfil.vue')
+      }
+    ]
   }
 ]
 
@@ -252,7 +307,13 @@ router.beforeEach((to, from, next) => {
   const user = JSON.parse(localStorage.getItem('user') || '{}')
   const isAdmin = user.role && user.role.toUpperCase() === 'ADMIN'
 
-  if (to.meta.requiresAuth && !isAuthenticated) {
+  if (to.meta.requiresEntregadorAuth) {
+    if (!entregadorService.isLoggedIn()) {
+      next('/entregador/login')
+    } else {
+      next()
+    }
+  } else if (to.meta.requiresAuth && !isAuthenticated) {
     if (to.path.startsWith('/admin')) {
       next('/admin/login')
     } else {

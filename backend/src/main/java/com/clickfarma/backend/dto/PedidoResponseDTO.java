@@ -25,6 +25,10 @@ public class PedidoResponseDTO {
     private Boolean whatsappEnviado;
     private String whatsappMensagem;
 
+    private String pixQrCodeBase64;
+    private String pixCopiaECola;
+    private String pixExpiracao;
+
     // Construtor padrão
     public PedidoResponseDTO() {}
 
@@ -99,4 +103,13 @@ public class PedidoResponseDTO {
 
     public String getWhatsappMensagem() { return whatsappMensagem; }
     public void setWhatsappMensagem(String whatsappMensagem) { this.whatsappMensagem = whatsappMensagem; }
+
+    public String getPixQrCodeBase64() { return pixQrCodeBase64; }
+    public void setPixQrCodeBase64(String pixQrCodeBase64) { this.pixQrCodeBase64 = pixQrCodeBase64; }
+
+    public String getPixCopiaECola() { return pixCopiaECola; }
+    public void setPixCopiaECola(String pixCopiaECola) { this.pixCopiaECola = pixCopiaECola; }
+
+    public String getPixExpiracao() { return pixExpiracao; }
+    public void setPixExpiracao(String pixExpiracao) { this.pixExpiracao = pixExpiracao; }
 }

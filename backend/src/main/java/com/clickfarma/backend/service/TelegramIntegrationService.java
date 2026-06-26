@@ -1,6 +1,7 @@
 package com.clickfarma.backend.service;
 
 import com.clickfarma.backend.dto.TelegramLinkResponseDTO;
+import com.clickfarma.backend.model.Entregador;
 import com.clickfarma.backend.model.Usuario;
 import com.clickfarma.backend.repository.UsuarioRepository;
 import org.slf4j.Logger;
@@ -21,13 +22,17 @@ public class TelegramIntegrationService {
 
     private final UsuarioRepository usuarioRepository;
     private final TelegramService telegramService;
+    private final EntregaService entregaService;
 
     @Value("${telegram.bot.username}")
     private String botUsername;
 
-    public TelegramIntegrationService(UsuarioRepository usuarioRepository, TelegramService telegramService) {
+    public TelegramIntegrationService(UsuarioRepository usuarioRepository,
+                                      TelegramService telegramService,
+                                      EntregaService entregaService) {
         this.usuarioRepository = usuarioRepository;
         this.telegramService = telegramService;
+        this.entregaService = entregaService;
     }
 
     public TelegramLinkResponseDTO gerarLinkVinculacao(Long usuarioId) {
@@ -65,6 +70,54 @@ public class TelegramIntegrationService {
 
         if (texto.startsWith("/start")) {
             processarComandoStart(chatId, nome, texto);
+        } else if (texto.startsWith("/aceitar")) {
+            processarAceitar(chatId, texto);
+        } else if (texto.startsWith("/recusar")) {
+            processarRecusar(chatId, texto);
+        } else if (texto.startsWith("/registrar")) {
+            processarRegistrar(chatId, nome, texto);
+        }
+    }
+
+    private void processarAceitar(String chatId, String texto) {
+        String[] partes = texto.split("\\s+", 2);
+        if (partes.length < 2) {
+            telegramService.enviarMensagem(chatId,
+                    "Use: /aceitar <ID da entrega>\nExemplo: /aceitar 3");
+            return;
+        }
+        try {
+            Long entregaId = Long.parseLong(partes[1].trim());
+            String resposta = entregaService.aceitar(entregaId, chatId);
+            telegramService.enviarMensagem(chatId, resposta);
+        } catch (NumberFormatException e) {
+            telegramService.enviarMensagem(chatId, "ID da entrega inválido. Use: /aceitar <ID>");
+        }
+    }
+
+    private void processarRecusar(String chatId, String texto) {
+        String[] partes = texto.split("\\s+", 2);
+        if (partes.length < 2) {
+            telegramService.enviarMensagem(chatId,
+                    "Use: /recusar <ID da entrega>\nExemplo: /recusar 3");
+            return;
+        }
+        try {
+            Long entregaId = Long.parseLong(partes[1].trim());
+            String resposta = entregaService.recusar(entregaId, chatId);
+            telegramService.enviarMensagem(chatId, resposta);
+        } catch (NumberFormatException e) {
+            telegramService.enviarMensagem(chatId, "ID da entrega inválido. Use: /recusar <ID>");
+        }
+    }
+
+    private void processarRegistrar(String chatId, String nomePadrao, String texto) {
+        String[] partes = texto.split("\\s+", 2);
+        String nome = partes.length >= 2 ? partes[1].trim() : nomePadrao;
+        Entregador existente = entregaService.registrarEntregador(nome, chatId);
+        if (existente == null) {
+            telegramService.enviarMensagem(chatId,
+                    "Você já está cadastrado como entregador!");
         }
     }
 

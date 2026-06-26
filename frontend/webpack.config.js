@@ -3,6 +3,7 @@ const fs = require('fs');
 const webpack = require('webpack');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const { VueLoaderPlugin } = require('vue-loader');
+const CopyWebpackPlugin = require('copy-webpack-plugin');
 
 function loadEnvVars(prefix = 'VUE_APP_') {
   const envFile = path.resolve(__dirname, '.env');
@@ -78,6 +79,17 @@ module.exports = {
       templateParameters: {
         BASE_URL: '/'
       }
+    }),
+    new CopyWebpackPlugin({
+      patterns: [
+        {
+          from: 'public',
+          to: '',
+          globOptions: {
+            ignore: ['**/index.html']
+          }
+        }
+      ]
     })
   ],
   resolve: {

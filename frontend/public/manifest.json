@@ -1,0 +1,75 @@
+{
+  "name": "ClickFarma",
+  "short_name": "ClickFarma",
+  "description": "Farmácia online com entrega rápida, leitura de receita por IA e assistente virtual",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#FAF9F6",
+  "theme_color": "#2A5C45",
+  "lang": "pt-BR",
+  "scope": "/",
+  "categories": ["health", "medical", "shopping"],
+  "icons": [
+    {
+      "src": "/images/icon-192.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/images/icon-512.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/images/icon-maskable.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ],
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "Produtos",
+      "short_name": "Produtos",
+      "description": "Ver catálogo de produtos",
+      "url": "/products",
+      "icons": [
+        {
+          "src": "/images/icon-192.svg",
+          "sizes": "192x192",
+          "type": "image/svg+xml"
+        }
+      ]
+    },
+    {
+      "name": "Meus Pedidos",
+      "short_name": "Pedidos",
+      "description": "Acompanhar meus pedidos",
+      "url": "/orders",
+      "icons": [
+        {
+          "src": "/images/icon-192.svg",
+          "sizes": "192x192",
+          "type": "image/svg+xml"
+        }
+      ]
+    },
+    {
+      "name": "Rastrear Entrega",
+      "short_name": "Rastrear",
+      "description": "Rastrear pedido",
+      "url": "/rastrear",
+      "icons": [
+        {
+          "src": "/images/icon-192.svg",
+          "sizes": "192x192",
+          "type": "image/svg+xml"
+        }
+      ]
+    }
+  ]
+}

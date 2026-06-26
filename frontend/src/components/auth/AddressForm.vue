@@ -124,6 +124,8 @@
 </template>
 
 <script>
+import cepService from '@/services/cepService';
+
 export default {
   name: 'AddressForm',
   props: {
@@ -148,7 +150,7 @@ export default {
       states: [
         'AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA', 
         'MT', 'MS', 'MG', 'PA', 'PB', 'PR', 'PE', 'PI', 'RJ', 'RN', 
-        'RS', 'RO', 'RR', 'SC', 'SP', 'SE', 'TO'
+        'RS', 'RO', 'RR', 'SC', 'SE', 'TO'
       ],
       loading: false
     }
@@ -179,23 +181,26 @@ export default {
         isDefault: false
       }
     },
-    
+
     async fetchAddressByZipcode() {
-      // Implementar busca de CEP via API
-      if (this.formData.zipcode.replace(/\D/g, '').length === 8) {
-        console.log('Buscando endereço para o CEP:', this.formData.zipcode)
-        // Simulação de busca de CEP
-        const mockAddress = {
-          street: 'Rua das Flores',
-          neighborhood: 'Centro',
-          city: 'Recife',
-          state: 'PE'
-        }
-        
-        this.formData = { ...this.formData, ...mockAddress }
+      const cep = this.formData.zipcode.replace(/\D/g, '');
+      if (cep.length !== 8) return;
+      this.loading = true;
+      try {
+        const res = await cepService.buscar(cep);
+        const data = res.data;
+        if (data.erro) return;
+        this.formData.street = data.logradouro || '';
+        this.formData.neighborhood = data.bairro || '';
+        this.formData.city = data.cidade || '';
+        this.formData.state = data.estado || '';
+      } catch (e) {
+        console.error('Erro ao buscar CEP:', e);
+      } finally {
+        this.loading = false;
       }
     },
-    
+
     handleSubmit() {
       this.$emit('save-address', this.formData)
     }

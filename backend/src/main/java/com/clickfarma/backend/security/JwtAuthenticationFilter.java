@@ -29,6 +29,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             "/api/auth/register",
             "/api/gemini/",
             "/api/telegram/webhook",
+            "/api/entregadores/",
+            "/api/entregas-entregador/",
+            "/api/weather",
             "/swagger-ui/",
             "/v3/api-docs/",
             "/actuator/"
@@ -58,7 +61,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             try {
                 username = jwtUtil.extractUsername(jwt);
             } catch (Exception e) {
-                logger.error("Erro ao extrair username do token", e);
+                logger.warn("Token JWT inválido/expirado para " + requestPath + ": " + e.getMessage());
             }
         }
 

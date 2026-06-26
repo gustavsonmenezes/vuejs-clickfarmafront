@@ -19,10 +19,14 @@ public class PedidoRequestDTO {
 
     private String observacoes;
 
-    // NOVOS CAMPOS PARA FRETE E TOTAL
+    // CAMPOS PARA FRETE E TOTAL
     private Double subtotal;
     private Double valorFrete;
     private Double totalFinal;
+
+    // CAMPOS PARA UBER DIRECT
+    private String tipoEntrega;
+    private String uberQuoteId;
 
     // Getters e Setters
     public Long getUsuarioId() { return usuarioId; }
@@ -48,4 +52,10 @@ public class PedidoRequestDTO {
 
     public Double getTotalFinal() { return totalFinal; }
     public void setTotalFinal(Double totalFinal) { this.totalFinal = totalFinal; }
+
+    public String getTipoEntrega() { return tipoEntrega; }
+    public void setTipoEntrega(String tipoEntrega) { this.tipoEntrega = tipoEntrega; }
+
+    public String getUberQuoteId() { return uberQuoteId; }
+    public void setUberQuoteId(String uberQuoteId) { this.uberQuoteId = uberQuoteId; }
 }

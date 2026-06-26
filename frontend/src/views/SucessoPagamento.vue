@@ -34,6 +34,28 @@
                 <p class="success-subtitle mb-0">Seu pagamento foi processado com sucesso</p>
               </div>
 
+              <!-- Uber Direct Delivery Info -->
+              <div v-if="uberDeliveryId" class="uber-info mb-4">
+                <div class="uber-info-header">
+                  <span class="uber-badge">UBER DIRECT</span>
+                  <span class="uber-status">Entregador a caminho</span>
+                </div>
+                <div class="uber-info-body">
+                  <div class="uber-info-row">
+                    <svg class="uber-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+                    </svg>
+                    <span>Entregador vai até a farmácia retirar o medicamento</span>
+                  </div>
+                  <a v-if="uberTrackingUrl" :href="uberTrackingUrl" target="_blank" class="btn btn-uber mt-2">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                      <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
+                    </svg>
+                    Acompanhar entrega ao vivo
+                  </a>
+                </div>
+              </div>
+
               <!-- Order ID -->
               <div v-if="pedidoId || codigoPedido" class="order-id-badge text-center mb-4">
                 <span class="badge-label">Número do pedido</span>
@@ -150,6 +172,8 @@ export default {
     return {
       pedidoId: localStorage.getItem('ultimoPedidoId') || '',
       codigoPedido: localStorage.getItem('ultimoCodigoPedido') || '',
+      uberDeliveryId: localStorage.getItem('ultimoUberDeliveryId') || '',
+      uberTrackingUrl: localStorage.getItem('ultimoUberTrackingUrl') || '',
       copySuccess: false
     }
   },
@@ -174,6 +198,8 @@ export default {
     localStorage.removeItem('cart');
     localStorage.removeItem('ultimoPedidoId');
     localStorage.removeItem('ultimoCodigoPedido');
+    localStorage.removeItem('ultimoUberDeliveryId');
+    localStorage.removeItem('ultimoUberTrackingUrl');
     this.$store.dispatch('clearCart');
   },
   methods: {

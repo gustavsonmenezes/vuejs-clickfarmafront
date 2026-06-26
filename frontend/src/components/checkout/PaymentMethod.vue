@@ -3,7 +3,22 @@
     <h4 class="mb-4 font-weight-bold text-dark">💳 Forma de Pagamento</h4>
 
     <div class="options-list">
-      <!-- OPÇÃO MERCADO PAGO (SELECIONADA POR PADRÃO) -->
+      <div
+          class="payment-option p-4 mb-3 border rounded shadow-sm d-flex align-items-center"
+          :class="{ 'selected-border bg-light': selectedMethod === 'PIX' }"
+          @click="selectMethod('PIX')"
+          style="cursor: pointer; transition: all 0.2s ease-in-out;"
+      >
+        <div class="form-check mb-0">
+          <input class="form-check-input" type="radio" value="PIX" v-model="selectedMethod">
+        </div>
+        <div class="ms-3">
+          <h6 class="mb-1 font-weight-bold">PIX</h6>
+          <p class="small text-muted mb-0">Pagamento instantâneo. Aprovação na hora.</p>
+        </div>
+        <i class="fas fa-qrcode fa-2x ms-auto text-success"></i>
+      </div>
+
       <div
           class="payment-option p-4 mb-3 border rounded shadow-sm d-flex align-items-center"
           :class="{ 'selected-border bg-light': selectedMethod === 'MERCADO_PAGO' }"
@@ -11,21 +26,15 @@
           style="cursor: pointer; transition: all 0.2s ease-in-out;"
       >
         <div class="form-check mb-0">
-          <input
-              class="form-check-input"
-              type="radio"
-              value="MERCADO_PAGO"
-              v-model="selectedMethod"
-          >
+          <input class="form-check-input" type="radio" value="MERCADO_PAGO" v-model="selectedMethod">
         </div>
         <div class="ms-3">
-          <h6 class="mb-1 font-weight-bold">Mercado Pago</h6>
-          <p class="small text-muted mb-0">Cartão de Crédito, PIX ou Boleto com segurança total.</p>
+          <h6 class="mb-1 font-weight-bold">Cartão de Crédito</h6>
+          <p class="small text-muted mb-0">Pagamento com cartão via Mercado Pago.</p>
         </div>
-        <img src="https://logodownload.org/wp-content/uploads/2019/06/mercado-pago-logo-0.png" height="25" class="ms-auto">
+        <i class="fas fa-credit-card fa-2x ms-auto text-primary"></i>
       </div>
 
-      <!-- OPÇÃO SIMULADA (PARA TESTE/DEMO) -->
       <div
           class="payment-option p-4 mb-3 border rounded shadow-sm d-flex align-items-center"
           :class="{ 'selected-border bg-light': selectedMethod === 'SIMULADO' }"
@@ -33,24 +42,14 @@
           style="cursor: pointer; transition: all 0.2s ease-in-out;"
       >
         <div class="form-check mb-0">
-          <input
-              class="form-check-input"
-              type="radio"
-              value="SIMULADO"
-              v-model="selectedMethod"
-          >
+          <input class="form-check-input" type="radio" value="SIMULADO" v-model="selectedMethod">
         </div>
         <div class="ms-3">
-          <h6 class="mb-1 font-weight-bold">Pagamento</h6>
-          <p class="small text-muted mb-0">Finaliza o pedido no sistema e acompanhe o rastreio.</p>
+          <h6 class="mb-1 font-weight-bold">Simulado</h6>
+          <p class="small text-muted mb-0">Finaliza o pedido no sistema para teste.</p>
         </div>
-        <i class="fas fa-credit-card fa-2x ms-auto text-muted"></i>
+        <i class="fas fa-flask fa-2x ms-auto text-muted"></i>
       </div>
-    </div>
-
-    <div class="alert alert-primary border-0 shadow-sm mt-4 d-flex align-items-center p-3">
-      <i class="fas fa-shield-alt fa-lg me-3 text-primary"></i>
-
     </div>
   </div>
 </template>
@@ -62,7 +61,7 @@ export default {
   methods: {
     selectMethod(method) {
       this.selectedMethod = method;
-      this.$emit('update-method', method); // Avisa o Checkout.vue
+      this.$emit('update-method', method);
     }
   },
   mounted() { this.$emit('update-method', this.selectedMethod); }

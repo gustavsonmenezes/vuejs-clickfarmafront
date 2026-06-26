@@ -330,7 +330,8 @@ export default createStore({
     weatherData: null,
     weatherRecommendations: [],
     weatherLoading: false,
-    weatherError: null
+    weatherError: null,
+    uberDeliveries: {}
   },
 
   getters: {
@@ -346,7 +347,8 @@ export default createStore({
     adminOrders: (state) => state.adminOrders,
     adminPrescriptions: (state) => state.adminPrescriptions,
     adminUsers: (state) => state.adminUsers,
-    getOrderTracking: (state) => (orderId) => state.orderTracking[orderId]
+    getOrderTracking: (state) => (orderId) => state.orderTracking[orderId],
+    getUberDelivery: (state) => (pedidoId) => state.uberDeliveries[pedidoId]
   },
 
   mutations: {
@@ -426,7 +428,10 @@ export default createStore({
       if (!state.orderTracking) state.orderTracking = {};
       state.orderTracking[orderId] = trackingInfo;
     },
-    // NOVA MUTATION: Salvar pedido no localStorage
+    SET_UBER_DELIVERY(state, { pedidoId, deliveryInfo }) {
+      if (!state.uberDeliveries) state.uberDeliveries = {};
+      state.uberDeliveries[pedidoId] = deliveryInfo;
+    },
     SAVE_ORDER_TO_LOCAL_STORAGE(state, order) {
       try {
         const savedOrders = JSON.parse(localStorage.getItem('userOrders') || '[]');
@@ -683,6 +688,18 @@ export default createStore({
         return trackingInfo;
       } catch (error) {
         console.error('Erro ao buscar rastreamento:', error);
+        throw error;
+      }
+    },
+
+    async fetchUberDeliveryStatus({ commit }, pedidoId) {
+      try {
+        const UberDirectService = (await import('@/services/uberDirectService')).UberDirectService;
+        const deliveryInfo = await UberDirectService.getDeliveryStatus(pedidoId);
+        commit('SET_UBER_DELIVERY', { pedidoId, deliveryInfo });
+        return deliveryInfo;
+      } catch (error) {
+        console.error('Erro ao buscar status Uber Direct:', error);
         throw error;
       }
     },

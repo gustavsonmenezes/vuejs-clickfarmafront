@@ -40,6 +40,7 @@
     "@vue/cli-plugin-unit-jest": "^5.0.9",
     "@vue/test-utils": "^2.4.0-alpha.2",
     "babel-loader": "^9.1.0",
+    "copy-webpack-plugin": "^14.0.0",
     "css-loader": "^6.8.1",
     "cypress": "^15.15.0",
     "eslint": "^8.56.0",

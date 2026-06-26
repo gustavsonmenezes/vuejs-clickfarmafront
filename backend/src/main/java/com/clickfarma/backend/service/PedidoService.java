@@ -5,6 +5,9 @@ import com.clickfarma.backend.dto.PedidoRequestDTO;
 import com.clickfarma.backend.dto.PedidoResponseDTO;
 import com.clickfarma.backend.dto.ItemPedidoRequestDTO;
 import com.clickfarma.backend.dto.RastreioResponseDTO;
+import com.clickfarma.backend.dto.UberDirectContactDTO;
+import com.clickfarma.backend.dto.UberDirectDeliveryResponseDTO;
+import com.clickfarma.backend.dto.UberDirectManifestItemDTO;
 import com.clickfarma.backend.model.AgendamentoRecompra;
 import com.clickfarma.backend.model.ItemPedido;
 import com.clickfarma.backend.model.Pedido;
@@ -71,8 +74,14 @@ public class PedidoService {
     @Autowired
     private WhatsAppCloudService whatsAppCloudService;
 
+    @Autowired
+    private UberDirectService uberDirectService;
+
     @Value("${telegram.entregador.chat-id}")
     private String entregadorChatId;
+
+    @Value("${farmacia.nome:ClickFarma - Matriz}")
+    private String farmaciaNome;
 
     /**
      * Cria o pedido normal (sem considerar agendamento de recompra).
@@ -123,16 +132,31 @@ public class PedidoService {
                 : "";
 
         String linkPagamento = null;
+        String pixQrCodeBase64 = null;
+        String pixCopiaECola = null;
+        String pixExpiracao = null;
+
         if ("MERCADO_PAGO".equals(metodo)) {
-            // Fluxo real: cria link e redireciona.
             linkPagamento = pagamentoService.criarLinkPagamento(valorTotal.doubleValue(), pedidoSalvo.getId());
+        } else if ("PIX".equals(metodo)) {
+            PagamentoService.CriarPixResponse pix = pagamentoService.criarPagamentoPix(
+                    valorTotal.doubleValue(),
+                    pedidoSalvo.getId(),
+                    usuario.getEmail());
+            pixQrCodeBase64 = pix.qrCodeBase64();
+            pixCopiaECola = pix.copiaECola();
+            pixExpiracao = pix.expiracao();
+            pedidoSalvo.setPagamentoMpId(pix.pagamentoId());
+            pedidoRepository.save(pedidoSalvo);
         } else {
-            // Fluxo demo: finaliza o pedido sem redirecionar e já cria rastreio para apresentação/teste.
-            finalizarPedidoSimulado(pedidoSalvo);
+            finalizarPedidoSimulado(pedidoSalvo, pedidoDTO.getTipoEntrega(), pedidoDTO.getUberQuoteId());
         }
 
         PedidoResponseDTO responseDTO = new PedidoResponseDTO(pedidoSalvo);
         responseDTO.setLinkPagamento(linkPagamento);
+        responseDTO.setPixQrCodeBase64(pixQrCodeBase64);
+        responseDTO.setPixCopiaECola(pixCopiaECola);
+        responseDTO.setPixExpiracao(pixExpiracao);
         responseDTO.setWhatsappLink(whatsAppService.gerarLinkCompartilhar(pedidoSalvo));
 
         emailNotificationService.enviarConfirmacaoPedido(usuario, pedidoSalvo, linkPagamento);
@@ -140,24 +164,30 @@ public class PedidoService {
         return responseDTO;
     }
 
-    private void finalizarPedidoSimulado(Pedido pedido) {
+    private void finalizarPedidoSimulado(Pedido pedido, String tipoEntrega, String uberQuoteId) {
         if (pedido == null) return;
 
         pedido.setStatus(Pedido.StatusPedido.PAGO);
         pedido.setDataAtualizacao(LocalDateTime.now());
         pedidoRepository.save(pedido);
 
-        // Cria um rastreio simples para permitir consulta imediata via numero/codigo do pedido.
         if (pedido.getRastreio() == null) {
             Rastreio rastreio = new Rastreio(pedido);
-            rastreio.setTransportadora("ClickFarma Express (Demo)");
+
+            if ("uber_direct".equals(tipoEntrega) && uberQuoteId != null) {
+                rastreio.setTransportadora("Uber Direct");
+                rastreio.setStatus("SAIU_PARA_ENTREGA");
+                rastreio.setUltimaLocalizacao("Farmácia " + farmaciaNome);
+            } else {
+                rastreio.setTransportadora("ClickFarma Express");
+                rastreio.setStatus("EM_TRANSITO");
+                rastreio.setUltimaLocalizacao("Centro de Distribuição");
+            }
+
             rastreio.setDataEnvio(LocalDateTime.now());
             rastreio.setDataPrevisaoEntrega(LocalDateTime.now().plusDays(5));
-            rastreio.setStatus("EM_TRANSITO");
-            rastreio.setUltimaLocalizacao("Centro de Distribuição");
             rastreio.setUltimaAtualizacao(LocalDateTime.now());
             rastreio = rastreioRepository.save(rastreio);
-            // Garante o vínculo bidirecional para consultas via p.rastreio (JOIN FETCH).
             pedido.setRastreio(rastreio);
 
             pedido.setStatus(Pedido.StatusPedido.ENVIADO);
@@ -165,8 +195,44 @@ public class PedidoService {
             pedidoRepository.save(pedido);
         }
 
-        // Notifica entregador via Telegram
-        notificarEntregador(pedido);
+        if ("uber_direct".equals(tipoEntrega) && uberQuoteId != null) {
+            criarEntregaUberDirect(pedido, uberQuoteId);
+        } else {
+            notificarEntregador(pedido);
+        }
+    }
+
+    private void criarEntregaUberDirect(Pedido pedido, String uberQuoteId) {
+        try {
+            List<UberDirectManifestItemDTO> itens = pedido.getItens().stream().map(item -> {
+                UberDirectManifestItemDTO dto = new UberDirectManifestItemDTO();
+                dto.setName(item.getProduto().getNome());
+                dto.setQuantity(item.getQuantidade());
+                dto.setSize("small");
+                return dto;
+            }).toList();
+
+            UberDirectContactDTO dropoff = new UberDirectContactDTO();
+            dropoff.setName(pedido.getUsuario().getNome());
+            dropoff.setAddress(pedido.getEnderecoEntrega());
+            dropoff.setPhone(pedido.getUsuario().getTelefone());
+
+            UberDirectDeliveryResponseDTO delivery = uberDirectService.createDelivery(
+                    uberQuoteId, dropoff, itens, String.valueOf(pedido.getId()));
+
+            String obs = pedido.getObservacoes() != null ? pedido.getObservacoes() : "";
+            obs += " [UberDirect: id=" + delivery.getId();
+            if (delivery.getTrackingUrl() != null) {
+                obs += " tracking=" + delivery.getTrackingUrl();
+            }
+            obs += "]";
+            pedido.setObservacoes(obs);
+            pedidoRepository.save(pedido);
+
+            log.info("Entrega Uber Direct criada para pedido {}: {}", pedido.getCodigoPedido(), delivery.getId());
+        } catch (Exception e) {
+            log.error("Erro ao criar entrega Uber Direct para pedido {}", pedido.getCodigoPedido(), e);
+        }
     }
 
     private void notificarEntregador(Pedido pedido) {
