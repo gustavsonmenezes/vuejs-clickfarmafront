@@ -18,3 +18,6 @@ INSERT INTO produtos (nome, descricao, preco, categoria_id, estoque) VALUES
 
 INSERT INTO usuarios (nome, email, senha, endereco, role, data_cadastro) VALUES
 ('Gustavson', 'gustavson.adm@gmail.com', '$2a$10$8K1p/a0dL3LzY5T4m7x0OeLzQ5bM9nJ8vU5sR2tW3yX4zC5vB6nO', 'Endereço Teste', 'ADMIN', NOW());
+
+INSERT IGNORE INTO entregadores (nome, cpf, senha, telefone, cnh, placa_veiculo, modelo_veiculo, chave_pix, status, ativo, data_cadastro)
+VALUES ('Entregador Teste', '12345678901', '$2a$10$5MP/RkYWSU9Asy1KUPDYkOLk0fljksOQLMf9gO4UrOOs3SMuApCcy', '(81) 99999-0000', '12345678901', 'ABC-1234', 'Honda CG 160', '12345678901', 'ATIVO', true, NOW());

@@ -51,6 +51,12 @@ public class Pedido {
     @Column(name = "pagamento_mp_id")
     private Long pagamentoMpId;
 
+    @Column(name = "farmacia_id")
+    private Long farmaciaId;
+
+    @Column(name = "valor_frete", precision = 10, scale = 2)
+    private BigDecimal valorFrete;
+
     // Enum para status
     public enum StatusPedido {
         AGUARDANDO_PAGAMENTO,
@@ -116,6 +122,12 @@ public class Pedido {
 
     public Long getPagamentoMpId() { return pagamentoMpId; }
     public void setPagamentoMpId(Long pagamentoMpId) { this.pagamentoMpId = pagamentoMpId; }
+
+    public Long getFarmaciaId() { return farmaciaId; }
+    public void setFarmaciaId(Long farmaciaId) { this.farmaciaId = farmaciaId; }
+
+    public BigDecimal getValorFrete() { return valorFrete; }
+    public void setValorFrete(BigDecimal valorFrete) { this.valorFrete = valorFrete; }
 
     // Métodos auxiliares
     public void adicionarItem(ItemPedido item) {

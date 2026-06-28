@@ -92,23 +92,17 @@ export default {
   },
   mounted() {
     this.pedidoId = this.$route.params.pedidoId;
-    this.codigoPedido = this.$route.params.codigoPedido || '';
-    this.qrCodeBase64 = this.$route.params.qrCodeBase64 || '';
-    this.copiaECola = this.$route.params.copiaECola || '';
-    this.expiracao = this.$route.params.expiracao || '';
 
-    if (!this.qrCodeBase64 && !this.copiaECola) {
-      const stored = localStorage.getItem('ultimoPixData');
-      if (stored) {
-        try {
-          const data = JSON.parse(stored);
-          this.pedidoId = data.pedidoId || this.pedidoId;
-          this.codigoPedido = data.codigoPedido || this.codigoPedido;
-          this.qrCodeBase64 = data.qrCodeBase64 || this.qrCodeBase64;
-          this.copiaECola = data.copiaECola || this.copiaECola;
-          this.expiracao = data.expiracao || this.expiracao;
-        } catch (e) {}
-      }
+    const stored = sessionStorage.getItem('ultimoPixData');
+    if (stored) {
+      try {
+        const data = JSON.parse(stored);
+        this.pedidoId = data.pedidoId || this.pedidoId;
+        this.codigoPedido = data.codigoPedido || this.codigoPedido;
+        this.qrCodeBase64 = data.qrCodeBase64 || this.qrCodeBase64;
+        this.copiaECola = data.copiaECola || this.copiaECola;
+        this.expiracao = data.expiracao || this.expiracao;
+      } catch (e) {}
     }
 
     if (this.expiracao) {
@@ -155,7 +149,7 @@ export default {
           if (res.data && res.data.status === 'PAGO') {
             this.pago = true;
             this.pararIntervalos();
-            localStorage.removeItem('ultimoPixData');
+            sessionStorage.removeItem('ultimoPixData');
             try {
               if (this.pedidoId) localStorage.setItem('ultimoPedidoId', String(this.pedidoId));
               if (this.codigoPedido) localStorage.setItem('ultimoCodigoPedido', String(this.codigoPedido));

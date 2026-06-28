@@ -20,6 +20,7 @@ public class PedidoResponseDTO {
     private Double subtotal;
     private Double valorFrete;
     private Double totalFinal;
+    private Long farmaciaId;
     private String linkPagamento;
     private String whatsappLink;
     private Boolean whatsappEnviado;
@@ -44,8 +45,8 @@ public class PedidoResponseDTO {
         this.observacoes = pedido.getObservacoes();
         this.dataPedido = pedido.getDataPedido();
         this.subtotal = pedido.getValorTotal() != null ? pedido.getValorTotal().doubleValue() : 0.0;
-        // O frete e o total final podem precisar de lógica adicional para serem preenchidos
-        this.valorFrete = 0.0; // Valor padrão
+        this.farmaciaId = pedido.getFarmaciaId();
+        this.valorFrete = pedido.getValorFrete() != null ? pedido.getValorFrete().doubleValue() : 0.0;
         this.totalFinal = this.subtotal + this.valorFrete;
         this.itens = pedido.getItens().stream()
                 .map(ItemPedidoResponseDTO::new)
@@ -85,6 +86,9 @@ public class PedidoResponseDTO {
 
     public Double getSubtotal() { return subtotal; }
     public void setSubtotal(Double subtotal) { this.subtotal = subtotal; }
+
+    public Long getFarmaciaId() { return farmaciaId; }
+    public void setFarmaciaId(Long farmaciaId) { this.farmaciaId = farmaciaId; }
 
     public Double getValorFrete() { return valorFrete; }
     public void setValorFrete(Double valorFrete) { this.valorFrete = valorFrete; }

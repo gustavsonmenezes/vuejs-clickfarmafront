@@ -1,6 +1,8 @@
 package com.clickfarma.backend.security;
 
+import com.clickfarma.backend.model.Entregador;
 import com.clickfarma.backend.model.Usuario;
+import com.clickfarma.backend.repository.EntregadorRepository;
 import com.clickfarma.backend.repository.UsuarioRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.User;
@@ -16,11 +18,22 @@ public class CustomUserDetailsService implements UserDetailsService {
     @Autowired
     private UsuarioRepository usuarioRepository;
 
-    @Override
-    public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
-        Usuario usuario = usuarioRepository.findByEmail(email)
-                .orElseThrow(() -> new UsernameNotFoundException("Usuário não encontrado com email: " + email));
+    @Autowired
+    private EntregadorRepository entregadorRepository;
 
-        return new User(usuario.getEmail(), usuario.getSenha(), new ArrayList<>());
+    @Override
+    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+        Usuario usuario = usuarioRepository.findByEmail(username).orElse(null);
+        if (usuario != null) {
+            return new User(usuario.getEmail(), usuario.getSenha(), new ArrayList<>());
+        }
+
+        Entregador entregador = entregadorRepository.findByCpf(username)
+                .orElseThrow(() -> new UsernameNotFoundException("Usuário ou entregador não encontrado: " + username));
+
+        return User.withUsername(entregador.getCpf())
+                .password(entregador.getSenha())
+                .roles("ENTREGADOR")
+                .build();
     }
 }

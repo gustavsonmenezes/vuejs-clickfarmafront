@@ -50,6 +50,9 @@
               </td>
               <td class="text-end fw-semibold">R$ {{ formatValue(order.valorTotal) }}</td>
               <td class="text-end pe-4 d-flex gap-1 justify-content-end">
+                <button @click="openDetailModal(order)" class="action-btn" title="Ver detalhes">
+                  <i class="fas fa-eye"></i>
+                </button>
                 <button @click="openStatusModal(order)" class="cf-btn cf-btn-secondary cf-btn-sm">
                   <i class="fas fa-arrow-right-arrow-left me-1"></i>
                   Status
@@ -61,6 +64,73 @@
         <div v-else class="cf-empty-state">
           <i class="fas fa-bag-shopping"></i>
           <p>Nenhum pedido encontrado.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Order Detail Modal -->
+    <div v-if="showDetailModal" class="modal-backdrop" @click.self="closeDetailModal">
+      <div class="modal-panel modal-lg">
+        <div class="modal-header">
+          <h5 class="mb-0 fw-semibold">Pedido #{{ detailOrder?.codigoPedido }}</h5>
+          <button @click="closeDetailModal" class="btn-close-modal"><i class="fas fa-xmark"></i></button>
+        </div>
+        <div class="modal-body" v-if="detailOrder">
+          <div class="detail-grid mb-4">
+            <div>
+              <span class="detail-label">Cliente</span>
+              <span class="detail-value">{{ detailOrder.usuarioNome }}</span>
+            </div>
+            <div>
+              <span class="detail-label">Data</span>
+              <span class="detail-value">{{ formatDate(detailOrder.dataPedido) }}</span>
+            </div>
+            <div>
+              <span class="detail-label">Status</span>
+              <span :class="['cf-badge', getStatusBadge(detailOrder.status)]">{{ statusMap[detailOrder.status] }}</span>
+            </div>
+            <div>
+              <span class="detail-label">Total</span>
+              <span class="detail-value fw-bold">R$ {{ formatValue(detailOrder.valorTotal) }}</span>
+            </div>
+            <div v-if="detailOrder.formaPagamento">
+              <span class="detail-label">Pagamento</span>
+              <span class="detail-value">{{ detailOrder.formaPagamento }}</span>
+            </div>
+            <div v-if="detailOrder.farmaciaNome">
+              <span class="detail-label">Farmácia</span>
+              <span class="detail-value">{{ detailOrder.farmaciaNome }}</span>
+            </div>
+          </div>
+          <h6 class="fw-semibold mb-2">Itens do Pedido</h6>
+          <table class="cf-table" v-if="detailOrder.itens && detailOrder.itens.length">
+            <thead>
+              <tr>
+                <th class="ps-3">Produto</th>
+                <th class="text-center">Qtd</th>
+                <th class="text-end">Preço</th>
+                <th class="text-end pe-3">Subtotal</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="item in detailOrder.itens" :key="item.id">
+                <td class="ps-3">{{ item.produtoNome || 'Produto' }}</td>
+                <td class="text-center">{{ item.quantidade }}</td>
+                <td class="text-end">R$ {{ formatValue(item.precoUnitario) }}</td>
+                <td class="text-end pe-3 fw-medium">R$ {{ formatValue(item.subtotal) }}</td>
+              </tr>
+            </tbody>
+            <tfoot>
+              <tr>
+                <td colspan="3" class="text-end pe-3 fw-semibold">Total</td>
+                <td class="text-end pe-3 fw-bold">R$ {{ formatValue(detailOrder.valorTotal) }}</td>
+              </tr>
+            </tfoot>
+          </table>
+          <p v-else class="cf-text-muted small">Nenhum item disponível.</p>
+        </div>
+        <div class="modal-footer">
+          <button class="cf-btn cf-btn-secondary" @click="closeDetailModal">Fechar</button>
         </div>
       </div>
     </div>
@@ -124,7 +194,9 @@ export default {
       showStatusModal: false,
       selectedOrder: null,
       newStatus: '',
-      whatsappFeedback: null
+      whatsappFeedback: null,
+      showDetailModal: false,
+      detailOrder: null
     };
   },
   computed: {
@@ -161,6 +233,14 @@ export default {
         'CANCELADO': 'cf-badge-danger'
       };
       return map[status] || 'cf-badge-primary';
+    },
+    openDetailModal(order) {
+      this.detailOrder = order;
+      this.showDetailModal = true;
+    },
+    closeDetailModal() {
+      this.showDetailModal = false;
+      this.detailOrder = null;
     },
     openStatusModal(order) {
       this.selectedOrder = order;
@@ -220,6 +300,41 @@ export default {
   transform: translateY(-50%);
   color: var(--cf-slate-400);
 }
+
+/* Detail Grid */
+.detail-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  background: var(--cf-slate-50);
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.detail-label {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--cf-slate-500);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 2px;
+}
+
+.detail-value {
+  font-size: 0.875rem;
+  color: var(--cf-slate-900);
+}
+
+.action-btn {
+  width: 32px; height: 32px; display: inline-flex;
+  align-items: center; justify-content: center; border: none;
+  background: transparent; color: var(--cf-slate-500);
+  border-radius: 6px; cursor: pointer;
+  transition: all 0.15s ease;
+}
+.action-btn:hover { background: var(--cf-slate-100); color: var(--cf-slate-700); }
+
+.modal-lg { max-width: 640px !important; }
 
 /* Modal */
 .modal-backdrop {

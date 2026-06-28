@@ -1,19 +1,26 @@
 /* ===================================
-   ClickFarma Admin - Design System
-   Professional SaaS Dashboard Theme
+   ClickFarma Admin - Healthcare Design System
    =================================== */
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Fira+Sans:wght@300;400;500;600;700&family=Fira+Code:wght@400;500;600&display=swap');
 
-/* CSS Variables */
 :root {
-  /* Primary - Blue */
-  --cf-primary-50: #eff6ff;
-  --cf-primary-100: #dbeafe;
-  --cf-primary-500: #3b82f6;
-  --cf-primary-600: #2563eb;
-  --cf-primary-700: #1d4ed8;
-  
+  /* Primary - Healthcare Green */
+  --cf-primary-50: #f0fdf4;
+  --cf-primary-100: #dcfce7;
+  --cf-primary-200: #bbf7d0;
+  --cf-primary-500: #22c55e;
+  --cf-primary-600: #16a34a;
+  --cf-primary-700: #15803d;
+  --cf-primary-800: #166534;
+
+  /* Accent - Trust Blue */
+  --cf-accent-50: #f0f9ff;
+  --cf-accent-100: #e0f2fe;
+  --cf-accent-500: #0ea5e9;
+  --cf-accent-600: #0284c7;
+  --cf-accent-700: #0369a1;
+
   /* Neutral - Slate */
   --cf-slate-50: #f8fafc;
   --cf-slate-100: #f1f5f9;
@@ -25,46 +32,16 @@
   --cf-slate-700: #334155;
   --cf-slate-800: #1e293b;
   --cf-slate-900: #0f172a;
-  
+
   /* Semantic */
-  --cf-success: #059669;
-  --cf-success-light: #d1fae5;
+  --cf-success: #16a34a;
+  --cf-success-light: #dcfce7;
   --cf-warning: #d97706;
   --cf-warning-light: #fef3c7;
   --cf-danger: #dc2626;
   --cf-danger-light: #fee2e2;
-  --cf-info: #0891b2;
-  --cf-info-light: #cffafe;
-  
-  /* Surfaces */
-  --cf-bg: #f4f7f6;
-  --cf-surface: #ffffff;
-  --cf-surface-hover: #f8fafc;
-  --cf-border: #e2e8f0;
-  
-  /* Typography */
-  --cf-font: 'Inter', system-ui, -apple-system, sans-serif;
-  
-  /* Shadows */
-  --cf-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
-  --cf-shadow-md: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
-  --cf-shadow-lg: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -1px rgba(0, 0, 0, 0.04);
-  
-  /* Radius */
-  --cf-radius-sm: 6px;
-  --cf-radius-md: 8px;
-  --cf-radius-lg: 12px;
-  
-  /* Transitions */
-  --cf-transition: 150ms ease;
-}
-
-/* Base */
-body {
-  font-family: var(--cf-font);
-  background-color: var(--cf-bg);
-  color: var(--cf-slate-800);
-  -webkit-font-smoothing: antialiased;
+  --cf-info: #0284c7;
+  --cf-info-light: #e0f2fe;
 }
 
 /* Buttons */
@@ -73,7 +50,7 @@ body {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  padding: 8px 16px;
+  padding: 10px 20px;
   font-size: 0.875rem;
   font-weight: 500;
   line-height: 1.25rem;
@@ -81,19 +58,27 @@ body {
   border: 1px solid transparent;
   cursor: pointer;
   transition: all var(--cf-transition);
+  text-decoration: none;
+  font-family: var(--cf-font);
 }
 
 .cf-btn:hover {
   transform: translateY(-1px);
 }
 
+.cf-btn:active {
+  transform: translateY(0);
+}
+
 .cf-btn-primary {
-  background-color: var(--cf-primary-600);
+  background-color: var(--cf-primary-700);
   color: white;
+  box-shadow: 0 1px 3px rgba(21, 128, 61, 0.2);
 }
 
 .cf-btn-primary:hover {
-  background-color: var(--cf-primary-700);
+  background-color: var(--cf-primary-800);
+  box-shadow: 0 4px 12px rgba(21, 128, 61, 0.3);
 }
 
 .cf-btn-secondary {
@@ -123,12 +108,22 @@ body {
   font-size: 0.8125rem;
 }
 
+.cf-btn-lg {
+  padding: 12px 28px;
+  font-size: 1rem;
+}
+
 /* Cards */
 .cf-card {
   background: var(--cf-surface);
   border-radius: var(--cf-radius-lg);
   border: 1px solid var(--cf-border);
   box-shadow: var(--cf-shadow-sm);
+  transition: box-shadow var(--cf-transition);
+}
+
+.cf-card:hover {
+  box-shadow: var(--cf-shadow-md);
 }
 
 .cf-card-header {
@@ -144,7 +139,7 @@ body {
 .cf-input,
 .cf-select {
   width: 100%;
-  padding: 8px 12px;
+  padding: 10px 14px;
   font-size: 0.875rem;
   line-height: 1.25rem;
   color: var(--cf-slate-800);
@@ -152,13 +147,14 @@ body {
   border: 1px solid var(--cf-border);
   border-radius: var(--cf-radius-md);
   transition: border-color var(--cf-transition), box-shadow var(--cf-transition);
+  font-family: var(--cf-font);
 }
 
 .cf-input:focus,
 .cf-select:focus {
   outline: none;
   border-color: var(--cf-primary-500);
-  box-shadow: 0 0 0 3px var(--cf-primary-50);
+  box-shadow: 0 0 0 3px var(--cf-primary-100);
 }
 
 .cf-input::placeholder {
@@ -209,7 +205,7 @@ body {
 }
 
 .cf-table thead th {
-  padding: 10px 16px;
+  padding: 12px 16px;
   font-size: 0.75rem;
   font-weight: 600;
   text-transform: uppercase;
@@ -228,14 +224,14 @@ body {
 }
 
 .cf-table tbody td {
-  padding: 12px 16px;
+  padding: 14px 16px;
   font-size: 0.875rem;
   border-bottom: 1px solid var(--cf-slate-100);
   color: var(--cf-slate-700);
 }
 
 .cf-table tbody tr:hover {
-  background-color: var(--cf-surface-hover);
+  background-color: var(--cf-primary-50);
 }
 
 .cf-table tbody tr:last-child td {
@@ -253,13 +249,13 @@ body {
 }
 
 .cf-stat-card:hover {
-  box-shadow: var(--cf-shadow-md);
+  box-shadow: var(--cf-shadow-lg);
   transform: translateY(-2px);
 }
 
 /* Progress */
 .cf-progress {
-  height: 4px;
+  height: 6px;
   background-color: var(--cf-slate-100);
   border-radius: 9999px;
   overflow: hidden;
@@ -312,4 +308,72 @@ body {
 
 .cf-font-bold {
   font-weight: 700;
+}
+
+/* Modal Overlay */
+.cf-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.5);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1050;
+  animation: fadeIn 150ms ease;
+}
+
+.cf-modal-card {
+  background: white;
+  border-radius: var(--cf-radius-xl);
+  padding: 28px;
+  width: 100%;
+  max-width: 640px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: var(--cf-shadow-xl);
+  animation: slideUp 200ms ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Form Layout */
+.cf-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.cf-form-full {
+  grid-column: 1 / -1;
+}
+
+.cf-form-label {
+  display: block;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--cf-slate-700);
+  margin-bottom: 6px;
+}
+
+.cf-form-label .required {
+  color: var(--cf-danger);
+  margin-left: 2px;
+}
+
+.cf-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid var(--cf-border);
 }

@@ -101,5 +101,75 @@ export default {
   async getEntrega(id) {
     const res = await api.get(`/entregas-entregador/${id}`)
     return res.data
+  },
+
+  // ─── Corridas ────────────────────────────────────────
+
+  async getCorridasDisponiveis(lat, lng, raio) {
+    const params = {}
+    if (lat != null) params.lat = lat
+    if (lng != null) params.lng = lng
+    if (raio != null) params.raio = raio
+    const res = await api.get('/corridas/disponiveis', { params })
+    return res.data
+  },
+
+  async getCorridasEntregador(entregadorId) {
+    const res = await api.get(`/corridas/entregador/${entregadorId}`)
+    return res.data
+  },
+
+  async getCorrida(id) {
+    const res = await api.get(`/corridas/${id}`)
+    return res.data
+  },
+
+  async aceitarCorrida(corridaId, entregadorId) {
+    const res = await api.post(`/corridas/${corridaId}/aceitar/${entregadorId}`)
+    return res.data
+  },
+
+  async iniciarCorrida(corridaId) {
+    const res = await api.post(`/corridas/${corridaId}/iniciar`)
+    return res.data
+  },
+
+  async finalizarCorrida(corridaId) {
+    const res = await api.post(`/corridas/${corridaId}/finalizar`)
+    return res.data
+  },
+
+  async cancelarCorrida(corridaId) {
+    const res = await api.post(`/corridas/${corridaId}/cancelar`)
+    return res.data
+  },
+
+  // ─── Avaliações ──────────────────────────────────────
+
+  async avaliarCorrida(dados) {
+    const res = await api.post('/avaliacoes', dados)
+    return res.data
+  },
+
+  async getAvaliacoesEntregador(entregadorId) {
+    const res = await api.get(`/avaliacoes/entregador/${entregadorId}`)
+    return res.data
+  },
+
+  async getMediaAvaliacao(entregadorId) {
+    const res = await api.get(`/avaliacoes/entregador/${entregadorId}/media`)
+    return res.data
+  },
+
+  async getAvaliacoesCorrida(corridaId) {
+    const res = await api.get(`/avaliacoes/corrida/${corridaId}`)
+    return res.data
+  },
+
+  // ─── Saque ──────────────────────────────────────────
+
+  async solicitarSaque(entregadorId, valor) {
+    const res = await api.post(`/entregadores/${entregadorId}/saque`, { valor })
+    return res.data
   }
 }

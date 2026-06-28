@@ -10,13 +10,11 @@
                 <i class="fas fa-store text-primary fa-lg"></i>
               </div>
               <div>
-                <h6 class="mb-0 fw-bold">ClickFarma - Matriz</h6>
-                <small class="text-muted">Rua da Hora, 123 · Aberto até 22h</small>
+                <h6 class="mb-0 fw-bold">{{ farmaciaNome }}</h6>
+                <small class="text-muted" v-if="farmaciaFrete > 0">Frete: R$ {{ farmaciaFrete.toFixed(2) }}</small>
+                <small class="text-muted" v-else>Frete incluso no preço</small>
               </div>
             </div>
-            <a :href="googleMapsLink" target="_blank" class="btn btn-sm btn-outline-primary">
-              <i class="fas fa-map-marker-alt me-1"></i>Ver no mapa
-            </a>
           </div>
         </div>
 
@@ -199,25 +197,46 @@
       </div>
 
       <div class="col-md-4">
-        <div class="card shadow-sm border-0 p-4 sticky-top" style="top: 20px;">
-          <h4 class="mb-4 font-weight-bold">Resumo</h4>
-          <div class="d-flex justify-content-between mb-2">
-            <span>Subtotal</span>
-            <span>R$ {{ cartTotal.toFixed(2) }}</span>
-          </div>
-          <div v-if="deliveryType === 'uber_direct' && uberQuote" class="d-flex justify-content-between mb-2">
-            <span>Frete (Uber Direct)</span>
-            <span class="text-primary">R$ {{ uberQuote.delivery_fee.toFixed(2) }}</span>
-          </div>
-          <div v-else class="d-flex justify-content-between mb-2">
-            <span>Frete</span>
-            <span class="text-success">Grátis</span>
-          </div>
-          <hr>
-          <div class="d-flex justify-content-between mb-4 h5 font-weight-bold">
-            <span>Total</span>
-            <span class="text-primary">R$ {{ totalComFrete.toFixed(2) }}</span>
-          </div>
+          <div class="card shadow-sm border-0 p-4 sticky-top" style="top: 20px;">
+            <h4 class="mb-4 font-weight-bold">Resumo</h4>
+            <div class="d-flex justify-content-between mb-2">
+              <span>Subtotal</span>
+              <span>R$ {{ cartTotal.toFixed(2) }}</span>
+            </div>
+            <div v-if="deliveryType === 'uber_direct' && uberQuote" class="d-flex justify-content-between mb-2">
+              <span>Frete (Uber Direct)</span>
+              <span class="text-primary">R$ {{ uberQuote.delivery_fee.toFixed(2) }}</span>
+            </div>
+            <div v-else class="d-flex justify-content-between mb-2">
+              <span>Frete</span>
+              <span class="text-success">Grátis</span>
+            </div>
+
+            <!-- Cupom -->
+            <div class="mb-3">
+              <label class="form-label small">Cupom de desconto</label>
+              <div class="input-group">
+                <input v-model="cupomCodigo" class="form-control form-control-sm" placeholder="Insira o código" :disabled="!!cupomAplicado" />
+                <button v-if="!cupomAplicado" class="btn btn-sm btn-outline-primary" type="button" @click="validarCupom" :disabled="!cupomCodigo || validandoCupom">
+                  {{ validandoCupom ? '...' : 'Aplicar' }}
+                </button>
+                <button v-else class="btn btn-sm btn-outline-danger" type="button" @click="removerCupom">
+                  <i class="fas fa-times"></i>
+                </button>
+              </div>
+              <small v-if="cupomErro" class="text-danger">{{ cupomErro }}</small>
+              <small v-if="cupomAplicado" class="text-success">{{ cupomAplicado }}</small>
+            </div>
+
+            <div v-if="cupomDesconto > 0" class="d-flex justify-content-between mb-2">
+              <span class="text-success">Desconto cupom</span>
+              <span class="text-success">− R$ {{ cupomDesconto.toFixed(2) }}</span>
+            </div>
+            <hr>
+            <div class="d-flex justify-content-between mb-4 h5 font-weight-bold">
+              <span>Total</span>
+              <span class="text-primary">R$ {{ totalComFrete.toFixed(2) }}</span>
+            </div>
           <button
             @click="finalizar"
             :disabled="loading || !enderecoValido"
@@ -241,6 +260,7 @@ import { OrderService } from '@/services/orderService.js';
 import { UberDirectService } from '@/services/uberDirectService';
 import PaymentMethod from '@/components/checkout/PaymentMethod.vue';
 import cepService from '@/services/cepService';
+import cuponsService from '@/services/cuponsService';
 
 export default {
   components: { PaymentMethod },
@@ -260,11 +280,24 @@ export default {
       deliveryType: 'standard',
       uberQuote: null,
       uberLoading: false,
-      uberDeliveryId: null
+      uberDeliveryId: null,
+      cupomCodigo: '',
+      cupomAplicado: null,
+      cupomDesconto: 0,
+      cupomErro: '',
+      validandoCupom: false,
+      cupomId: null
     };
   },
   computed: {
     ...mapState(['user', 'cart']),
+    ...mapState(['selectedFarmacia']),
+    farmaciaNome() {
+      return this.selectedFarmacia?.nome || 'ClickFarma - Matriz';
+    },
+    farmaciaFrete() {
+      return this.selectedFarmacia?.valorFrete || 0;
+    },
     googleMapsLink() {
       return 'https://www.google.com/maps/search/?api=0&query=ClickFarma+Recife+PE';
     },
@@ -297,7 +330,7 @@ export default {
       return 0;
     },
     totalComFrete() {
-      return this.cartTotal + this.valorFrete;
+      return Math.max(0, this.cartTotal + this.valorFrete - this.cupomDesconto);
     }
   },
   created() {
@@ -374,6 +407,31 @@ export default {
       }
     },
 
+    async validarCupom() {
+      if (!this.cupomCodigo) return;
+      this.validandoCupom = true;
+      this.cupomErro = '';
+      try {
+        const res = await cuponsService.validar(this.cupomCodigo, this.cartTotal);
+        const data = res.data;
+        if (data.valido) {
+          this.cupomAplicado = data.mensagem;
+          this.cupomDesconto = parseFloat(data.desconto);
+          this.cupomId = data.cupomId;
+        } else {
+          this.cupomErro = data.mensagem;
+        }
+      } catch (e) {
+        this.cupomErro = 'Erro ao validar cupom.';
+      } finally { this.validandoCupom = false; }
+    },
+    removerCupom() {
+      this.cupomCodigo = '';
+      this.cupomAplicado = null;
+      this.cupomDesconto = 0;
+      this.cupomErro = '';
+      this.cupomId = null;
+    },
     async finalizar() {
       if (!this.user) {
         alert('Você precisa estar logado para finalizar o pedido.');
@@ -396,8 +454,10 @@ export default {
           enderecoEntrega: this.enderecoEntrega,
           observacoes: '',
           subtotal: this.cartTotal,
-          valorFrete: this.valorFrete,
+          valorFrete: this.farmaciaFrete || this.valorFrete,
           totalFinal: this.totalComFrete,
+          farmaciaId: this.selectedFarmacia?.id || null,
+          cupomId: this.cupomId || null,
           tipoEntrega: this.deliveryType,
           uberQuoteId: this.uberQuote?.quote_id || null
         };
@@ -426,7 +486,7 @@ export default {
         }
 
         if (res.pixQrCodeBase64) {
-          localStorage.setItem('ultimoPixData', JSON.stringify({
+          sessionStorage.setItem('ultimoPixData', JSON.stringify({
             pedidoId: res.id,
             codigoPedido: res.codigoPedido,
             qrCodeBase64: res.pixQrCodeBase64,
@@ -435,13 +495,7 @@ export default {
           }));
           this.$router.push({
             name: 'PixPayment',
-            params: {
-              pedidoId: String(res.id),
-              codigoPedido: res.codigoPedido || '',
-              qrCodeBase64: res.pixQrCodeBase64 || '',
-              copiaECola: res.pixCopiaECola || '',
-              expiracao: res.pixExpiracao || ''
-            }
+            params: { pedidoId: String(res.id) }
           });
         } else if (res.linkPagamento) {
           window.location.href = res.linkPagamento;

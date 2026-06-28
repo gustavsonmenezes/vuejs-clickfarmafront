@@ -20,12 +20,14 @@
     "lint:fix": "eslint src/ --ext .js,.vue --fix"
   },
   "dependencies": {
+    "@stomp/stompjs": "^7.3.0",
     "axios": "^1.4.0",
     "bootstrap": "^5.3.0",
     "chart.js": "^4.5.1",
     "leaflet": "^1.9.4",
     "marked": "^18.0.0",
     "pinia": "^3.0.4",
+    "sockjs-client": "^1.6.1",
     "vue": "^3.3.0",
     "vue-chartjs": "^5.3.3",
     "vue-router": "^4.2.0",

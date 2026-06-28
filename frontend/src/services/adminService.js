@@ -18,6 +18,11 @@ export const adminService = {
         return api.get('/dashboard/pedidos-por-status');
     },
 
+    // Categories
+    async getCategorias() {
+        return api.get('/categorias');
+    },
+
     // Products
     async getProducts() {
         return api.get('/produtos');
@@ -36,6 +41,9 @@ export const adminService = {
     async getOrders() {
         return api.get('/pedidos');
     },
+    async getOrderById(id) {
+        return api.get(`/pedidos/${id}`);
+    },
     async updateOrderStatus(id, status) {
         return api.patch(`/pedidos/${id}/status?status=${status}`);
     },
@@ -49,6 +57,62 @@ export const adminService = {
     },
     async deleteUser(id) {
         return api.delete(`/usuarios/${id}`);
+    },
+
+    // Entregadores
+    async getEntregadoresPendentes() {
+        return api.get('/entregadores/admin/pendentes');
+    },
+    async getEntregadoresAprovados() {
+        return api.get('/entregadores/admin/aprovados');
+    },
+    async getEntregadoresRejeitados() {
+        return api.get('/entregadores/admin/rejeitados');
+    },
+    async aprovarEntregador(id) {
+        return api.put(`/entregadores/admin/${id}/aprovar`);
+    },
+    async rejeitarEntregador(id) {
+        return api.put(`/entregadores/admin/${id}/rejeitar`);
+    },
+
+    // Prescriptions (admin)
+    async getPrescriptions() {
+        return api.get('/admin/receitas');
+    },
+    async approvePrescription(id) {
+        return api.put(`/admin/receitas/${id}/aprovar`);
+    },
+    async rejectPrescription(id) {
+        return api.put(`/admin/receitas/${id}/rejeitar`);
+    },
+
+    // Cupons (admin)
+    async getCupons() {
+        return api.get('/admin/cupons');
+    },
+    async createCupom(data) {
+        return api.post('/admin/cupons', data);
+    },
+    async updateCupom(id, data) {
+        return api.put(`/admin/cupons/${id}`, data);
+    },
+    async deleteCupom(id) {
+        return api.delete(`/admin/cupons/${id}`);
+    },
+
+    // Corridas (admin)
+    async getCorridasAtivas() {
+        return api.get('/admin/corridas/ativas');
+    },
+    async getCorridasEntregador(entregadorId) {
+        return api.get(`/admin/corridas/entregador/${entregadorId}`);
+    },
+    async getCorridaAdmin(id) {
+        return api.get(`/admin/corridas/${id}`);
+    },
+    async cancelarCorridaAdmin(corridaId) {
+        return api.post(`/admin/corridas/${corridaId}/cancelar`);
     }
 };
 

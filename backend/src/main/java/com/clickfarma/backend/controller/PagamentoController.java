@@ -3,6 +3,7 @@ package com.clickfarma.backend.controller;
 import com.clickfarma.backend.model.Pedido;
 import com.clickfarma.backend.repository.PedidoRepository;
 import com.clickfarma.backend.service.PagamentoService;
+import com.clickfarma.backend.service.PedidoService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -16,6 +17,7 @@ public class PagamentoController {
 
     private final PagamentoService pagamentoService;
     private final PedidoRepository pedidoRepository;
+    private final PedidoService pedidoService;
 
     @GetMapping("/status/{pedidoId}")
     public ResponseEntity<Map<String, Object>> statusPagamento(@PathVariable Long pedidoId) {
@@ -29,9 +31,7 @@ public class PagamentoController {
             String mpStatus = pagamentoService.consultarStatusPagamento(pedido.getPagamentoMpId());
 
             if ("approved".equals(mpStatus)) {
-                pedido.setStatus(Pedido.StatusPedido.PAGO);
-                pedido.setDataAtualizacao(java.time.LocalDateTime.now());
-                pedidoRepository.save(pedido);
+                pedidoService.processarPagamentoAprovado(pedidoId);
                 statusPedido = "PAGO";
             }
         }

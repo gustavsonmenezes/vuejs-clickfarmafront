@@ -331,7 +331,8 @@ export default createStore({
     weatherRecommendations: [],
     weatherLoading: false,
     weatherError: null,
-    uberDeliveries: {}
+    uberDeliveries: {},
+    selectedFarmacia: null
   },
 
   getters: {
@@ -348,7 +349,8 @@ export default createStore({
     adminPrescriptions: (state) => state.adminPrescriptions,
     adminUsers: (state) => state.adminUsers,
     getOrderTracking: (state) => (orderId) => state.orderTracking[orderId],
-    getUberDelivery: (state) => (pedidoId) => state.uberDeliveries[pedidoId]
+    getUberDelivery: (state) => (pedidoId) => state.uberDeliveries[pedidoId],
+    selectedFarmacia: (state) => state.selectedFarmacia
   },
 
   mutations: {
@@ -431,6 +433,12 @@ export default createStore({
     SET_UBER_DELIVERY(state, { pedidoId, deliveryInfo }) {
       if (!state.uberDeliveries) state.uberDeliveries = {};
       state.uberDeliveries[pedidoId] = deliveryInfo;
+    },
+    SET_SELECTED_FARMACIA(state, farmacia) {
+      state.selectedFarmacia = farmacia
+    },
+    CLEAR_SELECTED_FARMACIA(state) {
+      state.selectedFarmacia = null
     },
     SAVE_ORDER_TO_LOCAL_STORAGE(state, order) {
       try {

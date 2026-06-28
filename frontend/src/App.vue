@@ -1,18 +1,16 @@
 <template>
   <div id="app">
-    <Header />
-    <main class="main-content">
+    <Header v-if="!isAdminRoute" />
+    <main class="main-content" :class="{ 'admin-mode': isAdminRoute }">
       <router-view />
     </main>
-    <!-- Botão flutuante -->
-    <div class="gemini-floating-btn" @click="toggleChat">
+    <div v-if="!isAdminRoute" class="gemini-floating-btn" @click="toggleChat">
       <i class="fas fa-brain"></i>
     </div>
-    <!-- Chat -->
-    <div v-if="isChatOpen" class="gemini-modal">
+    <div v-if="isChatOpen && !isAdminRoute" class="gemini-modal">
       <GeminiChat @close="toggleChat" />
     </div>
-    <Footer />
+    <Footer v-if="!isAdminRoute" />
   </div>
 </template>
 
@@ -27,6 +25,11 @@ export default {
     Header,
     Footer,
     GeminiChat
+  },
+  computed: {
+    isAdminRoute() {
+      return this.$route.path.startsWith('/admin') || this.$route.path.startsWith('/entregador')
+    }
   },
   data() {
     return {
@@ -45,6 +48,11 @@ export default {
 .main-content {
   min-height: calc(100vh - 160px);
   background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+}
+
+.main-content.admin-mode {
+  min-height: 100vh;
+  background: none;
 }
 
 .gemini-floating-btn {

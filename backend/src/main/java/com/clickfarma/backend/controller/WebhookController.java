@@ -3,6 +3,7 @@ package com.clickfarma.backend.controller;
 import com.clickfarma.backend.model.Pedido;
 import com.clickfarma.backend.repository.PedidoRepository;
 import com.clickfarma.backend.service.PagamentoService;
+import com.clickfarma.backend.service.PedidoService;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,6 +21,7 @@ public class WebhookController {
 
     private final PedidoRepository pedidoRepository;
     private final PagamentoService pagamentoService;
+    private final PedidoService pedidoService;
 
     @PostMapping("/mercadopago")
     public ResponseEntity<String> receberNotificacao(@RequestBody Map<String, Object> payload) {
@@ -51,9 +53,7 @@ public class WebhookController {
             if ("approved".equals(status)) {
                 Pedido pedido = pedidoRepository.findByPagamentoMpId(Long.parseLong(paymentId));
                 if (pedido != null) {
-                    pedido.setStatus(Pedido.StatusPedido.PAGO);
-                    pedido.setDataAtualizacao(java.time.LocalDateTime.now());
-                    pedidoRepository.save(pedido);
+                    pedidoService.processarPagamentoAprovado(pedido.getId());
                     log.info("✅ Pedido {} pago com sucesso!", pedido.getCodigoPedido());
                 } else {
                     log.warn("Pedido nao encontrado para pagamento MP: {}", paymentId);

@@ -1,47 +1,31 @@
 <template>
   <div class="delivery-options">
-    <div class="card">
-      <div class="card-header bg-primary text-white">
-        <h5 class="mb-0">
-          <i class="fas fa-truck me-2"></i>Opções de Entrega
-        </h5>
+    <div class="cf-card delivery-card">
+      <div class="cf-card-header">
+        <i class="fas fa-truck me-2 text-primary"></i>
+        Opções de Entrega
       </div>
-      <div class="card-body">
-        <!-- Opção de Entrega -->
+      <div class="cf-card-body">
         <div class="delivery-option mb-4">
-          <div class="form-check">
-            <input 
-              class="form-check-input" 
-              type="radio" 
-              id="delivery-home" 
-              value="delivery" 
-              :checked="selectedOption === 'delivery'"
-              @change="updateOption('delivery')"
-            >
-            <label class="form-check-label w-100" for="delivery-home">
-              <div class="d-flex justify-content-between align-items-center">
-                <div>
-                  <h6 class="mb-1">Entrega em Casa</h6>
-                  <p class="mb-0 text-muted">Receba seus produtos no conforto do seu lar</p>
-                  <small class="text-success" v-if="deliveryTime">
-                    <i class="fas fa-clock me-1"></i>Entrega em {{ deliveryTime }}
-                  </small>
-                </div>
-                <div class="text-end">
-                  <span class="fw-bold text-primary" v-if="deliveryPrice > 0">
-                    R$ {{ deliveryPrice.toFixed(2) }}
-                  </span>
-                  <span class="fw-bold text-success" v-else>
-                    Grátis
-                  </span>
-                </div>
+          <label class="option-label" :class="{ active: selectedOption === 'delivery' }">
+            <input type="radio" value="delivery" :checked="selectedOption === 'delivery'" @change="updateOption('delivery')" />
+            <div class="option-content">
+              <div class="option-info">
+                <h6 class="mb-1">Entrega em Casa</h6>
+                <p class="mb-0 text-muted small">Receba no conforto do seu lar</p>
+                <small class="text-success" v-if="deliveryTime">
+                  <i class="fas fa-clock me-1"></i>Entrega em {{ deliveryTime }}
+                </small>
               </div>
-            </label>
-          </div>
-
-          <!-- Seleção de Endereço (aparece quando entrega está selecionada) -->
+              <div class="option-price">
+                <span class="fw-bold" :class="deliveryPrice > 0 ? 'text-primary' : 'text-success'">
+                  {{ deliveryPrice > 0 ? 'R$ ' + deliveryPrice.toFixed(2) : 'Grátis' }}
+                </span>
+              </div>
+            </div>
+          </label>
           <div v-if="selectedOption === 'delivery'" class="mt-3 ps-4">
-            <address-selection 
+            <address-selection
               :addresses="addresses"
               :selected-address="selectedAddress"
               @select-address="handleAddressSelect"
@@ -49,56 +33,47 @@
           </div>
         </div>
 
-        <!-- Opção de Retirada -->
         <div class="delivery-option">
-          <div class="form-check">
-            <input 
-              class="form-check-input" 
-              type="radio" 
-              id="pickup-store" 
-              value="pickup" 
-              :checked="selectedOption === 'pickup'"
-              @change="updateOption('pickup')"
-            >
-            <label class="form-check-label w-100" for="pickup-store">
-              <div class="d-flex justify-content-between align-items-center">
-                <div>
-                  <h6 class="mb-1">Retirada na Loja</h6>
-                  <p class="mb-0 text-muted">Retire seus produtos em uma de nossas lojas</p>
-                  <small class="text-success">
-                    <i class="fas fa-clock me-1"></i>Disponível em 1 hora
-                  </small>
-                </div>
-                <div class="text-end">
-                  <span class="fw-bold text-success">Grátis</span>
-                </div>
+          <label class="option-label" :class="{ active: selectedOption === 'pickup' }">
+            <input type="radio" value="pickup" :checked="selectedOption === 'pickup'" @change="updateOption('pickup')" />
+            <div class="option-content">
+              <div class="option-info">
+                <h6 class="mb-1">Retirada na Loja</h6>
+                <p class="mb-0 text-muted small">Retire na farmácia selecionada</p>
+                <small class="text-success">
+                  <i class="fas fa-clock me-1"></i>Disponível em 1 hora
+                </small>
               </div>
-            </label>
-          </div>
-
-          <!-- Seleção de Loja (aparece quando retirada está selecionada) -->
+              <div class="option-price">
+                <span class="fw-bold text-success">Grátis</span>
+              </div>
+            </div>
+          </label>
           <div v-if="selectedOption === 'pickup'" class="mt-3 ps-4">
-            <pickup-store-selection 
-              :stores="stores"
-              :selected-store="selectedStore"
-              @select-store="handleStoreSelect"
-            />
+            <div class="store-card" v-if="farmacia">
+              <div class="store-name">{{ farmacia.nome }}</div>
+              <div class="store-address">
+                <i class="fas fa-map-marker-alt me-1"></i>{{ farmacia.endereco || farmacia.enderecoCompleto }}
+              </div>
+              <div class="store-hours text-success">
+                <i class="fas fa-clock me-1"></i>Seg-Sáb 8h-20h
+              </div>
+            </div>
+            <p v-else class="cf-text-muted small mb-0">
+              <i class="fas fa-info-circle me-1"></i>
+              Selecione uma farmácia na busca de produtos para ver o endereço de retirada.
+            </p>
           </div>
         </div>
 
-        <!-- Informações de Entrega -->
-        <div class="delivery-info mt-4 p-3 bg-light rounded">
-          <h6 class="mb-2">
+        <div class="delivery-info mt-4 p-3 rounded">
+          <h6 class="mb-2 small fw-semibold">
             <i class="fas fa-info-circle me-2 text-primary"></i>Informações Importantes
           </h6>
-          <ul class="list-unstyled mb-0 small">
-            <li v-if="selectedOption === 'delivery'">
-              • Entregas realizadas de segunda a sábado, das 8h às 18h
-            </li>
-            <li v-if="selectedOption === 'pickup'">
-              • Horário de funcionamento: Segunda a Sábado, 8h às 20h
-            </li>
-            <li>• Pedidos acima de R$ 300,00 têm frete grátis</li>
+          <ul class="list-unstyled mb-0 small cf-text-muted">
+            <li v-if="selectedOption === 'delivery'">• Entregas de segunda a sábado, das 8h às 18h</li>
+            <li v-if="selectedOption === 'pickup' && farmacia">• Retirada na {{ farmacia.nome }} — apresente documento com foto</li>
+            <li v-if="farmacia && farmacia.valorFrete">• Frete: R$ {{ parseFloat(farmacia.valorFrete).toFixed(2) }} por km</li>
             <li>• Medicamentos controlados exigem receita médica na retirada</li>
           </ul>
         </div>
@@ -109,133 +84,86 @@
 
 <script>
 import AddressSelection from './AddressSelection.vue'
-import PickupStoreSelection from './PickupStoreSelection.vue'
+import { mapState } from 'vuex';
 
 export default {
   name: 'DeliveryOptions',
-  components: {
-    AddressSelection,
-    PickupStoreSelection
-  },
+  components: { AddressSelection },
   props: {
-    addresses: {
-      type: Array,
-      default: () => []
-    },
-    selectedDeliveryOption: {
-      type: String,
-      default: ''
-    },
-    selectedAddress: {
-      type: Object,
-      default: null
-    },
-    selectedStore: {
-      type: Object,
-      default: null
-    }
+    addresses: { type: Array, default: () => [] },
+    selectedDeliveryOption: { type: String, default: '' },
+    selectedAddress: { type: Object, default: null },
+    selectedStore: { type: Object, default: null }
   },
   data() {
-    return {
-      selectedOption: this.selectedDeliveryOption,
-      stores: [
-        {
-          id: 1,
-          name: 'ClickFarma Centro',
-          address: 'Rua do Sol, 123 - Centro',
-          city: 'Recife',
-          state: 'PE',
-          phone: '(81) 3333-3333',
-          hours: 'Seg-Sáb: 8h-20h, Dom: 9h-14h',
-          distance: '1.2 km'
-        },
-        {
-          id: 2,
-          name: 'ClickFarma Boa Viagem',
-          address: 'Av. Boa Viagem, 456 - Boa Viagem',
-          city: 'Recife',
-          state: 'PE',
-          phone: '(81) 4444-4444',
-          hours: 'Seg-Sáb: 8h-20h, Dom: 9h-14h',
-          distance: '3.5 km'
-        },
-        {
-          id: 3,
-          name: 'ClickFarma Casa Forte',
-          address: 'Rua Madre Loyola, 789 - Casa Forte',
-          city: 'Recife',
-          state: 'PE',
-          phone: '(81) 5555-5555',
-          hours: 'Seg-Sáb: 8h-20h, Dom: 9h-14h',
-          distance: '2.8 km'
-        }
-      ]
-    }
+    return { selectedOption: this.selectedDeliveryOption }
   },
   computed: {
+    ...mapState(['selectedFarmacia']),
+    farmacia() { return this.selectedFarmacia; },
     deliveryPrice() {
-      const cartTotal = this.$store.getters.cartTotal
+      const cartTotal = this.$store.getters.cartTotal;
       if (cartTotal >= 300) return 0;
-      if (cartTotal < 100) return 10.00;
-      return 0;
+      const frete = this.farmacia?.valorFrete ? parseFloat(this.farmacia.valorFrete) : 10;
+      return cartTotal >= 100 ? frete : frete + 5;
     },
     deliveryTime() {
-      return '2-3 dias úteis'
+      return this.farmacia ? '1-2 dias úteis' : '2-3 dias úteis';
     }
   },
   watch: {
-    selectedDeliveryOption(newValue) {
-      this.selectedOption = newValue
-    }
+    selectedDeliveryOption(n) { this.selectedOption = n; }
   },
   methods: {
-    updateOption(option) {
-      this.selectedOption = option
-      this.$emit('update:delivery-option', option)
-      
-      // Limpar seleções quando mudar a opção
-      if (option === 'delivery') {
-        this.$emit('update:selected-store', null)
-      } else {
-        this.$emit('update:selected-address', null)
-      }
+    updateOption(opt) {
+      this.selectedOption = opt;
+      this.$emit('update:delivery-option', opt);
+      if (opt === 'delivery') this.$emit('update:selected-store', null);
+      else this.$emit('update:selected-address', null);
     },
-    handleAddressSelect(address) {
-      this.$emit('update:selected-address', address)
-    },
-    handleStoreSelect(store) {
-      this.$emit('update:selected-store', store)
-    }
+    handleAddressSelect(addr) { this.$emit('update:selected-address', addr); }
   }
 }
 </script>
 
 <style scoped>
-.delivery-options .card {
-  border: none;
-  border-radius: 10px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-}
+.delivery-card { border: 1px solid var(--cf-border); }
 
-.form-check-input {
-  transform: scale(1.2);
-  margin-right: 10px;
-}
-
-.form-check-label {
+.option-label {
+  display: flex;
   cursor: pointer;
-  padding: 15px;
-  border: 2px solid #e9ecef;
+  padding: 16px;
+  border: 2px solid var(--cf-border);
+  border-radius: var(--cf-radius-md);
+  transition: all 0.15s;
+}
+
+.option-label.active { border-color: var(--cf-primary-500); background: var(--cf-primary-50); }
+
+.option-label input { display: none; }
+
+.option-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  margin-left: 12px;
+}
+
+.option-info h6 { font-size: 0.9375rem; font-weight: 600; color: var(--cf-slate-900); }
+
+.store-card {
+  background: var(--cf-slate-50);
   border-radius: 8px;
-  transition: all 0.3s ease;
+  padding: 14px 16px;
+  border: 1px solid var(--cf-border);
 }
 
-.form-check-input:checked + .form-check-label {
-  border-color: #0d6efd;
-  background-color: #f8f9fa;
-}
+.store-name { font-weight: 600; font-size: 0.875rem; color: var(--cf-slate-900); margin-bottom: 4px; }
+.store-address { font-size: 0.8125rem; color: var(--cf-slate-600); margin-bottom: 2px; }
+.store-hours { font-size: 0.8125rem; }
 
-.delivery-info {
-  border-left: 4px solid #0d6efd;
-}
+.delivery-info { border-left: 4px solid var(--cf-primary-500); background: var(--cf-primary-50); }
+
+.delivery-info ul li { padding: 2px 0; }
 </style>

@@ -169,6 +169,7 @@
 import { mapActions, mapGetters } from 'vuex'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
+import { routingService } from '@/services/routingService'
 
 delete L.Icon.Default.prototype._getIconUrl
 L.Icon.Default.mergeOptions({
@@ -180,7 +181,9 @@ L.Icon.Default.mergeOptions({
 export default {
   name: 'LiveTrackingMap',
   props: {
-    orderId: { type: String, required: true }
+    orderId: { type: String, required: true },
+    destinoEndereco: { type: String, default: '' },
+    destinoCoords: { type: Object, default: null }
   },
   data() {
     return {
@@ -189,7 +192,9 @@ export default {
       driverMarker: null,
       destinationMarker: null,
       routeLine: null,
-      mapInterval: null
+      mapInterval: null,
+      rotaInfo: null,
+      destCoords: null
     }
   },
   computed: {
@@ -254,16 +259,18 @@ export default {
     },
     estimatedDistance() {
       if (!this.trackingInfo) return 'Calculando...'
-      const d = { 'confirmed': '12.5 km', 'processing': '11.2 km', 'shipped': '8.7 km', 'out_for_delivery': '3.2 km', 'delivered': '0.0 km' }
-      return d[this.trackingInfo.status] || '10.0 km'
+      return this.rotaInfo?.distanceKm != null ? this.rotaInfo.distanceKm + ' km' : 'Calculando...'
     },
     travelTime() {
       if (!this.trackingInfo) return '--:--'
-      const t = { 'confirmed': '45-60 min', 'processing': '35-50 min', 'shipped': '25-40 min', 'out_for_delivery': '10-20 min', 'delivered': '0 min' }
-      return t[this.trackingInfo.status] || '30-45 min'
+      return this.rotaInfo?.durationMin != null ? this.rotaInfo.durationMin + ' min' : '--'
     },
     averageSpeed() {
-      return '38 km/h'
+      if (this.rotaInfo?.distanceKm && this.rotaInfo?.durationMin) {
+        const kmh = Math.round(this.rotaInfo.distanceKm / (this.rotaInfo.durationMin / 60))
+        return kmh + ' km/h'
+      }
+      return '-- km/h'
     },
     lastUpdateTime() {
       if (!this.trackingInfo?.lastUpdate) return 'agora mesmo'
@@ -271,7 +278,7 @@ export default {
     },
     currentCoordinates() {
       if (this.trackingInfo?.coordinates) return this.trackingInfo.coordinates
-      const base = { lat: -8.047562, lng: -34.877003 }
+      const base = { lat: -8.6845, lng: -35.5898 }
       const off = {
         'confirmed': { lat: 0, lng: 0 }, 'processing': { lat: 0.01, lng: 0.01 },
         'shipped': { lat: 0.02, lng: 0.03 }, 'out_for_delivery': { lat: 0.03, lng: 0.05 },
@@ -281,41 +288,17 @@ export default {
       return { lat: base.lat + o.lat, lng: base.lng + o.lng }
     },
     destinationCoordinates() {
-      return { lat: -8.061373, lng: -34.871141 }
-    }
-  },
-  methods: {
-    ...mapActions(['fetchRealTimeTracking']),
-    async refreshLocation() {
-      this.refreshing = true
-      try {
-        await this.fetchRealTimeTracking(this.orderId)
-        this.updateMap()
-      } catch (e) { console.error('Erro ao atualizar localização:', e) }
-      finally { this.refreshing = false }
+      return this.destCoords || this.destinoCoords || { lat: -8.6845, lng: -35.5898 }
     },
-    contactDriver() {
-      if (this.driverInfo.phone) window.open(`tel:${this.driverInfo.phone}`, '_self')
-    },
-    formatRelativeTime(ts) {
-      if (!ts) return 'agora mesmo'
-      try {
-        const d = new Date(ts)
-        const diff = Math.round((Date.now() - d) / 60000)
-        if (diff < 1) return 'agora mesmo'
-        if (diff === 1) return 'há 1 minuto'
-        if (diff < 60) return `há ${diff} minutos`
-        if (diff < 120) return 'há 1 hora'
-        return `há ${Math.round(diff / 60)} horas`
-      } catch { return 'recentemente' }
-    },
+
     initMap() {
-      this.map = L.map('tracking-map').setView([-8.047562, -34.877003], 13)
+      const dest = this.destinationCoordinates
+      this.map = L.map('tracking-map').setView([-8.6845, -35.5898], 13)
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '© OpenStreetMap contributors', maxZoom: 18
       }).addTo(this.map)
 
-      this.destinationMarker = L.marker(this.destinationCoordinates, {
+      this.destinationMarker = L.marker(dest, {
         icon: L.divIcon({
           html: '<div class="ltm-marker-dest"><svg viewBox="0 0 24 24" fill="var(--cf-green)" stroke="white" stroke-width="1.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3" fill="white"/></svg></div>',
           className: 'ltm-marker-wrap', iconSize: [32, 32], iconAnchor: [16, 32]
@@ -335,25 +318,25 @@ export default {
         })
       }).addTo(this.map).bindPopup(`🚚 ${this.driverInfo.name}<br>${this.currentLocation}`)
     },
+    async carregarRotaOSRM() {
+      const dest = this.destinationCoordinates
+      const src = this.currentCoordinates
+      const route = await routingService.getRoute(src, dest)
+      if (!route) return
+      this.rotaInfo = route
+      if (this.routeLine) this.map.removeLayer(this.routeLine)
+      const latlngs = route.coordinates.map(c => [c.lat, c.lng])
+      this.routeLine = L.polyline(latlngs, { color: '#2A5C45', weight: 5, opacity: 0.85 }).addTo(this.map)
+    },
     updateRoute() {
       if (this.routeLine) this.map.removeLayer(this.routeLine)
-      const ghost = [
-        this.currentCoordinates,
-        ...Array.from({ length: 20 }, (_, i) => {
-          const t = (i + 1) / 21
-          return L.latLng(
-            this.currentCoordinates.lat + (this.destinationCoordinates.lat - this.currentCoordinates.lat) * t + (Math.random() - 0.5) * 0.0015,
-            this.currentCoordinates.lng + (this.destinationCoordinates.lng - this.currentCoordinates.lng) * t + (Math.random() - 0.5) * 0.0015
-          )
-        }),
-        this.destinationCoordinates
-      ]
-      this.routeLine = L.polyline(ghost, { color: '#B0AFA9', weight: 2, opacity: 0.25, dashArray: '6 8' }).addTo(this.map)
+      this.carregarRotaOSRM()
     },
     fitMap() {
       if (!this.map || !this.driverMarker) return
+      const dest = this.destinationMarker?.getLatLng() || this.destinationCoordinates
       this.map.fitBounds(L.latLngBounds([
-        this.driverMarker.getLatLng(), this.destinationCoordinates
+        this.driverMarker.getLatLng(), dest
       ]), { padding: [50, 50], maxZoom: 15, animate: true })
     },
     updateMap() {
@@ -376,6 +359,10 @@ export default {
   },
   async mounted() {
     this.$nextTick(() => this.initMap())
+    if (this.destinoEndereco && !this.destinoCoords && !this.destCoords) {
+      const c = await routingService.geocodeAddress(this.destinoEndereco)
+      if (c) this.destCoords = c
+    }
     if (!this.trackingInfo) await this.refreshLocation()
     else this.updateMap()
     this.startAutoRefresh()

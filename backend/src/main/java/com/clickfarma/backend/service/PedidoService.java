@@ -77,6 +77,9 @@ public class PedidoService {
     @Autowired
     private UberDirectService uberDirectService;
 
+    @Autowired
+    private EntregaService entregaService;
+
     @Value("${telegram.entregador.chat-id}")
     private String entregadorChatId;
 
@@ -98,6 +101,10 @@ public class PedidoService {
         pedido.setEnderecoEntrega(pedidoDTO.getEnderecoEntrega() != null ?
                 pedidoDTO.getEnderecoEntrega() : usuario.getEndereco());
         pedido.setObservacoes(pedidoDTO.getObservacoes());
+        pedido.setFarmaciaId(pedidoDTO.getFarmaciaId());
+        if (pedidoDTO.getValorFrete() != null) {
+            pedido.setValorFrete(BigDecimal.valueOf(pedidoDTO.getValorFrete()));
+        }
         pedido.setStatus(Pedido.StatusPedido.AGUARDANDO_PAGAMENTO);
         pedido.setDataPedido(LocalDateTime.now());
         pedido.setDataAtualizacao(LocalDateTime.now());
@@ -235,8 +242,26 @@ public class PedidoService {
         }
     }
 
+    @Transactional
+    public void processarPagamentoAprovado(Long pedidoId) {
+        Pedido pedido = pedidoRepository.findById(pedidoId).orElse(null);
+        if (pedido == null) return;
+
+        pedido.setStatus(Pedido.StatusPedido.PAGO);
+        pedido.setDataAtualizacao(LocalDateTime.now());
+        pedidoRepository.save(pedido);
+
+        notificarEntregador(pedido);
+    }
+
     private void notificarEntregador(Pedido pedido) {
         try {
+            String itensStr = pedido.getItens().stream()
+                    .map(i -> i.getProduto().getNome() + " x" + i.getQuantidade())
+                    .collect(java.util.stream.Collectors.joining(", "));
+
+            entregaService.criarEntrega(pedido.getId(), pedido.getCodigoPedido(), itensStr);
+
             StringBuilder msg = new StringBuilder();
             msg.append("Novo Pedido para Entrega!\n\n");
             msg.append("Pedido: #").append(pedido.getCodigoPedido()).append("\n");

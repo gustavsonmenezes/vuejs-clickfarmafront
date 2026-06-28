@@ -29,6 +29,7 @@
             <tr>
               <th class="ps-4">Produto</th>
               <th>Descrição</th>
+              <th>Categoria</th>
               <th class="text-center">Preço</th>
               <th class="text-center">Estoque</th>
               <th class="text-center">Receita</th>
@@ -43,6 +44,7 @@
               <td>
                 <span class="cf-text-muted small">{{ product.descricao || '-' }}</span>
               </td>
+              <td><span class="cf-badge cf-badge-primary cf-badge-sm">{{ product.categoriaNome || '-' }}</span></td>
               <td class="text-center fw-semibold">R$ {{ formatPrice(product.preco) }}</td>
               <td class="text-center">
                 <span :class="['cf-badge', product.estoque < 10 ? 'cf-badge-warning' : 'cf-badge-success']">
@@ -121,6 +123,14 @@
           </div>
           
           <div class="form-group mb-3">
+            <label class="form-label">Categoria</label>
+            <select v-model="productForm.categoriaId" class="cf-select">
+              <option value="">Selecione uma categoria</option>
+              <option v-for="cat in categorias" :key="cat.id" :value="cat.id">{{ cat.nome }}</option>
+            </select>
+          </div>
+
+          <div class="form-group mb-3">
             <label class="form-label">URL da Imagem</label>
             <input v-model="productForm.imagem" class="cf-input" placeholder="https://exemplo.com/foto.jpg" />
             <small class="cf-text-muted">Link público da foto do produto (opcional)</small>
@@ -172,8 +182,9 @@ export default {
   data() {
     return {
       products: [],
+      categorias: [],
       search: '',
-      productForm: { id: null, name: '', price: 0, description: '', imagem: '', requiresPrescription: false, stock: 0 },
+      productForm: { id: null, name: '', price: 0, description: '', imagem: '', categoriaId: null, requiresPrescription: false, stock: 0 },
       errors: {},
       notification: { show: false, message: '', type: 'success' },
       isEditing: false,
@@ -200,7 +211,7 @@ export default {
     endIndex() { return Math.min(this.startIndex + this.itemsPerPage, this.totalProducts); },
     paginatedProducts() { return this.filteredProducts.slice(this.startIndex, this.endIndex); }
   },
-  mounted() { this.fetchProducts(); },
+  mounted() { this.fetchProducts(); this.fetchCategorias(); },
   methods: {
     async fetchProducts() {
       this.loading = true;
@@ -210,6 +221,12 @@ export default {
       } catch (e) {
         this.showNotification('Erro ao carregar produtos', 'error');
       } finally { this.loading = false; }
+    },
+    async fetchCategorias() {
+      try {
+        const res = await adminService.getCategorias();
+        this.categorias = res.data || [];
+      } catch (e) { console.error('Erro ao carregar categorias:', e); }
     },
     openCreateModal() {
       this.resetForm();
@@ -222,6 +239,7 @@ export default {
         price: product.preco,
         description: product.descricao,
         imagem: product.imagem || '',
+        categoriaId: product.categoriaId || null,
         stock: product.estoque,
         requiresPrescription: product.receita
       };
@@ -248,7 +266,8 @@ export default {
           preco: parseFloat(this.productForm.price),
           descricao: this.productForm.description,
           imagem: this.productForm.imagem || null,
-          estoque: parseInt(this.productForm.stock) || 0
+          estoque: parseInt(this.productForm.stock) || 0,
+          categoriaId: this.productForm.categoriaId || null
         };
         if (this.isEditing) {
           await adminService.updateProduct(this.productForm.id, payload);
@@ -264,7 +283,7 @@ export default {
       }
     },
     resetForm() {
-      this.productForm = { id: null, name: '', price: 0, description: '', requiresPrescription: false, stock: 0 };
+      this.productForm = { id: null, name: '', price: 0, description: '', imagem: '', categoriaId: null, requiresPrescription: false, stock: 0 };
       this.isEditing = false;
       this.errors = {};
     },

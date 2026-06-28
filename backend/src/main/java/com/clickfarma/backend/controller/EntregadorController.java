@@ -3,7 +3,9 @@ package com.clickfarma.backend.controller;
 import com.clickfarma.backend.dto.entregador.*;
 import com.clickfarma.backend.model.Entregador;
 import com.clickfarma.backend.model.Entregador.StatusEntregador;
+import com.clickfarma.backend.model.Transacao;
 import com.clickfarma.backend.repository.EntregadorRepository;
+import com.clickfarma.backend.repository.TransacaoRepository;
 import com.clickfarma.backend.security.JwtUtil;
 import com.clickfarma.backend.service.EntregaTrackingService;
 import jakarta.validation.Valid;
@@ -12,6 +14,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -23,15 +26,18 @@ public class EntregadorController {
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
     private final EntregaTrackingService trackingService;
+    private final TransacaoRepository transacaoRepository;
 
     public EntregadorController(EntregadorRepository entregadorRepository,
                                  PasswordEncoder passwordEncoder,
                                  JwtUtil jwtUtil,
-                                 EntregaTrackingService trackingService) {
+                                 EntregaTrackingService trackingService,
+                                 TransacaoRepository transacaoRepository) {
         this.entregadorRepository = entregadorRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtUtil = jwtUtil;
         this.trackingService = trackingService;
+        this.transacaoRepository = transacaoRepository;
     }
 
     @PostMapping("/cadastro")
@@ -132,5 +138,80 @@ public class EntregadorController {
                 entregadorRepository.findByAtivoTrueAndLatitudeIsNotNull()
                         .stream().map(EntregadorResponseDTO::fromEntity).toList()
         );
+    }
+
+    @PostMapping("/{id}/saque")
+    public ResponseEntity<?> solicitarSaque(@PathVariable Long id,
+                                             @Valid @RequestBody SaqueRequestDTO dto) {
+        Entregador e = entregadorRepository.findById(id).orElse(null);
+        if (e == null) return ResponseEntity.notFound().build();
+        if (e.getChavePix() == null || e.getChavePix().isBlank()) {
+            return ResponseEntity.badRequest().body("Chave PIX não configurada");
+        }
+        if (dto.getValor() == null || dto.getValor().compareTo(BigDecimal.ZERO) <= 0) {
+            return ResponseEntity.badRequest().body("Valor inválido");
+        }
+
+        Transacao t = new Transacao();
+        t.setEntregadorId(id);
+        t.setValor(dto.getValor());
+        t.setChavePix(e.getChavePix());
+        t.setTipo("SAQUE");
+        t.setStatus(Transacao.StatusTransacao.PENDENTE);
+        transacaoRepository.save(t);
+
+        return ResponseEntity.ok(TransacaoResponseDTO.fromEntity(t));
+    }
+
+    @GetMapping("/{id}/transacoes")
+    public ResponseEntity<List<TransacaoResponseDTO>> listarTransacoes(@PathVariable Long id) {
+        return ResponseEntity.ok(
+                transacaoRepository.findByEntregadorIdOrderByCriadoEmDesc(id)
+                        .stream().map(TransacaoResponseDTO::fromEntity).toList()
+        );
+    }
+
+    // --- Admin endpoints ---
+
+    @GetMapping("/admin/aprovados")
+    public ResponseEntity<List<EntregadorResponseDTO>> listarAprovados() {
+        return ResponseEntity.ok(
+                entregadorRepository.findByStatusAndAtivoTrue(StatusEntregador.ATIVO)
+                        .stream().map(EntregadorResponseDTO::fromEntity).toList()
+        );
+    }
+
+    @GetMapping("/admin/rejeitados")
+    public ResponseEntity<List<EntregadorResponseDTO>> listarRejeitados() {
+        return ResponseEntity.ok(
+                entregadorRepository.findByStatus(StatusEntregador.BLOQUEADO)
+                        .stream().map(EntregadorResponseDTO::fromEntity).toList()
+        );
+    }
+
+    @GetMapping("/admin/pendentes")
+    public ResponseEntity<List<EntregadorResponseDTO>> listarPendentes() {
+        return ResponseEntity.ok(
+                entregadorRepository.findByStatusAndAtivoTrue(StatusEntregador.PENDENTE)
+                        .stream().map(EntregadorResponseDTO::fromEntity).toList()
+        );
+    }
+
+    @PutMapping("/admin/{id}/aprovar")
+    public ResponseEntity<?> aprovar(@PathVariable Long id) {
+        Entregador e = entregadorRepository.findById(id).orElse(null);
+        if (e == null) return ResponseEntity.notFound().build();
+        e.setStatus(StatusEntregador.ATIVO);
+        entregadorRepository.save(e);
+        return ResponseEntity.ok(EntregadorResponseDTO.fromEntity(e));
+    }
+
+    @PutMapping("/admin/{id}/rejeitar")
+    public ResponseEntity<?> rejeitar(@PathVariable Long id) {
+        Entregador e = entregadorRepository.findById(id).orElse(null);
+        if (e == null) return ResponseEntity.notFound().build();
+        e.setStatus(StatusEntregador.BLOQUEADO);
+        entregadorRepository.save(e);
+        return ResponseEntity.ok(EntregadorResponseDTO.fromEntity(e));
     }
 }

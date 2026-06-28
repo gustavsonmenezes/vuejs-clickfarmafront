@@ -37,7 +37,11 @@ module.exports = {
     host: '0.0.0.0',
     allowedHosts: 'all',
     port: 8081,
-    hot: true,
+    hot: 'only',
+    liveReload: false,
+    headers: {
+      'Cache-Control': 'no-store'
+    },
     open: true,
     historyApiFallback: true,
     proxy: {
@@ -46,6 +50,11 @@ module.exports = {
         changeOrigin: true,
         secure: false,
         logLevel: 'debug'
+      },
+      '/ws-corridas': {
+        target: 'http://localhost:8080',
+        ws: true,
+        changeOrigin: true
       }
     }
   },

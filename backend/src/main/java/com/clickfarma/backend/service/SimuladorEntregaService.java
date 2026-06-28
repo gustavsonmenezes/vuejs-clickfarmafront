@@ -43,7 +43,7 @@ public class SimuladorEntregaService {
         rastreio.setDataPrevisaoEntrega(LocalDateTime.now().plusMinutes(15));
         rastreioRepository.save(rastreio);
 
-        double[] origem = { -8.047562, -34.877003 };
+        double[] origem = { -8.6845, -35.5898 };
         double[] destino = extrairCoordenadas(pedido.getEnderecoEntrega());
         List<double[]> rota = gerarRota(origem, destino, 20);
 
@@ -98,7 +98,7 @@ public class SimuladorEntregaService {
         if (endereco != null && endereco.toUpperCase().contains("PALMARES")) {
             return new double[]{ -8.6845, -35.5898 };
         }
-        return new double[]{ -8.061373, -34.871141 };
+        return new double[]{ -8.6845, -35.5898 };
     }
 
     private List<double[]> gerarRota(double[] origem, double[] destino, int passos) {

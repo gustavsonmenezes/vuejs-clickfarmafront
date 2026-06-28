@@ -24,6 +24,9 @@ public class PedidoRequestDTO {
     private Double valorFrete;
     private Double totalFinal;
 
+    // CAMPOS PARA MULTI-FARMÁCIA
+    private Long farmaciaId;
+
     // CAMPOS PARA UBER DIRECT
     private String tipoEntrega;
     private String uberQuoteId;
@@ -52,6 +55,9 @@ public class PedidoRequestDTO {
 
     public Double getTotalFinal() { return totalFinal; }
     public void setTotalFinal(Double totalFinal) { this.totalFinal = totalFinal; }
+
+    public Long getFarmaciaId() { return farmaciaId; }
+    public void setFarmaciaId(Long farmaciaId) { this.farmaciaId = farmaciaId; }
 
     public String getTipoEntrega() { return tipoEntrega; }
     public void setTipoEntrega(String tipoEntrega) { this.tipoEntrega = tipoEntrega; }

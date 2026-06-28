@@ -1,9 +1,12 @@
 package com.clickfarma.backend.controller;
 
 import com.clickfarma.backend.dto.ReceitaRequestDTO;
+import com.clickfarma.backend.model.Receita;
+import com.clickfarma.backend.repository.ReceitaRepository;
 import com.clickfarma.backend.service.TesseractOCRService;
 import com.clickfarma.backend.service.OCRService;
 import com.clickfarma.backend.service.GroqProcessadorReceitaService;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,6 +35,12 @@ public class ReceitaController {
     @Autowired
     private GroqProcessadorReceitaService groqProcessadorReceitaService;
 
+    @Autowired
+    private ReceitaRepository receitaRepository;
+
+    @Autowired
+    private ObjectMapper objectMapper;
+
     /**
      * Processa uma receita médica extraindo medicamentos via IA Vision (Llama 3.2 90B Vision).
      * Envia a imagem diretamente para o modelo de visão, com OCR como fallback complementar.
@@ -58,6 +67,15 @@ public class ReceitaController {
                             log.warn("Vision falhou, tentando fallback OCR...");
                             return tentarFallbackOcr(request.getImagemBase64());
                         }
+                    }
+                    try {
+                        Receita receita = new Receita();
+                        receita.setImagemBase64(imagemBase64);
+                        receita.setTextoOriginal(dto.getTextoOriginal());
+                        receita.setMedicamentosExtraidos(objectMapper.writeValueAsString(dto.getMedicamentos()));
+                        receitaRepository.save(receita);
+                    } catch (Exception e) {
+                        log.warn("Erro ao salvar receita: {}", e.getMessage());
                     }
                     Map<String, Object> response = new HashMap<>();
                     response.put("sucesso", true);
