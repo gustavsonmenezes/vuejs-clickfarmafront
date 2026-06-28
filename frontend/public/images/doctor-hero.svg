@@ -1,0 +1,146 @@
+<svg width="400" height="480" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 480">
+  <defs>
+    <linearGradient id="skin" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FFE4D6"/>
+      <stop offset="100%" stop-color="#F5D0B8"/>
+    </linearGradient>
+    <linearGradient id="coat" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF"/>
+      <stop offset="100%" stop-color="#F0F4F8"/>
+    </linearGradient>
+    <linearGradient id="stethoscope" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0D9488"/>
+      <stop offset="100%" stop-color="#0284C7"/>
+    </linearGradient>
+    <linearGradient id="crossIcon" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0D9488"/>
+      <stop offset="100%" stop-color="#14B8A6"/>
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="4" stdDeviation="8" flood-color="#0D9488" flood-opacity="0.15"/>
+    </filter>
+    <linearGradient id="bgGlow" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#E0F2FE"/>
+      <stop offset="100%" stop-color="#CCFBF1"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Fundo decorativo -->
+  <circle cx="200" cy="240" r="180" fill="url(#bgGlow)" opacity="0.5"/>
+  <circle cx="200" cy="240" r="140" fill="white" opacity="0.3"/>
+
+  <!-- Ícone de cruz médica decorativa atrás -->
+  <g opacity="0.06" transform="translate(200, 240)">
+    <rect x="-8" y="-40" width="16" height="80" rx="3" fill="#0D9488"/>
+    <rect x="-40" y="-8" width="80" height="16" rx="3" fill="#0284C7"/>
+  </g>
+
+  <!-- Corpo - Jaleco branco -->
+  <g filter="url(#shadow)">
+    <!-- Ombros e jaleco -->
+    <path d="M130 280 Q130 260 140 250 L260 250 Q270 260 270 280 L280 420 Q280 440 260 440 L140 440 Q120 440 120 420 Z" fill="url(#coat)" stroke="#E2E8F0" stroke-width="1"/>
+    
+    <!-- Lapela esquerda -->
+    <path d="M160 250 L155 350 L200 350 L200 250 Z" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="0.5"/>
+    
+    <!-- Lapela direita -->
+    <path d="M240 250 L245 350 L200 350 L200 250 Z" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="0.5"/>
+    
+    <!-- Botões do jaleco -->
+    <circle cx="200" cy="280" r="3" fill="#CBD5E1"/>
+    <circle cx="200" cy="310" r="3" fill="#CBD5E1"/>
+    <circle cx="200" cy="340" r="3" fill="#CBD5E1"/>
+
+    <!-- Bolso -->
+    <rect x="230" y="300" width="28" height="22" rx="2" fill="none" stroke="#CBD5E1" stroke-width="1"/>
+  </g>
+
+  <!-- Pescoço -->
+  <path d="M175 210 L185 250 L215 250 L225 210 Z" fill="url(#skin)"/>
+
+  <!-- Cabeça -->
+  <ellipse cx="200" cy="175" rx="45" ry="52" fill="url(#skin)"/>
+
+  <!-- Cabelo -->
+  <path d="M155 165 Q155 110 200 105 Q245 110 245 165 Q240 145 200 142 Q160 145 155 165 Z" fill="#1E293B"/>
+  <path d="M155 165 Q153 155 158 148 Q165 135 180 128 Q170 138 168 155 Z" fill="#1E293B"/>
+  <path d="M245 165 Q247 155 242 148 Q235 135 220 128 Q230 138 232 155 Z" fill="#1E293B"/>
+  <path d="M160 125 Q180 108 200 105 Q220 108 240 125 Q220 115 200 113 Q180 115 160 125 Z" fill="#0F172A"/>
+
+  <!-- Olhos -->
+  <ellipse cx="184" cy="170" rx="5" ry="5.5" fill="white"/>
+  <ellipse cx="216" cy="170" rx="5" ry="5.5" fill="white"/>
+  <circle cx="185" cy="170" r="3" fill="#1E293B"/>
+  <circle cx="217" cy="170" r="3" fill="#1E293B"/>
+  <circle cx="186" cy="169" r="1.2" fill="white"/>
+  <circle cx="218" cy="169" r="1.2" fill="white"/>
+
+  <!-- Sobrancelhas -->
+  <path d="M175 161 Q180 158 188 160" fill="none" stroke="#1E293B" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M212 160 Q220 158 225 161" fill="none" stroke="#1E293B" stroke-width="1.5" stroke-linecap="round"/>
+
+  <!-- Nariz -->
+  <path d="M198 174 Q200 180 202 178" fill="none" stroke="#D4A574" stroke-width="1.5" stroke-linecap="round"/>
+
+  <!-- Boca (sorriso amigável) -->
+  <path d="M189 185 Q192 191 200 192 Q208 191 211 185" fill="none" stroke="#C0856A" stroke-width="1.5" stroke-linecap="round"/>
+
+  <!-- Bochechas -->
+  <ellipse cx="172" cy="182" rx="8" ry="4" fill="#FFB5A7" opacity="0.3"/>
+  <ellipse cx="228" cy="182" rx="8" ry="4" fill="#FFB5A7" opacity="0.3"/>
+
+  <!-- Orelhas -->
+  <ellipse cx="155" cy="175" rx="6" ry="10" fill="url(#skin)"/>
+  <ellipse cx="245" cy="175" rx="6" ry="10" fill="url(#skin)"/>
+
+  <!-- Estetoscópio -->
+  <g>
+    <!-- Fio ao redor do pescoço -->
+    <path d="M165 215 Q160 235 170 245 Q180 255 200 255 Q220 255 230 245 Q240 235 235 215" fill="none" stroke="#64748B" stroke-width="2.5" stroke-linecap="round"/>
+    
+    <!-- Tubo descendo -->
+    <path d="M200 255 L200 280 Q200 295 195 300" fill="none" stroke="url(#stethoscope)" stroke-width="2.5" stroke-linecap="round"/>
+    
+    <!-- Peça peitoral (campânula) -->
+    <circle cx="190" cy="305" r="12" fill="url(#stethoscope)" opacity="0.9"/>
+    <circle cx="190" cy="305" r="7" fill="white" opacity="0.2"/>
+    <circle cx="190" cy="305" r="3" fill="white" opacity="0.4"/>
+  </g>
+
+  <!-- Braço direito (segurando prancheta/tablet) -->
+  <path d="M270 270 Q290 285 295 310 Q298 325 290 340" fill="url(#coat)" stroke="#E2E8F0" stroke-width="1"/>
+  
+  <!-- Mão direita -->
+  <circle cx="288" cy="345" r="12" fill="url(#skin)"/>
+  
+  <!-- Prancheta/tablet -->
+  <g transform="translate(275, 340) rotate(-15)">
+    <rect x="-20" y="-30" width="40" height="55" rx="4" fill="white" stroke="#CBD5E1" stroke-width="1"/>
+    <rect x="-15" y="-25" width="30" height="4" rx="2" fill="#E2E8F0"/>
+    <rect x="-15" y="-18" width="25" height="3" rx="1.5" fill="#E2E8F0"/>
+    <rect x="-15" y="-12" width="28" height="3" rx="1.5" fill="#E2E8F0"/>
+    <rect x="-15" y="-6" width="20" height="3" rx="1.5" fill="#0D9488" opacity="0.3"/>
+    <rect x="-15" y="0" width="28" height="3" rx="1.5" fill="#E2E8F0"/>
+    <rect x="-15" y="6" width="22" height="3" rx="1.5" fill="#E2E8F0"/>
+    <!-- Ícone de receita na prancheta -->
+    <rect x="10" y="15" width="6" height="8" rx="1" fill="#0D9488" opacity="0.4"/>
+  </g>
+
+  <!-- Braço esquerdo (levemente abaixado) -->
+  <path d="M130 270 Q112 285 108 310 Q105 325 112 340" fill="url(#coat)" stroke="#E2E8F0" stroke-width="1"/>
+  
+  <!-- Mão esquerda -->
+  <circle cx="113" cy="345" r="12" fill="url(#skin)"/>
+
+  <!-- Badge/identificação no jaleco -->
+  <rect x="210" y="260" width="22" height="14" rx="3" fill="#0D9488"/>
+  <text x="221" y="270" text-anchor="middle" font-family="Arial, sans-serif" font-size="6" fill="white" font-weight="bold">CRM</text>
+
+  <!-- Elementos decorativos flutuantes -->
+  <g opacity="0.08">
+    <text x="60" y="100" font-family="Arial, sans-serif" font-size="24" fill="#0D9488">+</text>
+    <text x="330" y="380" font-family="Arial, sans-serif" font-size="18" fill="#0284C7">+</text>
+    <text x="340" y="90" font-family="Arial, sans-serif" font-size="14" fill="#0D9488">+</text>
+    <text x="55" y="420" font-family="Arial, sans-serif" font-size="20" fill="#0284C7">+</text>
+  </g>
+</svg>

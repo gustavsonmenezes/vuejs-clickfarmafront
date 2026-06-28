@@ -1,15 +1,26 @@
-<svg width="1200" height="600" xmlns="http://www.w3.org/2000/svg">
+<svg width="1200" height="600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 600">
   <defs>
-    <linearGradient id="heroGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#667eea"/>
-      <stop offset="100%" stop-color="#764ba2"/>
+    <linearGradient id="heroBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0284C7"/>
+      <stop offset="50%" stop-color="#0D9488"/>
+      <stop offset="100%" stop-color="#14B8A6"/>
+    </linearGradient>
+    <linearGradient id="glow1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="white" stop-opacity="0.08"/>
+      <stop offset="100%" stop-color="white" stop-opacity="0"/>
     </linearGradient>
   </defs>
-  <rect width="1200" height="600" fill="url(#heroGradient)"/>
-  <text x="600" y="300" text-anchor="middle" font-family="Arial" font-size="36" fill="white" font-weight="bold">
-    ClickFarma - Sua Farmácia Online
-  </text>
-  <text x="600" y="350" text-anchor="middle" font-family="Arial" font-size="18" fill="white" opacity="0.8">
-    Entregamos saúde e bem-estar na sua casa
-  </text>
+  <rect width="1200" height="600" fill="url(#heroBg)"/>
+  <circle cx="100" cy="100" r="200" fill="url(#glow1)"/>
+  <circle cx="1100" cy="500" r="250" fill="url(#glow1)"/>
+  <circle cx="600" cy="300" r="180" fill="white" opacity="0.03"/>
+  <g opacity="0.06">
+    <text x="120" y="150" font-family="Arial, sans-serif" font-size="40" fill="white">+</text>
+    <text x="1050" y="120" font-family="Arial, sans-serif" font-size="30" fill="white">+</text>
+    <text x="80" y="480" font-family="Arial, sans-serif" font-size="25" fill="white">+</text>
+    <text x="1080" y="450" font-family="Arial, sans-serif" font-size="35" fill="white">+</text>
+    <text x="500" y="80" font-family="Arial, sans-serif" font-size="18" fill="white">+</text>
+    <text x="700" y="530" font-family="Arial, sans-serif" font-size="22" fill="white">+</text>
+  </g>
+  <path d="M0 550 Q300 480 600 530 Q900 580 1200 520 L1200 600 L0 600 Z" fill="white" opacity="0.05"/>
 </svg>

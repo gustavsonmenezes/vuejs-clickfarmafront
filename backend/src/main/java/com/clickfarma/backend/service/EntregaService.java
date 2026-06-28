@@ -3,15 +3,20 @@ package com.clickfarma.backend.service;
 import com.clickfarma.backend.model.Entrega;
 import com.clickfarma.backend.model.Entrega.StatusEntrega;
 import com.clickfarma.backend.model.Entregador;
+import com.clickfarma.backend.model.Pedido;
 import com.clickfarma.backend.repository.EntregaRepository;
 import com.clickfarma.backend.repository.EntregadorRepository;
+import com.clickfarma.backend.repository.PedidoRepository;
+import com.clickfarma.backend.service.CorridaService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Objects;
 
 @Service
 public class EntregaService {
@@ -20,28 +25,70 @@ public class EntregaService {
 
     private final EntregaRepository entregaRepository;
     private final EntregadorRepository entregadorRepository;
+    private final PedidoRepository pedidoRepository;
     private final TelegramService telegramService;
+    private final CorridaService corridaService;
+
+    @Value("${farmacia.nome:ClickFarma}")
+    private String farmaciaNome;
+
+    @Value("${farmacia.endereco:}")
+    private String farmaciaEndereco;
+
+    @Value("${farmacia.latitude:}")
+    private Double farmaciaLatitude;
+
+    @Value("${farmacia.longitude:}")
+    private Double farmaciaLongitude;
+
+    @Value("${uber.direct.taxa-entrega:10.00}")
+    private java.math.BigDecimal taxaEntregaPadrao;
 
     public EntregaService(EntregaRepository entregaRepository,
                           EntregadorRepository entregadorRepository,
-                          TelegramService telegramService) {
+                          PedidoRepository pedidoRepository,
+                          TelegramService telegramService,
+                          CorridaService corridaService) {
         this.entregaRepository = entregaRepository;
         this.entregadorRepository = entregadorRepository;
+        this.pedidoRepository = pedidoRepository;
         this.telegramService = telegramService;
+        this.corridaService = corridaService;
     }
 
     @Transactional
     public Entrega criarEntrega(Long pedidoId, String codigoPedido, String mensagem) {
-        Entrega entrega = new Entrega(pedidoId, codigoPedido);
-        entrega.setMensagemTelegram(mensagem);
-        return entregaRepository.save(entrega);
+        Entrega nova = new Entrega(pedidoId, codigoPedido);
+        nova.setMensagemTelegram(mensagem);
+
+        pedidoRepository.findById(pedidoId).ifPresent(pedido -> {
+            nova.setClienteNome(pedido.getUsuario().getNome());
+            nova.setClienteTelefone(pedido.getUsuario().getTelefone());
+            nova.setEnderecoDestino(pedido.getEnderecoEntrega());
+            nova.setTaxaEntrega(taxaEntregaPadrao);
+            if (pedido.getValorTotal() != null) {
+                nova.setDistanciaKm(java.math.BigDecimal.ZERO);
+            }
+        });
+
+        nova.setEnderecoOrigem(farmaciaEndereco);
+        nova.setLatitudeOrigem(farmaciaLatitude);
+        nova.setLongitudeOrigem(farmaciaLongitude);
+
+        Entrega salva = entregaRepository.save(nova);
+
+        corridaService.criarCorrida(salva);
+
+        return salva;
     }
 
     public void broadcastEntrega(Entrega entrega, String endereco, String farmaciaNome, String farmaciaEndereco) {
-        List<Entregador> entregadores = entregadorRepository.findByAtivoTrue();
+        List<Entregador> entregadores = entregadorRepository.findByAtivoTrue().stream()
+                .filter(e -> e.getTelegramChatId() != null)
+                .toList();
 
         if (entregadores.isEmpty()) {
-            log.warn("Nenhum entregador ativo cadastrado para broadcast da entrega {}", entrega.getCodigoPedido());
+            log.warn("Nenhum entregador ativo com Telegram cadastrado para broadcast da entrega {}", entrega.getCodigoPedido());
             return;
         }
 
@@ -74,7 +121,7 @@ public class EntregaService {
     @Transactional
     public synchronized String aceitar(Long entregaId, String telegramChatId) {
         Entregador entregador = entregadorRepository.findByAtivoTrue().stream()
-                .filter(e -> e.getTelegramChatId().equals(telegramChatId))
+                .filter(e -> Objects.equals(e.getTelegramChatId(), telegramChatId))
                 .findFirst()
                 .orElse(null);
 
@@ -118,6 +165,7 @@ public class EntregaService {
     private void notificarOutrosEntregadores(Entrega entrega, Entregador aceitou) {
         List<Entregador> outros = entregadorRepository.findByAtivoTrue().stream()
                 .filter(e -> !e.getId().equals(aceitou.getId()))
+                .filter(e -> e.getTelegramChatId() != null)
                 .toList();
 
         String msg = "⚠️ Entrega #" + entrega.getCodigoPedido()
@@ -135,7 +183,7 @@ public class EntregaService {
     @Transactional
     public Entregador registrarEntregador(String nome, String telegramChatId) {
         if (entregadorRepository.findByAtivoTrue().stream()
-                .anyMatch(e -> e.getTelegramChatId().equals(telegramChatId))) {
+                .anyMatch(e -> Objects.equals(e.getTelegramChatId(), telegramChatId))) {
             return null;
         }
 
@@ -151,7 +199,7 @@ public class EntregaService {
     public void seedFromConfig(String chatId, String nome) {
         if (chatId == null || chatId.isEmpty()) return;
         boolean jaExiste = entregadorRepository.findByAtivoTrue().stream()
-                .anyMatch(e -> e.getTelegramChatId().equals(chatId));
+                .anyMatch(e -> Objects.equals(e.getTelegramChatId(), chatId));
         if (!jaExiste) {
             Entregador e = new Entregador(nome, chatId);
             entregadorRepository.save(e);

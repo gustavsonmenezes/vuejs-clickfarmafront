@@ -22,6 +22,10 @@ import InventoryManagement from '../views/admin/InventoryManagement.vue'
 import OrderManagement from '../views/admin/OrderManagement.vue'
 import PrescriptionValidation from '../views/admin/PrescriptionValidation.vue'
 import UserManagement from '../views/admin/UserManagement.vue'
+import AdminEntregadores from '../views/admin/AdminEntregadores.vue'
+import AdminFarmacias from '../views/admin/AdminFarmacias.vue'
+import AdminCupons from '../views/admin/AdminCupons.vue'
+import AdminCorridas from '../views/admin/AdminCorridas.vue'
 
 // Importe o componente
 import UploadReceita from '@/components/prescriptions/UploadReceita.vue';
@@ -51,6 +55,11 @@ const routes = [
     path: '/login',
     name: 'Login',
     component: Login
+  },
+  {
+    path: '/forgot-password',
+    name: 'ForgotPassword',
+    component: () => import('../views/ForgotPassword.vue')
   },
   {
     path: '/register',
@@ -158,7 +167,7 @@ const routes = [
   },
 
   {
-    path: '/pix-payment/:pedidoId?/:codigoPedido?/:qrCodeBase64?/:copiaECola?/:expiracao?',
+    path: '/pix-payment/:pedidoId?',
     name: 'PixPayment',
     component: () => import('../views/PixPayment.vue'),
     props: true,
@@ -245,6 +254,31 @@ const routes = [
         path: 'users',
         name: 'AdminUsers',
         component: UserManagement
+      },
+      {
+        path: 'entregadores',
+        name: 'AdminEntregadores',
+        component: AdminEntregadores
+      },
+      {
+        path: 'farmacias',
+        name: 'AdminFarmacias',
+        component: AdminFarmacias
+      },
+      {
+        path: 'farmacias/:id/catalogo',
+        name: 'AdminFarmaciaCatalogo',
+        component: () => import('../views/admin/AdminFarmaciaCatalogo.vue')
+      },
+      {
+        path: 'cupons',
+        name: 'AdminCupons',
+        component: AdminCupons
+      },
+      {
+        path: 'corridas',
+        name: 'AdminCorridas',
+        component: AdminCorridas
       }
     ]
   },

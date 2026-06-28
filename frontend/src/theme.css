@@ -1,105 +1,99 @@
 /* =====================================================
    CLICKFARMA — Design System
-   Paleta: Fundo claro, verde saúde, dourado editorial
+   Paleta: Azul-claro, Verde-água, Fundo branco
+   Tipografia: Figtree (headings) + Noto Sans (body)
    ===================================================== */
+@import url('https://fonts.googleapis.com/css2?family=Figtree:wght@300;400;500;600;700&family=Noto+Sans:wght@300;400;500;700&display=swap');
+
 :root {
-    /* Backgrounds — todos claros */
-    --cf-white:       #FFFFFF;
-    --cf-ivory:       #FAF9F6;
-    --cf-cream:       #F4F1EB;
-    --cf-sage-tint:   #F0F5F2;
+  /* === Cores Principais === */
+  --cf-teal:        #0D9488;
+  --cf-teal-dark:   #0F766E;
+  --cf-teal-mid:    #14B8A6;
+  --cf-teal-light:  #CCFBF1;
+  --cf-teal-xlight: #F0FDFA;
 
-    /* Verde — identidade farmácia */
-    --cf-green:        #2A5C45;
-    --cf-green-dark:   #1C3D2E;
-    --cf-green-mid:    #3D7A5E;
-    --cf-green-light:  #E8F2EC;
-    --cf-green-xlight: #F0F7F3;
+  --cf-blue:        #0284C7;
+  --cf-blue-dark:   #0369A1;
+  --cf-blue-light:  #BAE6FD;
+  --cf-blue-xlight: #F0F9FF;
 
-    /* Dourado — acento editorial */
-    --cf-gold:       #B89550;
-    --cf-gold-light: #F8F0DC;
-    --cf-gold-hover: #9E7D3E;
+  /* === Neutros === */
+  --cf-white:       #FFFFFF;
+  --cf-ivory:       #F8FAFC;
+  --cf-cream:       #F1F5F9;
+  --cf-gray-100:    #F1F5F9;
+  --cf-gray-200:    #E2E8F0;
+  --cf-gray-300:    #CBD5E1;
+  --cf-gray-400:    #94A3B8;
+  --cf-gray-500:    #64748B;
+  --cf-gray-600:    #475569;
+  --cf-gray-700:    #334155;
+  --cf-gray-800:    #1E293B;
+  --cf-gray-900:    #0F172A;
 
-    /* Texto */
-    --cf-text-dark:  #1C1C1A;
-    --cf-text-mid:   #4A4A47;
-    --cf-text-muted: #868680;
-    --cf-text-faint: #B0AFA9;
+  /* === Semântica === */
+  --cf-success:     #0D9488;
+  --cf-warning:     #D97706;
+  --cf-danger:      #DC2626;
+  --cf-info:        var(--cf-blue);
 
-    /* Bordas */
-    --cf-border:     rgba(28,28,26,0.10);
-    --cf-border-mid: rgba(28,28,26,0.16);
+  /* === Tarjas Medicamentos === */
+  --cf-stripe-black: #1C1C1C;
+  --cf-stripe-red:   #B91C1C;
 
-    /* Status */
-    --cf-success: #2A5C45;
-    --cf-danger:  #8B3A3A;
-    --cf-warning: #B89550;
+  /* === Sombras === */
+  --cf-shadow-xs: 0 1px 3px rgba(15,23,42,0.05);
+  --cf-shadow-sm: 0 2px 8px rgba(15,23,42,0.06);
+  --cf-shadow-md: 0 6px 24px rgba(15,23,42,0.08);
+  --cf-shadow-lg: 0 12px 48px rgba(15,23,42,0.10);
+  --cf-shadow-xl: 0 20px 60px rgba(15,23,42,0.12);
 
-    /* Sombras — muito suaves */
-    --cf-shadow-xs: 0 1px 4px rgba(28,28,26,0.05);
-    --cf-shadow-sm: 0 2px 8px rgba(28,28,26,0.07);
-    --cf-shadow-md: 0 6px 24px rgba(28,28,26,0.09);
-    --cf-shadow-lg: 0 12px 40px rgba(28,28,26,0.11);
+  /* === Raios === */
+  --cf-r-sm: 6px;
+  --cf-r-md: 10px;
+  --cf-r-lg: 14px;
+  --cf-r-xl: 20px;
+  --cf-r-full: 9999px;
 
-    /* Raios */
-    --cf-r-sm: 4px;
-    --cf-r-md: 8px;
-    --cf-r-lg: 12px;
-    --cf-r-xl: 16px;
+  /* === Tipografia === */
+  --cf-heading: 'Figtree', system-ui, sans-serif;
+  --cf-body:    'Noto Sans', system-ui, sans-serif;
 
-    /* Tipografia */
-    --cf-serif: 'Cormorant Garamond', Georgia, serif;
-    --cf-sans:  'DM Sans', system-ui, sans-serif;
+  /* === Transições === */
+  --cf-ease: cubic-bezier(0.4, 0, 0.2, 1);
+  --cf-fast: 150ms var(--cf-ease);
+  --cf-base: 250ms var(--cf-ease);
+  --cf-slow: 400ms var(--cf-ease);
 
-    /* Transições */
-    --cf-ease: cubic-bezier(0.4, 0, 0.2, 1);
-
-    /* ---- Aliases para compatibilidade com código existente ---- */
-    --color-primary:        var(--cf-green);
-    --color-primary-dark:   var(--cf-green-dark);
-    --color-primary-light:  var(--cf-green-light);
-    --color-primary-xlight: var(--cf-green-xlight);
-    --color-primary-mid:    var(--cf-green-mid);
-    --color-secondary:      var(--cf-green);
-    --color-secondary-light:var(--cf-green-light);
-    --color-secondary-dark: var(--cf-green-dark);
-    --color-accent:         var(--cf-gold);
-    --color-accent-light:   var(--cf-gold-light);
-    --color-gold:           var(--cf-gold);
-    --color-gold-light:     var(--cf-gold-light);
-    --color-ivory:          var(--cf-ivory);
-    --color-warm-white:     var(--cf-white);
-    --color-cream:          var(--cf-cream);
-    --color-charcoal:       var(--cf-text-dark);
-    --color-muted:          var(--cf-text-muted);
-    --color-muted-light:    var(--cf-text-faint);
-    --color-white:          var(--cf-white);
-    --color-gray-50:        var(--cf-ivory);
-    --color-gray-100:       var(--cf-cream);
-    --color-gray-200:       #E8E5DE;
-    --color-gray-300:       #CCCAC4;
-    --color-gray-600:       var(--cf-text-muted);
-    --color-gray-900:       var(--cf-text-dark);
-    --color-success:        var(--cf-success);
-    --color-warning:        var(--cf-warning);
-    --color-danger:         var(--cf-danger);
-    --color-info:           #2A4C6E;
-    --font-primary:         var(--cf-sans);
-    --font-secondary:       var(--cf-serif);
-    --border-light:         1px solid var(--cf-border);
-    --border-fine:          0.5px solid var(--cf-border);
-    --shadow-sm:            var(--cf-shadow-sm);
-    --shadow-md:            var(--cf-shadow-md);
-    --shadow-lg:            var(--cf-shadow-lg);
-    --shadow-xl:            var(--cf-shadow-lg);
-    --radius-sm:            var(--cf-r-sm);
-    --radius-md:            var(--cf-r-md);
-    --radius-lg:            var(--cf-r-lg);
-    --radius-xl:            var(--cf-r-xl);
-    --transition-fast:      150ms var(--cf-ease);
-    --transition-base:      250ms var(--cf-ease);
-    --transition-slow:      400ms var(--cf-ease);
+  /* === Aliases (compatibilidade) === */
+  --color-primary:        var(--cf-teal);
+  --color-primary-dark:   var(--cf-teal-dark);
+  --color-primary-light:  var(--cf-teal-light);
+  --color-primary-xlight: var(--cf-teal-xlight);
+  --color-secondary:      var(--cf-blue);
+  --color-secondary-light:var(--cf-blue-light);
+  --color-accent:         var(--cf-blue);
+  --color-accent-light:   var(--cf-blue-light);
+  --color-ivory:          var(--cf-ivory);
+  --color-white:          var(--cf-white);
+  --color-charcoal:       var(--cf-gray-900);
+  --color-muted:          var(--cf-gray-500);
+  --color-danger:         var(--cf-danger);
+  --color-success:        var(--cf-success);
+  --color-warning:        var(--cf-warning);
+  --font-heading:         var(--cf-heading);
+  --font-body:            var(--cf-body);
+  --shadow-sm:            var(--cf-shadow-sm);
+  --shadow-md:            var(--cf-shadow-md);
+  --shadow-lg:            var(--cf-shadow-lg);
+  --radius-sm:            var(--cf-r-sm);
+  --radius-md:            var(--cf-r-md);
+  --radius-lg:            var(--cf-r-lg);
+  --radius-xl:            var(--cf-r-xl);
+  --transition-fast:      var(--cf-fast);
+  --transition-base:      var(--cf-base);
+  --transition-slow:      var(--cf-slow);
 }
 
 /* ===========================
@@ -109,228 +103,331 @@
 html { scroll-behavior: smooth; }
 
 body {
-    font-family: var(--cf-sans);
-    color: var(--cf-text-dark);
-    background: var(--cf-ivory);
-    line-height: 1.65;
-    font-weight: 400;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
+  font-family: var(--cf-body);
+  color: var(--cf-gray-900);
+  background: var(--cf-white);
+  line-height: 1.65;
+  font-weight: 400;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 /* ===========================
    TIPOGRAFIA
    =========================== */
 h1, h2, h3, h4, h5, h6 {
-    font-family: var(--cf-serif);
-    font-weight: 500;
-    line-height: 1.2;
-    color: var(--cf-text-dark);
-    letter-spacing: -0.02em;
+  font-family: var(--cf-heading);
+  font-weight: 600;
+  line-height: 1.25;
+  color: var(--cf-gray-900);
 }
-h1 { font-size: clamp(2rem, 4.5vw, 3.4rem); }
-h2 { font-size: clamp(1.6rem, 3.5vw, 2.6rem); }
-h3 { font-size: clamp(1.3rem, 2.5vw, 1.9rem); }
-h4 { font-size: 1.4rem; }
-h5 { font-size: 1.2rem; }
+h1 { font-size: clamp(2rem, 4.5vw, 3.5rem); letter-spacing: -0.02em; }
+h2 { font-size: clamp(1.5rem, 3vw, 2.5rem); letter-spacing: -0.015em; }
+h3 { font-size: clamp(1.2rem, 2.5vw, 1.75rem); }
+h4 { font-size: 1.25rem; }
+h5 { font-size: 1.1rem; }
 
-p { color: var(--cf-text-mid); line-height: 1.75; }
+p { color: var(--cf-gray-600); line-height: 1.7; }
 
-a { color: var(--cf-green); text-decoration: none; transition: color var(--transition-fast); }
-a:hover { color: var(--cf-green-dark); }
+a { color: var(--cf-teal); text-decoration: none; transition: color var(--cf-fast); }
+a:hover { color: var(--cf-teal-dark); }
 
 /* ===========================
    BOTÕES
    =========================== */
-.btn {
-    font-family: var(--cf-sans);
-    font-weight: 400;
-    font-size: 0.78rem;
-    letter-spacing: 0.11em;
-    text-transform: uppercase;
-    border-radius: var(--cf-r-md);
-    padding: 0.72rem 1.6rem;
-    transition: all 220ms var(--cf-ease);
-    border: none;
-    cursor: pointer;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
+.cf-btn {
+  font-family: var(--cf-body);
+  font-weight: 500;
+  font-size: 0.875rem;
+  border-radius: var(--cf-r-md);
+  padding: 0.625rem 1.25rem;
+  transition: all 220ms var(--cf-ease);
+  border: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  line-height: 1.4;
+  min-height: 44px;
 }
 
-.btn-primary {
-    background: var(--cf-green);
-    color: white;
+.cf-btn-primary {
+  background: var(--cf-teal);
+  color: white;
 }
-.btn-primary:hover, .btn-primary:focus {
-    background: var(--cf-green-dark);
-    color: white;
-    transform: translateY(-1px);
-    box-shadow: 0 4px 14px rgba(42,92,69,0.22);
-}
-
-.btn-accent {
-    background: var(--cf-gold);
-    color: white;
-    border: none;
-}
-.btn-accent:hover {
-    background: var(--cf-gold-hover);
-    color: white;
-    transform: translateY(-1px);
-    box-shadow: 0 4px 14px rgba(184,149,80,0.22);
+.cf-btn-primary:hover {
+  background: var(--cf-teal-dark);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(13,148,136,0.3);
 }
 
-.btn-secondary {
-    background: var(--cf-green);
-    color: white;
+.cf-btn-secondary {
+  background: var(--cf-blue);
+  color: white;
 }
-.btn-secondary:hover {
-    background: var(--cf-green-dark);
-    color: white;
-    transform: translateY(-1px);
+.cf-btn-secondary:hover {
+  background: var(--cf-blue-dark);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(2,132,199,0.3);
 }
 
-.btn-outline-primary {
-    border: 1px solid var(--cf-green);
-    color: var(--cf-green);
-    background: transparent;
+.cf-btn-outline {
+  background: transparent;
+  color: var(--cf-teal);
+  border: 1.5px solid var(--cf-teal);
 }
-.btn-outline-primary:hover {
-    background: var(--cf-green);
-    color: white;
-    transform: translateY(-1px);
+.cf-btn-outline:hover {
+  background: var(--cf-teal-xlight);
+  transform: translateY(-1px);
 }
+
+.cf-btn-ghost {
+  background: transparent;
+  color: var(--cf-gray-600);
+}
+.cf-btn-ghost:hover {
+  background: var(--cf-gray-100);
+  color: var(--cf-gray-900);
+}
+
+.cf-btn-sm {
+  font-size: 0.8rem;
+  padding: 0.4rem 0.9rem;
+  min-height: 36px;
+}
+.cf-btn-lg {
+  font-size: 1rem;
+  padding: 0.75rem 1.75rem;
+  min-height: 52px;
+}
+.cf-btn-block { width: 100%; }
+.cf-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none !important; }
 
 /* ===========================
    CARDS
    =========================== */
-.card {
-    border: 1px solid var(--cf-border);
-    border-radius: var(--cf-r-lg);
-    background: var(--cf-white);
-    box-shadow: var(--cf-shadow-xs);
-    transition: all 250ms var(--cf-ease);
-    overflow: hidden;
+.cf-card {
+  background: var(--cf-white);
+  border: 1px solid var(--cf-gray-200);
+  border-radius: var(--cf-r-lg);
+  box-shadow: var(--cf-shadow-xs);
+  transition: all 250ms var(--cf-ease);
+  overflow: hidden;
 }
-.card:hover {
-    transform: translateY(-3px);
-    box-shadow: var(--cf-shadow-md);
-    border-color: rgba(184,149,80,0.22);
-}
-.card-header {
-    background: var(--cf-ivory) !important;
-    border-bottom: 1px solid var(--cf-border) !important;
-    padding: 1.1rem 1.4rem;
+.cf-card-hover:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--cf-shadow-md);
+  border-color: var(--cf-teal-light);
 }
 
 /* ===========================
    BADGES
    =========================== */
-.badge {
-    padding: 0.28rem 0.75rem;
-    border-radius: 3px;
-    font-weight: 400;
-    font-size: 0.68rem;
-    letter-spacing: 0.09em;
-    text-transform: uppercase;
+.cf-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0.2rem 0.65rem;
+  border-radius: var(--cf-r-full);
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  line-height: 1.4;
 }
-.badge-success { background: var(--cf-green-light); color: var(--cf-green); }
-.badge-warning  { background: var(--cf-gold-light);  color: var(--cf-gold);  }
-.badge-danger   { background: #F9EDED; color: var(--cf-danger); }
+.cf-badge-teal { background: var(--cf-teal-xlight); color: var(--cf-teal-dark); }
+.cf-badge-blue { background: var(--cf-blue-xlight); color: var(--cf-blue-dark); }
+.cf-badge-red { background: #FEF2F2; color: var(--cf-danger); }
+.cf-badge-amber { background: #FFFBEB; color: #B45309; }
+.cf-badge-gray { background: var(--cf-gray-100); color: var(--cf-gray-600); }
 
-/* ===========================
-   FORMS
-   =========================== */
-.form-control, .form-select {
-    font-family: var(--cf-sans);
-    font-weight: 300;
-    border: 1px solid var(--cf-border-mid);
-    border-radius: var(--cf-r-md);
-    padding: 0.65rem 1rem;
-    background: var(--cf-white);
-    color: var(--cf-text-dark);
-    transition: all 220ms var(--cf-ease);
-    font-size: 0.93rem;
+/* Tarja de medicamento */
+.cf-stripe {
+  display: inline-block;
+  padding: 0.15rem 0.5rem;
+  border-radius: 3px;
+  font-size: 0.55rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  line-height: 1.4;
 }
-.form-control:focus, .form-select:focus {
-    border-color: var(--cf-green);
-    box-shadow: 0 0 0 3px rgba(42,92,69,0.09);
-    outline: none;
+.cf-stripe-black {
+  background: var(--cf-stripe-black);
+  color: white;
 }
-.form-label {
-    font-size: 0.7rem;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    color: var(--cf-text-muted);
-    font-weight: 500;
-    margin-bottom: 0.35rem;
-    display: block;
+.cf-stripe-red {
+  background: var(--cf-stripe-red);
+  color: white;
 }
 
 /* ===========================
-   DIVISORES
+   INPUTS
    =========================== */
-hr, .divider {
-    border: none;
-    border-top: 1px solid var(--cf-border);
-    margin: 1.4rem 0;
+.cf-input {
+  font-family: var(--cf-body);
+  font-weight: 400;
+  border: 1.5px solid var(--cf-gray-200);
+  border-radius: var(--cf-r-md);
+  padding: 0.625rem 1rem;
+  background: var(--cf-white);
+  color: var(--cf-gray-900);
+  transition: all 200ms var(--cf-ease);
+  font-size: 0.9rem;
+  width: 100%;
+  line-height: 1.5;
+}
+.cf-input:focus {
+  border-color: var(--cf-teal);
+  box-shadow: 0 0 0 3px rgba(13,148,136,0.12);
+  outline: none;
+}
+.cf-input::placeholder { color: var(--cf-gray-400); }
+.cf-input-group {
+  display: flex;
+  align-items: center;
+  gap: 0;
+}
+.cf-input-group .cf-input {
+  border-radius: var(--cf-r-md) 0 0 var(--cf-r-md);
+}
+.cf-input-group .cf-btn {
+  border-radius: 0 var(--cf-r-md) var(--cf-r-md) 0;
+}
+.cf-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--cf-gray-700);
+  margin-bottom: 0.35rem;
+  display: block;
 }
 
 /* ===========================
-   ANIMAÇÕES
+   SELECT
    =========================== */
-@keyframes fadeInUp {
-    from { opacity: 0; transform: translateY(14px); }
-    to   { opacity: 1; transform: translateY(0); }
+.cf-select {
+  font-family: var(--cf-body);
+  font-weight: 400;
+  border: 1.5px solid var(--cf-gray-200);
+  border-radius: var(--cf-r-md);
+  padding: 0.5rem 0.9rem;
+  background: var(--cf-white);
+  color: var(--cf-gray-900);
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 200ms var(--cf-ease);
 }
-.fade-in-up { animation: fadeInUp 0.45s var(--cf-ease) both; }
+.cf-select:focus {
+  border-color: var(--cf-teal);
+  box-shadow: 0 0 0 3px rgba(13,148,136,0.12);
+  outline: none;
+}
 
 /* ===========================
-   UTILITÁRIOS
+   DIVISOR
    =========================== */
-.section-eyebrow {
-    font-size: 0.68rem;
-    letter-spacing: 0.16em;
-    text-transform: uppercase;
-    color: var(--cf-gold);
-    font-weight: 500;
-    display: block;
-    margin-bottom: 0.4rem;
+.cf-divider {
+  border: none;
+  border-top: 1px solid var(--cf-gray-200);
+  margin: 1rem 0;
 }
-.section-title {
-    font-family: var(--cf-serif);
-    font-size: clamp(1.6rem, 3vw, 2.4rem);
-    font-weight: 400;
-    color: var(--cf-text-dark);
-    letter-spacing: -0.01em;
+
+/* ===========================
+   ANIMAÇÕES COMPARTILHADAS
+   =========================== */
+@keyframes cf-fadeInUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes cf-fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes cf-slideInRight {
+  from { opacity: 0; transform: translateX(20px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+.cf-anim-fade-in-up { animation: cf-fadeInUp 0.45s var(--cf-ease) both; }
+.cf-anim-fade-in { animation: cf-fadeIn 0.35s var(--cf-ease) both; }
+.cf-anim-slide-in-right { animation: cf-slideInRight 0.4s var(--cf-ease) both; }
+
+/* Stagger children */
+.cf-stagger > * { animation: cf-fadeInUp 0.4s var(--cf-ease) both; }
+.cf-stagger > *:nth-child(1) { animation-delay: 0.05s; }
+.cf-stagger > *:nth-child(2) { animation-delay: 0.1s; }
+.cf-stagger > *:nth-child(3) { animation-delay: 0.15s; }
+.cf-stagger > *:nth-child(4) { animation-delay: 0.2s; }
+.cf-stagger > *:nth-child(5) { animation-delay: 0.25s; }
+.cf-stagger > *:nth-child(6) { animation-delay: 0.3s; }
+.cf-stagger > *:nth-child(7) { animation-delay: 0.35s; }
+.cf-stagger > *:nth-child(8) { animation-delay: 0.4s; }
+
+/* ===========================
+   LAYOUT UTILITY
+   =========================== */
+.cf-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+.cf-section {
+  padding: 3rem 0;
+}
+.cf-section-title {
+  font-family: var(--cf-heading);
+  font-size: clamp(1.3rem, 2.5vw, 1.75rem);
+  font-weight: 600;
+  color: var(--cf-gray-900);
+  margin-bottom: 0.5rem;
+}
+.cf-section-subtitle {
+  font-size: 0.95rem;
+  color: var(--cf-gray-500);
+  margin-bottom: 1.5rem;
+}
+
+/* ===========================
+   SKELETON / LOADING
+   =========================== */
+.cf-skeleton {
+  background: linear-gradient(90deg, var(--cf-gray-100) 25%, var(--cf-gray-200) 50%, var(--cf-gray-100) 75%);
+  background-size: 200% 100%;
+  animation: cf-shimmer 1.5s infinite;
+  border-radius: var(--cf-r-sm);
+}
+@keyframes cf-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
 }
 
 /* Scrollbar */
 ::-webkit-scrollbar { width: 5px; }
-::-webkit-scrollbar-track { background: var(--cf-ivory); }
-::-webkit-scrollbar-thumb { background: var(--cf-green-light); border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: rgba(42,92,69,0.3); }
+::-webkit-scrollbar-track { background: var(--cf-white); }
+::-webkit-scrollbar-thumb { background: var(--cf-gray-200); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--cf-gray-300); }
 
 /* ===========================
-   TIPOGRAFIA UTILITÁRIA
+   TOAST
    =========================== */
-.cf-text-lead {
-    font-size: 1.15rem;
-    color: var(--cf-text-mid);
-    line-height: 1.7;
+.cf-toast {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  background: var(--cf-gray-900);
+  color: white;
+  padding: 0.75rem 1.25rem;
+  border-radius: var(--cf-r-md);
+  font-size: 0.85rem;
+  box-shadow: var(--cf-shadow-lg);
+  z-index: 9999;
+  animation: cf-fadeInUp 0.3s var(--cf-ease);
+  max-width: 380px;
 }
+.cf-toast-success { background: var(--cf-teal); }
+.cf-toast-error { background: var(--cf-danger); }
 
-.cf-text-small {
-    font-size: 0.82rem;
-    line-height: 1.5;
-    color: var(--cf-text-muted);
+/* RESPONSIVO */
+@media (max-width: 768px) {
+  .cf-container { padding: 0 16px; }
+  .cf-section { padding: 2rem 0; }
 }
-
-.cf-text-mono {
-    font-family: 'DM Sans', monospace;
-    font-variant-numeric: tabular-nums;
-}
-
-.cf-font-serif { font-family: var(--cf-serif); }
-.cf-font-sans { font-family: var(--cf-sans); }

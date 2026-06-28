@@ -2,6 +2,9 @@ package com.clickfarma.backend.service;
 
 import com.clickfarma.backend.dto.*;
 import com.clickfarma.backend.model.Entrega;
+import com.fasterxml.jackson.databind.PropertyNamingStrategies;
+import com.fasterxml.jackson.databind.annotation.JsonNaming;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,8 +16,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
@@ -55,9 +58,6 @@ public class UberDirectService {
 
     @Autowired
     private RestTemplate restTemplate;
-
-    @Autowired(required = false)
-    private TelegramService telegramService;
 
     @Autowired
     private EntregaService entregaService;
@@ -119,23 +119,43 @@ public class UberDirectService {
                 && customerId != null && !customerId.isEmpty();
     }
 
+    private UberDirectAddressDTO criarEndereco(String enderecoStr) {
+        String[] partes = enderecoStr.split(",");
+        String rua = partes.length > 0 ? partes[0].trim() : enderecoStr;
+        String cidade = "Recife";
+        String estado = "PE";
+        String cep = "50000-000";
+
+        for (String p : partes) {
+            String t = p.trim().toUpperCase();
+            if (t.matches("\\d{5}-?\\d{3}")) {
+                cep = t.replaceAll("(\\d{5})-?(\\d{3})", "$1-$2");
+            }
+        }
+
+        return new UberDirectAddressDTO(
+                Arrays.asList(rua),
+                cidade,
+                estado,
+                cep,
+                "BR"
+        );
+    }
+
     private UberDirectQuoteResponseDTO getQuoteDaApi(String dropoffAddress) {
         try {
             String token = obterTokenApi();
-            String url = apiUrl + "/" + customerId + "/delivery_quotes";
+            String url = apiUrl + "/" + customerId + "/delivery-quotes";
 
             HttpHeaders headers = new HttpHeaders();
             headers.setBearerAuth(token);
             headers.set("Content-Type", "application/json");
 
-            String body = String.format("""
-                    {
-                        "pickup_address": "{\\"street_address\\":[\\"%s\\"],\\"city\\":\\"Recife\\",\\"state\\":\\"PE\\",\\"zip_code\\":\\"50000-000\\",\\"country\\":\\"BR\\"}",
-                        "dropoff_address": "{\\"street_address\\":[\\"%s\\"],\\"city\\":\\"Recife\\",\\"state\\":\\"PE\\",\\"zip_code\\":\\"50000-000\\",\\"country\\":\\"BR\\"}"
-                    }
-                    """, farmaciaEndereco.replace("\"", "\\\""), dropoffAddress.replace("\"", "\\\""));
+            UberDirectApiQuoteRequest body = new UberDirectApiQuoteRequest();
+            body.setPickupAddress(criarEndereco(farmaciaEndereco));
+            body.setDropoffAddress(criarEndereco(dropoffAddress));
 
-            HttpEntity<String> request = new HttpEntity<>(body, headers);
+            HttpEntity<UberDirectApiQuoteRequest> request = new HttpEntity<>(body, headers);
             ResponseEntity<UberDirectQuoteResponseDTO> response = restTemplate.exchange(
                     url, HttpMethod.POST, request, UberDirectQuoteResponseDTO.class);
 
@@ -173,47 +193,23 @@ public class UberDirectService {
             headers.setBearerAuth(token);
             headers.set("Content-Type", "application/json");
 
-            StringBuilder itemsJson = new StringBuilder("[");
-            for (int i = 0; i < manifestItems.size(); i++) {
-                if (i > 0) itemsJson.append(",");
-                UberDirectManifestItemDTO item = manifestItems.get(i);
-                itemsJson.append(String.format("""
-                        {"name":"%s","quantity":%d,"size":"%s"}
-                        """, item.getName(), item.getQuantity(), item.getSize() != null ? item.getSize() : "small"));
-            }
-            itemsJson.append("]");
+            UberDirectApiDeliveryRequest body = new UberDirectApiDeliveryRequest();
+            body.setQuoteId(quoteId);
+            body.setPickupAddress(criarEndereco(farmaciaEndereco));
+            body.setPickupName(farmaciaNome);
+            body.setPickupPhoneNumber(farmaciaTelefone);
+            body.setPickupLatitude(farmaciaLatitude);
+            body.setPickupLongitude(farmaciaLongitude);
+            body.setDropoffAddress(criarEndereco(
+                    dropoff.getAddress() != null ? dropoff.getAddress() : ""));
+            body.setDropoffName(dropoff.getName() != null ? dropoff.getName() : "");
+            body.setDropoffPhoneNumber(dropoff.getPhone() != null ? dropoff.getPhone() : "");
+            body.setDropoffLatitude(dropoff.getLatitude() != null ? dropoff.getLatitude() : farmaciaLatitude);
+            body.setDropoffLongitude(dropoff.getLongitude() != null ? dropoff.getLongitude() : farmaciaLongitude);
+            body.setManifestItems(manifestItems);
+            body.setExternalOrderId(externalOrderId != null ? externalOrderId : "");
 
-            String body = String.format("""
-                    {
-                        "quote_id": "%s",
-                        "pickup_address": "{\\"street_address\\":[\\"%s\\"],\\"city\\":\\"Recife\\",\\"state\\":\\"PE\\",\\"zip_code\\":\\"50000-000\\",\\"country\\":\\"BR\\"}",
-                        "pickup_name": "%s",
-                        "pickup_phone_number": "%s",
-                        "pickup_latitude": %f,
-                        "pickup_longitude": %f,
-                        "dropoff_address": "{\\"street_address\\":[\\"%s\\"],\\"city\\":\\"Recife\\",\\"state\\":\\"PE\\",\\"zip_code\\":\\"50000-000\\",\\"country\\":\\"BR\\"}",
-                        "dropoff_name": "%s",
-                        "dropoff_phone_number": "%s",
-                        "dropoff_latitude": %f,
-                        "dropoff_longitude": %f,
-                        "manifest_items": %s,
-                        "external_order_id": "%s"
-                    }
-                    """,
-                    quoteId,
-                    farmaciaEndereco.replace("\"", "\\\""),
-                    farmaciaNome, farmaciaTelefone,
-                    farmaciaLatitude, farmaciaLongitude,
-                    (dropoff.getAddress() != null ? dropoff.getAddress() : "").replace("\"", "\\\""),
-                    dropoff.getName() != null ? dropoff.getName() : "",
-                    dropoff.getPhone() != null ? dropoff.getPhone() : "",
-                    dropoff.getLatitude() != null ? dropoff.getLatitude() : farmaciaLatitude,
-                    dropoff.getLongitude() != null ? dropoff.getLongitude() : farmaciaLongitude,
-                    itemsJson.toString(),
-                    externalOrderId != null ? externalOrderId : ""
-            );
-
-            HttpEntity<String> request = new HttpEntity<>(body, headers);
+            HttpEntity<UberDirectApiDeliveryRequest> request = new HttpEntity<>(body, headers);
             ResponseEntity<UberDirectDeliveryResponseDTO> response = restTemplate.exchange(
                     url, HttpMethod.POST, request, UberDirectDeliveryResponseDTO.class);
 
@@ -230,22 +226,21 @@ public class UberDirectService {
 
         String deliveryId = "ud_" + UUID.randomUUID().toString().substring(0, 10);
 
-        String itensStr = "";
+        StringBuilder itensStr = new StringBuilder();
         for (UberDirectManifestItemDTO item : manifestItems) {
-            itensStr += "  - " + item.getName() + " x" + item.getQuantity() + "\n";
+            itensStr.append("  - ").append(item.getName()).append(" x").append(item.getQuantity()).append("\n");
         }
 
         String enderecoCompleto = dropoff.getAddress() != null ? dropoff.getAddress() : "";
         String codigoPedido = externalOrderId != null ? "#" + externalOrderId : deliveryId;
 
-        Entrega entrega = entregaService.criarEntrega(
-                externalOrderId != null ? Long.parseLong(externalOrderId.replaceAll("\\D", "")) : 0,
-                codigoPedido,
-                itensStr);
+        String digitsOnly = externalOrderId != null ? externalOrderId.replaceAll("\\D", "") : "";
+        long pedidoId = digitsOnly.isEmpty() ? 0 : Long.parseLong(digitsOnly);
+
+        Entrega entrega = entregaService.criarEntrega(pedidoId, codigoPedido, itensStr.toString());
 
         entregaService.broadcastEntrega(entrega, enderecoCompleto, farmaciaNome, farmaciaEndereco);
 
-        // Seed do entregador inicial da config se ainda não existir
         entregaService.seedFromConfig(entregadorChatId, "Entregador ClickFarma");
 
         UberDirectDeliveryResponseDTO dto = new UberDirectDeliveryResponseDTO();
@@ -264,41 +259,6 @@ public class UberDirectService {
         dto.setManifestItems(manifestItems);
 
         return dto;
-    }
-
-    private void notificarEntregadorTelegram(
-            String deliveryId, UberDirectContactDTO dropoff,
-            List<UberDirectManifestItemDTO> items, String externalOrderId) {
-
-        if (telegramService == null || entregadorChatId == null || entregadorChatId.isEmpty()) {
-            log.warn("Telegram nao configurado. Entregador nao foi notificado.");
-            return;
-        }
-
-        try {
-            StringBuilder msg = new StringBuilder();
-            msg.append("NOVA ENTREGA UBER DIRECT\n");
-            msg.append("========================\n\n");
-            msg.append("Pedido: #").append(externalOrderId != null ? externalOrderId : deliveryId).append("\n");
-            msg.append("Cliente: ").append(dropoff.getName() != null ? dropoff.getName() : "N/A").append("\n");
-            msg.append("Endereço: ").append(dropoff.getAddress() != null ? dropoff.getAddress() : "N/A").append("\n");
-            msg.append("Telefone: ").append(dropoff.getPhone() != null ? dropoff.getPhone() : "N/A").append("\n\n");
-            msg.append("Itens:\n");
-            for (UberDirectManifestItemDTO item : items) {
-                msg.append("  - ").append(item.getName()).append(" x").append(item.getQuantity()).append("\n");
-            }
-            msg.append("\n");
-            msg.append("Retirar na farmácia: ").append(farmaciaNome).append("\n");
-            msg.append("Endereço: ").append(farmaciaEndereco).append("\n\n");
-            msg.append("Responda esta mensagem com:\n");
-            msg.append("/aceitar - Aceitar entrega\n");
-            msg.append("/recusar - Recusar entrega");
-
-            telegramService.enviarMensagem(entregadorChatId, msg.toString());
-            log.info("Entregador notificado via Telegram para entrega {}", deliveryId);
-        } catch (Exception e) {
-            log.error("Erro ao notificar entregador via Telegram", e);
-        }
     }
 
     private String obterTokenApi() {
@@ -372,6 +332,7 @@ public class UberDirectService {
         return 3.0;
     }
 
+    @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
     private static class UberTokenResponse {
         @JsonProperty("access_token")
         public String accessToken;
